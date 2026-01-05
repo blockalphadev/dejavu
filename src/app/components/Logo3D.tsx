@@ -1,3 +1,5 @@
+"use client";
+
 import { Canvas, useFrame } from '@react-three/fiber';
 import React, { useRef, useState, useMemo } from 'react';
 import { Float, Environment, PerspectiveCamera, Stars, Trail } from '@react-three/drei';
@@ -52,7 +54,7 @@ function RotatingShape(props: any) {
 export function Logo3D({ className }: { className?: string }) {
     return (
         <div className={className}>
-            <Canvas alpha dpr={[1, 2]}>
+            <Canvas gl={{ alpha: true }} dpr={[1, 2]}>
                 <PerspectiveCamera makeDefault position={[0, 0, 4]} />
                 <ambientLight intensity={0.5} />
                 <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} />

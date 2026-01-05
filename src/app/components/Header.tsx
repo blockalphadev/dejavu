@@ -15,9 +15,11 @@ import { NavIcons } from "./NavIcons";
 interface HeaderProps {
   currentTab?: string;
   onNavigate?: (tab: string) => void;
+  activeCategory?: string;
+  onSelectCategory?: (category: string) => void;
 }
 
-export function Header({ currentTab = 'markets', onNavigate }: HeaderProps) {
+export function Header({ currentTab = 'markets', onNavigate, activeCategory = 'Live', onSelectCategory }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -44,7 +46,7 @@ export function Header({ currentTab = 'markets', onNavigate }: HeaderProps) {
               <div className="w-10 h-10">
                 <Logo3D className="w-full h-full" />
               </div>
-              <span className="font-outfit font-bold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-600 dark:from-cyan-400 dark:via-blue-500 dark:to-purple-500 drop-shadow-sm">
+              <span className="font-rajdhani font-bold text-3xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-gray-800 to-slate-900 dark:from-white dark:via-gray-200 dark:to-gray-400 drop-shadow-sm">
                 DeJaVu
               </span>
             </div>
@@ -172,18 +174,18 @@ export function Header({ currentTab = 'markets', onNavigate }: HeaderProps) {
       <div className="border-t border-border/40 bg-background/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-4 overflow-x-auto py-3 scrollbar-hide">
-            <CategoryBadge active>🔴 Live</CategoryBadge>
-            <CategoryBadge>All</CategoryBadge>
-            <CategoryBadge>For You</CategoryBadge>
-            <CategoryBadge>Politics</CategoryBadge>
-            <CategoryBadge>Sports</CategoryBadge>
-            <CategoryBadge>Crypto</CategoryBadge>
-            <CategoryBadge>Global Elections</CategoryBadge>
-            <CategoryBadge>Mentions</CategoryBadge>
-            <CategoryBadge>Creators</CategoryBadge>
-            <CategoryBadge>Pop Culture</CategoryBadge>
-            <CategoryBadge>Business</CategoryBadge>
-            <CategoryBadge>Science</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Live'} onClick={() => onSelectCategory?.('Live')}>🔴 Live</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'All'} onClick={() => onSelectCategory?.('All')}>All</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'For You'} onClick={() => onSelectCategory?.('For You')}>For You</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Politics'} onClick={() => onSelectCategory?.('Politics')}>Politics</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Sports'} onClick={() => onSelectCategory?.('Sports')}>Sports</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Crypto'} onClick={() => onSelectCategory?.('Crypto')}>Crypto</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Global Elections'} onClick={() => onSelectCategory?.('Global Elections')}>Global Elections</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Mentions'} onClick={() => onSelectCategory?.('Mentions')}>Mentions</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Creators'} onClick={() => onSelectCategory?.('Creators')}>Creators</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Pop Culture'} onClick={() => onSelectCategory?.('Pop Culture')}>Pop Culture</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Business'} onClick={() => onSelectCategory?.('Business')}>Business</CategoryBadge>
+            <CategoryBadge active={activeCategory === 'Science'} onClick={() => onSelectCategory?.('Science')}>Science</CategoryBadge>
           </div>
         </div>
       </div>
@@ -229,9 +231,10 @@ function MobileNavLink({ children, active = false }: { children: React.ReactNode
   );
 }
 
-function CategoryBadge({ children, active = false }: { children: React.ReactNode; active?: boolean }) {
+function CategoryBadge({ children, active = false, onClick }: { children: React.ReactNode; active?: boolean; onClick?: () => void }) {
   return (
     <button
+      onClick={onClick}
       className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-colors text-sm ${active
         ? "bg-primary text-primary-foreground"
         : "bg-accent/50 hover:bg-accent text-foreground"

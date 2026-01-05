@@ -8,25 +8,38 @@ import { Sidebar } from "./components/Sidebar";
 import { Menu } from "lucide-react";
 import { Footer } from "./components/Footer";
 import { MarketGrid } from "./components/MarketGrid";
+import SportsCategory from "./components/SportsCategory";
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("markets");
+  const [activeCategory, setActiveCategory] = useState("Live"); // Default to Live, but we'll switch to Sports
 
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <div className="min-h-screen bg-background text-foreground">
-          <Header currentTab={activeTab} onNavigate={setActiveTab} />
+          <Header
+            currentTab={activeTab}
+            onNavigate={setActiveTab}
+            activeCategory={activeCategory}
+            onSelectCategory={setActiveCategory}
+          />
 
           <div className="flex">
             {/* Main Content */}
             <main className="flex-1 min-w-0">
               {activeTab === 'markets' && (
                 <>
-                  <HeroSection />
-                  <FilterSection />
-                  <MarketGrid />
+                  {activeCategory === 'Sports' ? (
+                    <SportsCategory />
+                  ) : (
+                    <>
+                      <HeroSection />
+                      <FilterSection />
+                      <MarketGrid />
+                    </>
+                  )}
                 </>
               )}
               {activeTab === 'dashboards' && <div className="p-8 text-center text-muted-foreground">Dashboards Coming Soon</div>}
