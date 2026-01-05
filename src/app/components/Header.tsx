@@ -44,7 +44,7 @@ export function Header({ currentTab = 'markets', onNavigate }: HeaderProps) {
               <div className="w-10 h-10">
                 <Logo3D className="w-full h-full" />
               </div>
-              <span className="font-bold text-xl hidden sm:block bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+              <span className="font-outfit font-bold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-600 dark:from-cyan-400 dark:via-blue-500 dark:to-purple-500 drop-shadow-sm">
                 DeJaVu
               </span>
             </div>
