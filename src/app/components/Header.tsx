@@ -46,7 +46,7 @@ export function Header({ currentTab = 'markets', onNavigate, activeCategory = 'L
               <div className="w-10 h-10">
                 <Logo3D className="w-full h-full" />
               </div>
-              <span className="font-rajdhani font-bold text-3xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-gray-800 to-slate-900 dark:from-white dark:via-gray-200 dark:to-gray-400 drop-shadow-sm">
+              <span className="font-rajdhani font-bold text-2xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-gray-600 via-gray-500 to-gray-700 dark:from-gray-100 dark:via-gray-300 dark:to-gray-100 drop-shadow-sm">
                 DeJaVu
               </span>
             </div>
