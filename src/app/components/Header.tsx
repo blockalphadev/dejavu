@@ -1,19 +1,29 @@
-import { Search, Bell, Menu, X, Sun, Moon } from "lucide-react";
-import { useState, useCallback } from "react";
+import { Search, Bell, Menu, X, Sun, Moon, Laptop } from "lucide-react";
+import React, { useState, useCallback } from "react";
 import { useTheme } from "./ThemeProvider";
 import { Button } from "./ui/button";
+import { Logo3D } from "./Logo3D";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
-export function Header() {
+import { NavIcons } from "./NavIcons";
+
+interface HeaderProps {
+  currentTab?: string;
+  onNavigate?: (tab: string) => void;
+}
+
+export function Header({ currentTab = 'markets', onNavigate }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   const handleToggleMenu = useCallback(() => {
     setIsMenuOpen(prev => !prev);
   }, []);
-
-  const handleToggleTheme = useCallback(() => {
-    toggleTheme();
-  }, [toggleTheme]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -30,21 +40,52 @@ export function Header() {
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">C</span>
+              <div className="w-10 h-10">
+                <Logo3D className="w-full h-full" />
               </div>
-              <span className="font-bold text-xl hidden sm:block">CryonMarket</span>
+              <span className="font-bold text-xl hidden sm:block bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                DeJaVu
+              </span>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              <NavLink icon="📊" active>Markets</NavLink>
-              <NavLink icon="📈">Dashboards</NavLink>
-              <NavLink icon="⚡">Activity</NavLink>
-              <NavLink icon="🏆">Ranks</NavLink>
-              <NavLink icon="🎁">Rewards</NavLink>
+              <NavLink
+                icon={<NavIcons.Markets active={currentTab === 'markets'} />}
+                active={currentTab === 'markets'}
+                onClick={() => onNavigate?.('markets')}
+              >
+                Markets
+              </NavLink>
+              <NavLink
+                icon={<NavIcons.Dashboards active={currentTab === 'dashboards'} />}
+                active={currentTab === 'dashboards'}
+                onClick={() => onNavigate?.('dashboards')}
+              >
+                Dashboards
+              </NavLink>
+              <NavLink
+                icon={<NavIcons.Activity active={currentTab === 'activity'} />}
+                active={currentTab === 'activity'}
+                onClick={() => onNavigate?.('activity')}
+              >
+                Activity
+              </NavLink>
+              <NavLink
+                icon={<NavIcons.Ranks active={currentTab === 'ranks'} />}
+                active={currentTab === 'ranks'}
+                onClick={() => onNavigate?.('ranks')}
+              >
+                Ranks
+              </NavLink>
+              <NavLink
+                icon={<NavIcons.Rewards active={currentTab === 'rewards'} />}
+                active={currentTab === 'rewards'}
+                onClick={() => onNavigate?.('rewards')}
+              >
+                Rewards
+              </NavLink>
             </nav>
           </div>
 
@@ -61,24 +102,31 @@ export function Header() {
               <span className="text-xs text-muted-foreground">/</span>
             </div>
 
-            {/* Theme Toggle with Slider */}
-            <button
-              onClick={handleToggleTheme}
-              className="relative w-14 h-7 bg-accent rounded-full p-1 transition-colors duration-300 hover:bg-accent/80"
-              aria-label="Toggle theme"
-            >
-              <div
-                className={`absolute w-5 h-5 bg-primary rounded-full transition-transform duration-300 ease-in-out flex items-center justify-center ${
-                  theme === "dark" ? "translate-x-7" : "translate-x-0"
-                }`}
-              >
-                {theme === "dark" ? (
-                  <Moon className="w-3 h-3 text-primary-foreground" />
-                ) : (
-                  <Sun className="w-3 h-3 text-primary-foreground" />
-                )}
-              </div>
-            </button>
+            {/* Theme Toggle Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full relative">
+                  <Sun className={`h-[1.2rem] w-[1.2rem] transition-all absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${theme === 'light' ? 'scale-100 rotate-0 opacity-100' : 'scale-0 -rotate-90 opacity-0'}`} />
+                  <Moon className={`h-[1.2rem] w-[1.2rem] transition-all absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${theme === 'dark' ? 'scale-100 rotate-0 opacity-100' : 'scale-0 rotate-90 opacity-0'}`} />
+                  <Laptop className={`h-[1.2rem] w-[1.2rem] transition-all absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${theme === 'system' ? 'scale-100 rotate-0 opacity-100' : 'scale-0 rotate-90 opacity-0'}`} />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Light</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Dark</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  <Laptop className="mr-2 h-4 w-4" />
+                  <span>System</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Notification Bell */}
             <button className="relative p-2 hover:bg-accent rounded-lg transition-colors">
@@ -143,19 +191,27 @@ export function Header() {
   );
 }
 
-function NavLink({ icon, children, active = false }: { icon: string; children: React.ReactNode; active?: boolean }) {
+function NavLink({ icon, children, active = false, onClick }: { icon: React.ReactNode; children: React.ReactNode; active?: boolean; onClick?: () => void }) {
+  const [isHovered, setIsHovered] = React.useState(false);
+
   return (
-    <a
-      href="#"
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-        active
-          ? "bg-accent text-accent-foreground"
-          : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
-      }`}
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${active
+        ? "bg-accent text-accent-foreground"
+        : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+        }`}
     >
-      <span>{icon}</span>
-      <span className="text-sm">{children}</span>
-    </a>
+      {/* We can clone element to pass hover state if needed, but for now specific icons handle active state. 
+          If we want hover animation for 3D icons, we might need to pass hover state down. 
+          Currently NavIcons accept 'active'. We could also pass 'hovered'.
+          But for MVP let's stick to 'active'.
+      */}
+      <span className="w-6 h-6 flex items-center justify-center">{icon}</span>
+      <span className="text-sm font-medium">{children}</span>
+    </button>
   );
 }
 
@@ -163,11 +219,10 @@ function MobileNavLink({ children, active = false }: { children: React.ReactNode
   return (
     <a
       href="#"
-      className={`px-4 py-2 rounded-lg transition-colors ${
-        active
-          ? "bg-accent text-accent-foreground"
-          : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
-      }`}
+      className={`px-4 py-2 rounded-lg transition-colors ${active
+        ? "bg-accent text-accent-foreground"
+        : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+        }`}
     >
       {children}
     </a>
@@ -177,11 +232,10 @@ function MobileNavLink({ children, active = false }: { children: React.ReactNode
 function CategoryBadge({ children, active = false }: { children: React.ReactNode; active?: boolean }) {
   return (
     <button
-      className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-colors text-sm ${
-        active
-          ? "bg-primary text-primary-foreground"
-          : "bg-accent/50 hover:bg-accent text-foreground"
-      }`}
+      className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-colors text-sm ${active
+        ? "bg-primary text-primary-foreground"
+        : "bg-accent/50 hover:bg-accent text-foreground"
+        }`}
     >
       {children}
     </button>

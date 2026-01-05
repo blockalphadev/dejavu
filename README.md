@@ -1,161 +1,71 @@
-# CryonMarket - Professional Prediction Market Platform
+# 🔮 DeJaVu
 
-CryonMarket adalah platform prediction market yang modern, responsif, dan user-friendly, dibangun dengan teknologi terkini.
+**DeJaVu** adalah platform prediction market generasi baru yang menggabungkan estetika "Tokyo Night" yang dalam, interaksi 3D yang playful, dan performa tinggi. Dibangun untuk memberikan pengalaman pengguna yang tidak hanya fungsional tetapi juga memukau secara visual.
 
-## 📸 Screenshot
+## ✨ Fitur Unggulan
 
-![CryonMarket Platform](https://via.placeholder.com/1200x600/0f1419/e7e9ea?text=CryonMarket+Professional+Platform)
+### 🎨 Sistem Tema Cerdas (Tri-Mode)
+DeJaVu menghadirkan sistem tema 3 mode yang unik:
+- **☀️ Light Mode**: Tampilan bersih, profesional, dan kontras tinggi.
+- **🌑 Dark Mode**: Mode gelap klasik (Slate/Black) yang elegan.
+- **🌊 System (Tokyo Night)**: Jika sistem operasi Anda dalam mode gelap, DeJaVu secara otomatis beralih ke tema **Tokyo Night** yang eksklusif (Deep Ocean Blue) untuk pengalaman visual yang menenangkan dan futuristik.
 
-> Platform prediction market dengan design modern, tema dark/light, dan UX yang optimal
+### 🧊 Ikon Navigasi 3D (Interactive)
+Menu navigasi tidak lagi membosankan. Kami mengganti ikon statis dengan **objek 3D interaktif** menggunakan **Three.js**:
+- **📊 Markets**: Kapsul equalizer yang membal (Bouncing Capsules).
+- **📈 Dashboards**: Donat futuristik yang berputar (Floating Torus).
+- **⚡ Activity**: Atom yang berdenyut (Pulsating Sphere).
+- **🏆 Ranks**: Bintang gemuk yang berputar (Chubby Star).
+- **🎁 Rewards**: Kotak hadiah yang bergoyang (Wiggling Gift Box).
 
-## 🚀 Fitur Utama
+*Semua ikon dirancang dengan bentuk "cute" (rounded geometries) dan palet warna yang aman untuk Light & Dark mode.*
 
-### ✨ UI/UX Professional
-- **Design Modern**: Interface yang bersih dan profesional terinspirasi dari platform terkemuka
-- **Fully Responsive**: Optimasi sempurna untuk desktop, tablet, dan mobile
-- **Dark/Light Mode**: Theme switcher dengan toggle slider yang smooth
-- **Smooth Animations**: Transisi dan animasi yang halus menggunakan Tailwind CSS
+### ⚡ Performa & UI/UX
+- **Responsive Design**: Tampilan sempurna di Desktop (Sidebar & Grid) dan Mobile (Floating Menu).
+- **Smooth Animations**: Transisi halus antar halaman dan elemen UI.
+- **Anti-Throttling**: Optimasi rendering untuk menjaga FPS tetap tinggi bahkan dengan elemen 3D.
 
-### ⚡ Performance & Optimization
-- **Anti-Throttling**: Implementasi debouncing dan throttling untuk performa optimal
-- **React.memo**: Optimasi rendering komponen
-- **Lazy Loading**: Intersection Observer untuk loading konten efisien
-- **GPU Acceleration**: Hardware acceleration untuk animasi smooth
-- **Custom Scrollbar**: Scrollbar yang indah dan responsif
+## 🛠️ Teknologi Stack
 
-### 📱 Mobile-Friendly
-- **Touch Optimized**: Interaksi yang dioptimalkan untuk perangkat sentuh
-- **Responsive Sidebar**: Sidebar yang dapat di-toggle dengan smooth transition
-- **Mobile Navigation**: Menu hamburger dengan overlay backdrop blur
-- **Floating Action Button**: Quick access untuk fitur penting di mobile
+- **Framework**: React 19 + Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4 + CSS Variables
+- **3D Graphics**: React Three Fiber + Three.js
+- **Icons**: Lucide React (UI) + Custom 3D Meshes (Nav)
+- **State Management**: React Hooks (Context API)
 
-### 🎨 Design System
-- **Custom Theme**: Sistem warna yang konsisten untuk light dan dark mode
-- **Gradient Accents**: Gradient yang menarik untuk elemen penting
-- **Glassmorphism**: Efek backdrop blur untuk modern look
-- **Consistent Spacing**: Spacing dan typography yang konsisten
-
-### 🛡️ Reliability
-- **Error Boundary**: Graceful error handling
-- **Type Safety**: Full TypeScript support
-- **Accessibility**: ARIA labels dan semantic HTML
-- **SEO Ready**: Optimized meta tags dan semantic structure
-
-## 🏗️ Teknologi Stack
-
-- **React 18.3.1**: Library UI terbaru dengan concurrent features
-- **TypeScript**: Type safety dan better developer experience
-- **Tailwind CSS 4.x**: Utility-first CSS framework
-- **Vite**: Build tool yang super cepat
-- **Lucide React**: Icon library yang modern
-- **Radix UI**: Headless UI components untuk accessibility
-
-## 📂 Struktur Folder
+## 📂 Struktur Proyek
 
 ```
 src/
 ├── app/
 │   ├── components/
-│   │   ├── ui/              # Reusable UI components
-│   │   ├── ErrorBoundary.tsx
-│   │   ├── FilterSection.tsx
-│   │   ├── Header.tsx
-│   │   ├── HeroSection.tsx
-│   │   ├── LoadingSpinner.tsx
-│   │   ├── MarketCard.tsx
-│   │   ├── Sidebar.tsx
-│   │   ���── SkeletonCard.tsx
-│   │   └── ThemeProvider.tsx
-│   ├── hooks/
-│   │   ├── useDebounce.ts
-│   │   ├── useIntersectionObserver.ts
-│   │   └── useThrottle.ts
-│   └── App.tsx
+│   │   ├── NavIcons.tsx       # 🧊 Komponen Ikon 3D
+│   │   ├── Header.tsx         # 🧭 Header dengan Navigasi 3D
+│   │   ├── ThemeProvider.tsx  # 🎨 Logic Tema (Tokyo Night)
+│   │   ├── ...
+│   └── App.tsx                #  Routing & Layout Utama
 └── styles/
-    ├── fonts.css
-    ├── index.css
-    ├── tailwind.css
-    └── theme.css
+    └── theme.css              # 💅 Definisi Variabel CSS & Tokyo Night
 ```
 
-## 🎯 Key Features Detail
+## 🚀 Cara Menjalankan
 
-### Theme System
-- Persistent theme storage di localStorage
-- System preference detection
-- Smooth theme transition tanpa flash
-- Custom color palette untuk light dan dark mode
+1.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
 
-### Market Cards
-- Interactive Yes/No voting buttons
-- Real-time percentage display
-- Visual progress indicators
-- Hover effects dan smooth transitions
-- Badge untuk featured markets
-- Comment dan share functionality
+2.  **Run Development Server**
+    ```bash
+    npm run dev
+    ```
 
-### Navigation
-- Sticky header dengan backdrop blur
-- Category navigation dengan horizontal scroll
-- Search functionality dengan debouncing
-- Mobile-responsive menu
-
-### Sidebar
-- Portfolio tracking
-- Watchlist management
-- Trending topics
-- Recent activity feed
-- Smooth slide-in animation untuk mobile
-
-## 🔧 Optimizations
-
-1. **Performance**
-   - Component memoization dengan React.memo
-   - Debounced search input
-   - Throttled scroll events
-   - Lazy loading images
-   - CSS GPU acceleration
-
-2. **User Experience**
-   - Smooth scroll behavior
-   - Custom scrollbar styling
-   - Loading states dengan skeleton screens
-   - Error boundaries untuk error handling
-   - Accessible keyboard navigation
-
-3. **Mobile**
-   - Touch-optimized interactions
-   - Responsive breakpoints
-   - Mobile-first approach
-   - Optimized bundle size
-
-## 🎨 Design Highlights
-
-- **Color Scheme**: Professional dark theme dengan cyan/blue accents
-- **Typography**: Clean hierarchy dengan custom font weights
-- **Spacing**: Consistent padding dan margins
-- **Shadows**: Subtle shadows untuk depth
-- **Borders**: Soft border radius untuk modern look
-- **Gradients**: Eye-catching gradients untuk CTAs
-
-## 🚀 Next Steps Suggestions
-
-- Implementasi real-time updates dengan WebSocket
-- Add filtering dan sorting functionality
-- Implementasi user authentication
-- Add chart visualization untuk market trends
-- Implementasi infinite scroll
-- Add social sharing functionality
-- Implementasi notification system
-
-## 📝 Notes
-
-- Default theme: Dark mode
-- Fully responsive dari 320px hingga 4K
-- Optimized untuk modern browsers
-- Zero dependencies untuk core functionality
-- Production-ready code
+3.  **Build for Production**
+    ```bash
+    npm run build
+    ```
 
 ---
 
-Built with ❤️ for Figma Make
+*Built with ❤️ by DeJaVu Team*

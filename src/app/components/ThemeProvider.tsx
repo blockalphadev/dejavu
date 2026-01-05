@@ -1,70 +1,73 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "dark" | "light" | "system";
+
+interface ThemeProviderProps {
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  storageKey?: string;
+}
 
 interface ThemeContextType {
   theme: Theme;
-  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({
+  children,
+  defaultTheme = "system",
+  storageKey = "dejavu-theme",
+}: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("cryonmarket-theme") as Theme;
-      if (stored) return stored;
-      
-      // Check system preference
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        return "dark";
-      }
+      return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
     }
-    return "dark"; // Default to dark
+    return defaultTheme;
   });
 
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
     const root = window.document.documentElement;
-    
-    // Add changing-theme class to prevent transitions during theme change
-    root.classList.add("changing-theme");
-    
-    // Remove both classes first
-    root.classList.remove("light", "dark");
-    
-    // Add the current theme
+    root.classList.remove("light", "dark", "tokyo-night");
+
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+      // Apply initial system theme
+      root.classList.add(systemTheme.matches ? "dark" : "light");
+      if (systemTheme.matches) {
+        root.classList.add("tokyo-night");
+      }
+
+      // Listener for system theme changes
+      // Using addEventListener for modern browser support (React 19+)
+      const listener = (e: MediaQueryListEvent) => {
+        const newTheme = e.matches ? "dark" : "light";
+        root.classList.remove("light", "dark", "tokyo-night");
+        root.classList.add(newTheme);
+        if (e.matches) {
+          root.classList.add("tokyo-night");
+        }
+      };
+
+      systemTheme.addEventListener("change", listener);
+      return () => systemTheme.removeEventListener("change", listener);
+    }
+
     root.classList.add(theme);
-    
-    // Save to localStorage
-    localStorage.setItem("cryonmarket-theme", theme);
-    
-    // Remove changing-theme class after a brief delay
-    const timer = setTimeout(() => {
-      root.classList.remove("changing-theme");
-    }, 50);
+  }, [theme]);
 
-    return () => clearTimeout(timer);
-  }, [theme, mounted]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  const value = {
+    theme,
+    setTheme: (theme: Theme) => {
+      localStorage.setItem(storageKey, theme);
+      setTheme(theme);
+    },
   };
 
-  // Prevent flash of unstyled content
-  if (!mounted) {
-    return null;
-  }
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
@@ -72,8 +75,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
+  if (context === undefined)
     throw new Error("useTheme must be used within a ThemeProvider");
-  }
   return context;
 }
