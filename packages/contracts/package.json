@@ -1,0 +1,42 @@
+{
+    "name": "@dejavu/contracts",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./abis": {
+            "import": "./dist/abis/index.js",
+            "types": "./dist/abis/index.d.ts"
+        },
+        "./addresses": {
+            "import": "./dist/addresses/index.js",
+            "types": "./dist/addresses/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "dev": "tsc -p tsconfig.json --watch",
+        "clean": "rm -rf dist",
+        "typecheck": "tsc --noEmit",
+        "generate-types": "tsx scripts/generate-types.ts"
+    },
+    "dependencies": {
+        "viem": "^2.21.0",
+        "@solana/web3.js": "^1.95.0",
+        "@mysten/sui": "^1.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0",
+        "tsx": "^4.7.0"
+    },
+    "peerDependencies": {
+        "@dejavu/shared": "workspace:*"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "name": "@dejavu/contracts-evm",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "build": "forge build",
+        "test": "forge test",
+        "test:gas": "forge test --gas-report",
+        "coverage": "forge coverage",
+        "format": "forge fmt",
+        "lint": "forge fmt --check",
+        "deploy:local": "forge script script/Deploy.s.sol --broadcast --rpc-url http://localhost:8545",
+        "deploy:base": "forge script script/Deploy.s.sol --broadcast --rpc-url $BASE_RPC_URL --verify",
+        "clean": "forge clean"
+    },
+    "devDependencies": {}
+}

@@ -1,0 +1,12 @@
+{
+    "name": "@dejavu/contracts-sui",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "build": "sui move build",
+        "test": "sui move test",
+        "publish:devnet": "sui client publish --gas-budget 100000000",
+        "publish:testnet": "sui client switch --env testnet && sui client publish --gas-budget 100000000",
+        "publish:mainnet": "sui client switch --env mainnet && sui client publish --gas-budget 100000000"
+    }
+}

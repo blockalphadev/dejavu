@@ -1,0 +1,35 @@
+{
+    "name": "@dejavu/config",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./chains": {
+            "import": "./dist/chains/index.js",
+            "types": "./dist/chains/index.d.ts"
+        },
+        "./features": {
+            "import": "./dist/features/index.js",
+            "types": "./dist/features/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "dev": "tsc -p tsconfig.json --watch",
+        "clean": "rm -rf dist",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "zod": "^3.23.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.0"
+    }
+}

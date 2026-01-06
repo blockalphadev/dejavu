@@ -1,0 +1,24 @@
+{
+    "name": "@dejavu/contracts-solana",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "build": "anchor build",
+        "test": "anchor test",
+        "deploy:localnet": "anchor deploy --provider.cluster localnet",
+        "deploy:devnet": "anchor deploy --provider.cluster devnet",
+        "deploy:mainnet": "anchor deploy --provider.cluster mainnet",
+        "clean": "anchor clean"
+    },
+    "dependencies": {
+        "@coral-xyz/anchor": "^0.30.0",
+        "@solana/web3.js": "^1.91.0"
+    },
+    "devDependencies": {
+        "@types/mocha": "^10.0.6",
+        "chai": "^4.4.1",
+        "mocha": "^10.4.0",
+        "ts-mocha": "^10.0.0",
+        "typescript": "^5.4.0"
+    }
+}

@@ -1,0 +1,56 @@
+# =====================
+# Web Build Stage
+# =====================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy workspace files
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY tsconfig.base.json ./
+
+# Copy packages
+COPY packages ./packages
+
+# Copy web app
+COPY apps/web ./apps/web
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Build packages first
+RUN pnpm --filter @dejavu/shared build
+RUN pnpm --filter @dejavu/ui build
+RUN pnpm --filter @dejavu/web3 build
+RUN pnpm --filter @dejavu/contracts build
+RUN pnpm --filter @dejavu/config build
+
+# Build web app
+RUN pnpm --filter @dejavu/web build
+
+# =====================
+# Production Stage (Nginx)
+# =====================
+FROM nginx:alpine AS production
+
+# Copy built assets
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+# Copy nginx config
+COPY infra/docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Security: Run as non-root
+RUN chown -R nginx:nginx /usr/share/nginx/html
+RUN chown -R nginx:nginx /var/cache/nginx
+RUN chown -R nginx:nginx /var/log/nginx
+RUN touch /var/run/nginx.pid
+RUN chown -R nginx:nginx /var/run/nginx.pid
+
+USER nginx
+
+EXPOSE 3000
+
+CMD ["nginx", "-g", "daemon off;"]

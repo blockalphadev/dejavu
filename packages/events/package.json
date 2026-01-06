@@ -1,0 +1,31 @@
+{
+    "name": "@dejavu/events",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": {
+            "types": "./src/index.ts",
+            "import": "./src/index.ts"
+        }
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint src/",
+        "build": "tsc",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "dependencies": {
+        "@dejavu/shared": "workspace:*",
+        "@dejavu/domain": "workspace:*",
+        "@dejavu/messaging": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "typescript": "^5.4.0",
+        "vitest": "^2.0.0"
+    }
+}

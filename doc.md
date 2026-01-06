@@ -124,7 +124,7 @@ Multiple Data Sources
  → Final Resolution
  → Solana Settlement
 
----
+--- 
 
 ## 10. Dispute Flow
 

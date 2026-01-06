@@ -1,0 +1,342 @@
+import { useState, useEffect, useCallback } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import { useDeposit } from './DepositContext';
+import { depositApi, type DepositChain } from '../../services/deposit';
+import { useAuth } from './auth/AuthContext';
+
+/**
+ * SVG Icons - inline to avoid lucide-react issues
+ */
+const Icons = {
+    X: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+    ),
+    Copy: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+        </svg>
+    ),
+    Check: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+        </svg>
+    ),
+    ChevronDown: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m6 9 6 6 6-6" />
+        </svg>
+    ),
+    Info: () => (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+        </svg>
+    ),
+    Loader: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+    ),
+    Back: () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+    ),
+};
+
+/**
+ * Token definitions
+ */
+interface Token {
+    symbol: string;
+    name: string;
+    icon: string;
+    chains: DepositChain[];
+    minDeposit: number;
+}
+
+const TOKENS: Token[] = [
+    { symbol: 'USDC', name: 'USD Coin', icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', chains: ['ethereum', 'base', 'solana', 'sui'], minDeposit: 10 },
+    { symbol: 'USDT', name: 'Tether', icon: 'https://cryptologos.cc/logos/tether-usdt-logo.png', chains: ['ethereum', 'base', 'solana'], minDeposit: 10 },
+    { symbol: 'ETH', name: 'Ethereum', icon: '/images/coin/ethereum.png', chains: ['ethereum', 'base'], minDeposit: 0.001 },
+    { symbol: 'SOL', name: 'Solana', icon: '/images/coin/solana.png', chains: ['solana'], minDeposit: 0.01 },
+    { symbol: 'SUI', name: 'Sui', icon: '/images/coin/sui.png', chains: ['sui'], minDeposit: 0.1 },
+    { symbol: 'WBTC', name: 'Wrapped Bitcoin', icon: 'https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png', chains: ['ethereum', 'base'], minDeposit: 0.0001 },
+    { symbol: 'DAI', name: 'Dai', icon: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png', chains: ['ethereum', 'base'], minDeposit: 10 },
+];
+
+/**
+ * Chain definitions
+ */
+interface Chain {
+    id: DepositChain;
+    name: string;
+    icon: string;
+    color: string;
+}
+
+const CHAINS: Chain[] = [
+    { id: 'ethereum', name: 'Ethereum', icon: '/images/coin/ethereum.png', color: '#627EEA' },
+    { id: 'base', name: 'Base', icon: '/images/coin/base.jpeg', color: '#0052FF' },
+    { id: 'solana', name: 'Solana', icon: '/images/coin/solana.png', color: '#14F195' },
+    { id: 'sui', name: 'Sui', icon: '/images/coin/sui.png', color: '#6FBCF0' },
+];
+
+interface DepositModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+export function DepositModal({ isOpen, onClose }: DepositModalProps) {
+    const { balance } = useDeposit();
+    const { user } = useAuth();
+
+    const [selectedToken, setSelectedToken] = useState<Token>(TOKENS[0]);
+    const [selectedChain, setSelectedChain] = useState<Chain>(CHAINS[0]);
+    const [showTokenDropdown, setShowTokenDropdown] = useState(false);
+    const [showChainDropdown, setShowChainDropdown] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [depositAddress, setDepositAddress] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Get available chains for selected token
+    const availableChains = CHAINS.filter(chain => selectedToken.chains.includes(chain.id));
+
+    // Auto-select first available chain when token changes
+    useEffect(() => {
+        if (!selectedToken.chains.includes(selectedChain.id)) {
+            const newChain = CHAINS.find(c => selectedToken.chains.includes(c.id));
+            if (newChain) setSelectedChain(newChain);
+        }
+    }, [selectedToken, selectedChain.id]);
+
+    // Fetch real wallet address from backend when chain changes
+    useEffect(() => {
+        if (!isOpen || !user?.id) return;
+
+        const fetchWalletAddress = async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                // Try to get existing wallet first
+                let wallet = await depositApi.getWallet(selectedChain.id);
+
+                // If no wallet exists, generate one
+                if (!wallet) {
+                    wallet = await depositApi.generateWallet(selectedChain.id, user.id);
+                }
+
+                setDepositAddress(wallet.address);
+            } catch (err) {
+                console.error('Failed to get deposit address:', err);
+                setError('Failed to get deposit address');
+                // Fallback to demo address if API fails
+                setDepositAddress(getFallbackAddress(selectedChain.id));
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchWalletAddress();
+    }, [isOpen, selectedChain.id, user?.id]);
+
+    // Reset state when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setShowTokenDropdown(false);
+            setShowChainDropdown(false);
+            setCopied(false);
+            setError(null);
+        }
+    }, [isOpen]);
+
+    const copyAddress = useCallback(() => {
+        navigator.clipboard.writeText(depositAddress);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }, [depositAddress]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+
+            {/* Modal */}
+            <div className="relative w-full max-w-[420px] bg-[#1a1b23] rounded-2xl shadow-2xl overflow-hidden border border-gray-800">
+                {/* Header */}
+                <div className="relative px-6 py-4 border-b border-gray-800">
+                    <button onClick={onClose} className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-800 transition-colors text-gray-400">
+                        <Icons.Back />
+                    </button>
+                    <div className="text-center">
+                        <h2 className="text-lg font-semibold text-white">Transfer Crypto</h2>
+                        <p className="text-sm text-gray-500">Balance: ${balance?.availableBalance || '0.00'}</p>
+                    </div>
+                    <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-800 transition-colors text-gray-400">
+                        <Icons.X />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-5">
+                    {/* Error Alert */}
+                    {error && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Token & Chain Selectors */}
+                    <div className="flex gap-3">
+                        {/* Token Selector */}
+                        <div className="flex-1 relative">
+                            <label className="block text-xs text-gray-500 mb-1.5">Supported token</label>
+                            <button
+                                onClick={() => { setShowTokenDropdown(!showTokenDropdown); setShowChainDropdown(false); }}
+                                className="w-full flex items-center justify-between p-3 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <img src={selectedToken.icon} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = '/images/coin/ethereum.png'; }} />
+                                    <span className="font-medium text-white">{selectedToken.symbol}</span>
+                                </div>
+                                <Icons.ChevronDown />
+                            </button>
+
+                            {showTokenDropdown && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#252631] rounded-xl border border-gray-700 shadow-xl z-20 max-h-60 overflow-y-auto">
+                                    {TOKENS.map((token) => (
+                                        <button
+                                            key={token.symbol}
+                                            onClick={() => { setSelectedToken(token); setShowTokenDropdown(false); }}
+                                            className={`w-full flex items-center gap-3 p-3 hover:bg-[#2d2e3a] transition-colors ${selectedToken.symbol === token.symbol ? 'bg-[#2d2e3a]' : ''}`}
+                                        >
+                                            <img src={token.icon} alt={token.symbol} className="w-6 h-6 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = '/images/coin/ethereum.png'; }} />
+                                            <div className="text-left">
+                                                <p className="font-medium text-white">{token.symbol}</p>
+                                                <p className="text-xs text-gray-500">{token.name}</p>
+                                            </div>
+                                            {selectedToken.symbol === token.symbol && <div className="ml-auto text-green-500"><Icons.Check /></div>}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Chain Selector */}
+                        <div className="flex-1 relative">
+                            <div className="flex items-center gap-1 mb-1.5">
+                                <label className="text-xs text-gray-500">Supported chain</label>
+                                <span className="text-xs text-gray-600">Min ${selectedToken.minDeposit}</span>
+                                <Icons.Info />
+                            </div>
+                            <button
+                                onClick={() => { setShowChainDropdown(!showChainDropdown); setShowTokenDropdown(false); }}
+                                className="w-full flex items-center justify-between p-3 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <img src={selectedChain.icon} alt={selectedChain.name} className="w-6 h-6 rounded-full" />
+                                    <span className="font-medium text-white">{selectedChain.name}</span>
+                                </div>
+                                <Icons.ChevronDown />
+                            </button>
+
+                            {showChainDropdown && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#252631] rounded-xl border border-gray-700 shadow-xl z-20">
+                                    {availableChains.map((chain) => (
+                                        <button
+                                            key={chain.id}
+                                            onClick={() => { setSelectedChain(chain); setShowChainDropdown(false); }}
+                                            className={`w-full flex items-center gap-3 p-3 hover:bg-[#2d2e3a] transition-colors ${selectedChain.id === chain.id ? 'bg-[#2d2e3a]' : ''}`}
+                                        >
+                                            <img src={chain.icon} alt={chain.name} className="w-6 h-6 rounded-full" />
+                                            <span className="font-medium text-white">{chain.name}</span>
+                                            {selectedChain.id === chain.id && <div className="ml-auto text-green-500"><Icons.Check /></div>}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="flex justify-center py-4">
+                        {isLoading ? (
+                            <div className="w-[212px] h-[212px] bg-white/10 rounded-2xl flex items-center justify-center">
+                                <Icons.Loader />
+                            </div>
+                        ) : (
+                            <div className="relative bg-white p-4 rounded-2xl">
+                                <QRCodeSVG
+                                    value={depositAddress || 'loading...'}
+                                    size={180}
+                                    level="H"
+                                    includeMargin={false}
+                                    bgColor="#FFFFFF"
+                                    fgColor="#1a1b23"
+                                />
+                                <div
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white p-1 shadow-lg"
+                                    style={{ boxShadow: `0 0 0 3px ${selectedChain.color}` }}
+                                >
+                                    <img src={selectedChain.icon} alt={selectedChain.name} className="w-full h-full rounded-full object-cover" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Deposit Address */}
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                            <span className="text-sm text-gray-400">Your deposit address</span>
+                            <Icons.Info />
+                        </div>
+                        <div className="bg-[#252631] rounded-xl border border-gray-700 overflow-hidden">
+                            <div className="p-3">
+                                <code className="text-sm text-gray-300 break-all">
+                                    {isLoading ? 'Loading...' : depositAddress}
+                                </code>
+                            </div>
+                            <button
+                                onClick={copyAddress}
+                                disabled={isLoading || !depositAddress}
+                                className="w-full px-4 py-2.5 bg-[#2d2e3a] hover:bg-[#363745] transition-colors flex items-center justify-center gap-2 border-t border-gray-700 disabled:opacity-50"
+                            >
+                                {copied ? (
+                                    <><div className="text-green-500"><Icons.Check /></div><span className="text-green-500 font-medium">Copied!</span></>
+                                ) : (
+                                    <><div className="text-gray-400"><Icons.Copy /></div><span className="text-gray-300 font-medium">Copy address</span></>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Info Banner */}
+                    <div className="bg-[#252631] rounded-xl p-3 flex items-center gap-2 border border-gray-700">
+                        <div className="text-blue-400"><Icons.Info /></div>
+                        <p className="text-xs text-gray-400">
+                            Send only <span className="text-white font-medium">{selectedToken.symbol}</span> on <span className="text-white font-medium">{selectedChain.name}</span> network. Other assets will be lost.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Fallback addresses for demo/development
+function getFallbackAddress(chain: DepositChain): string {
+    const addresses: Record<DepositChain, string> = {
+        ethereum: '0xCc3d3f27620d8a1c4AF98Ce96B47939fb6594bd0',
+        base: '0xCc3d3f27620d8a1c4AF98Ce96B47939fb6594bd0',
+        solana: 'DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1',
+        sui: '0x02a212de6a9dfa3a69e22387acfbafbb1a9e591c5d4a123456789abcdef12345',
+    };
+    return addresses[chain];
+}
+

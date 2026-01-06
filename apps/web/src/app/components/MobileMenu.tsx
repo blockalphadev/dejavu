@@ -1,0 +1,147 @@
+import React from "react";
+import {
+    X,
+    Twitter,
+    Instagram,
+    Facebook,
+    Linkedin,
+    Trophy,
+    Activity,
+    BarChart2,
+    LogOut,
+    LogIn,
+    UserPlus
+} from "lucide-react";
+import { Button } from "./ui/button";
+import { useAuth } from "./auth/AuthContext";
+import { useTheme } from "./ThemeProvider";
+import { Logo3D } from "./Logo3D";
+
+interface MobileMenuProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onNavigate: (tab: string) => void;
+    onOpenAuth: () => void;
+}
+
+export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMenuProps) {
+    const { user, isAuthenticated, logout } = useAuth();
+
+    return (
+        <>
+            {/* Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 z-50 lg:hidden backdrop-blur-sm"
+                    onClick={onClose}
+                />
+            )}
+
+            {/* Sidebar Drawer */}
+            <div className={`fixed top-0 left-0 h-full w-[280px] bg-background/95 backdrop-blur-xl border-r border-border z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? "translate-x-0" : "-translate-x-full"
+                }`}>
+
+                {/* Header: Socials & Logo */}
+                <div className="p-4 flex flex-col gap-4 border-b border-border/40">
+                    <div className="flex items-center justify-between">
+                        {/* Social Icons - Top Left */}
+                        <div className="flex items-center gap-3">
+                            <SocialLink icon={<Twitter className="w-5 h-5" />} />
+                            <SocialLink icon={<Instagram className="w-5 h-5" />} />
+                            <SocialLink icon={<Facebook className="w-5 h-5" />} />
+                        </div>
+
+                        {/* Close Button */}
+                        <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors">
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content: Navigation */}
+                <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+                    <MenuItem
+                        icon={<BarChart2 className="w-5 h-5 text-blue-500" />}
+                        label="Markets"
+                        onClick={() => { onNavigate('markets'); onClose(); }}
+                    />
+                    <MenuItem
+                        icon={<Activity className="w-5 h-5 text-green-500" />}
+                        label="Activity"
+                        onClick={() => { onNavigate('activity'); onClose(); }}
+                    />
+                    <MenuItem
+                        icon={<Trophy className="w-5 h-5 text-yellow-500" />}
+                        label="Ranks"
+                        onClick={() => { onNavigate('ranks'); onClose(); }}
+                    />
+                </div>
+
+                {/* Footer: Auth */}
+                <div className="p-6 border-t border-border/40 bg-accent/5">
+                    {isAuthenticated ? (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 px-2">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                    {user?.fullName?.[0] || 'U'}
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-medium truncate max-w-[150px]">{user?.fullName || 'User'}</span>
+                                    <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
+                                </div>
+                            </div>
+                            <Button
+                                variant="destructive"
+                                className="w-full gap-2"
+                                onClick={() => { logout(); onClose(); }}
+                            >
+                                <LogOut className="w-4 h-4" />
+                                Log Out
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="ghost"
+                                className="flex-1 justify-center gap-2 h-10 border border-border/50"
+                                onClick={() => { onOpenAuth(); onClose(); }}
+                            >
+                                <LogIn className="w-4 h-4" />
+                                Log In
+                            </Button>
+                            <Button
+                                className="flex-1 justify-center gap-2 h-10 bg-primary text-primary-foreground"
+                                onClick={() => { onOpenAuth(); onClose(); }}
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                Sign Up
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}
+
+function SocialLink({ icon }: { icon: React.ReactNode }) {
+    return (
+        <a href="#" className="p-2 rounded-full bg-accent/50 hover:bg-accent hover:scale-110 transition-all text-muted-foreground hover:text-foreground">
+            {icon}
+        </a>
+    )
+}
+
+function MenuItem({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) {
+    return (
+        <button
+            onClick={onClick}
+            className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-accent/50 transition-colors group"
+        >
+            <div className="p-2 rounded-lg bg-accent/50 group-hover:bg-accent transition-colors">
+                {icon}
+            </div>
+            <span className="font-medium text-lg">{label}</span>
+        </button>
+    )
+}

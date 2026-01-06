@@ -1,70 +1,138 @@
 # 🔮 DeJaVu
 
-**DeJaVu** adalah platform prediction market generasi baru yang menggabungkan estetika "Tokyo Night" yang dalam, interaksi 3D yang playful, dan performa tinggi. Dibangun untuk memberikan pengalaman pengguna yang tidak hanya fungsional tetapi juga memukau secara visual.
+**DeJaVu** adalah platform prediction market generasi baru yang dibangun dengan arsitektur enterprise-grade, mendukung multi-chain Web3 (EVM, Solana, Sui).
 
-## ✨ Fitur Unggulan
-
-### 🎨 Sistem Tema Cerdas (Tri-Mode)
-DeJaVu menghadirkan sistem tema 3 mode yang unik:
-- **☀️ Light Mode**: Tampilan bersih, profesional, dan kontras tinggi.
-- **🌑 Dark Mode**: Mode gelap klasik (Slate/Black) yang elegan.
-- **🌊 System (Tokyo Night)**: Jika sistem operasi Anda dalam mode gelap, DeJaVu secara otomatis beralih ke tema **Tokyo Night** yang eksklusif (Deep Ocean Blue) untuk pengalaman visual yang menenangkan dan futuristik.
-
-### 🧊 Ikon Navigasi 3D (Interactive)
-Menu navigasi tidak lagi membosankan. Kami mengganti ikon statis dengan **objek 3D interaktif** menggunakan **Three.js**:
-- **📊 Markets**: Kapsul equalizer yang membal (Bouncing Capsules).
-- **📈 Dashboards**: Donat futuristik yang berputar (Floating Torus).
-- **⚡ Activity**: Atom yang berdenyut (Pulsating Sphere).
-- **🏆 Ranks**: Bintang gemuk yang berputar (Chubby Star).
-- **🎁 Rewards**: Kotak hadiah yang bergoyang (Wiggling Gift Box).
-
-*Semua ikon dirancang dengan bentuk "cute" (rounded geometries) dan palet warna yang aman untuk Light & Dark mode.*
-
-### ⚡ Performa & UI/UX
-- **Responsive Design**: Tampilan sempurna di Desktop (Sidebar & Grid) dan Mobile (Floating Menu).
-- **Smooth Animations**: Transisi halus antar halaman dan elemen UI.
-- **Anti-Throttling**: Optimasi rendering untuk menjaga FPS tetap tinggi bahkan dengan elemen 3D.
-
-## 🛠️ Teknologi Stack
-
-- **Framework**: React 19 + Vite
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4 + CSS Variables
-- **3D Graphics**: React Three Fiber + Three.js
-- **Icons**: Lucide React (UI) + Custom 3D Meshes (Nav)
-- **State Management**: React Hooks (Context API)
-
-## 📂 Struktur Proyek
+## 🏗️ Arsitektur
 
 ```
-src/
-├── app/
-│   ├── components/
-│   │   ├── NavIcons.tsx       # 🧊 Komponen Ikon 3D
-│   │   ├── Header.tsx         # 🧭 Header dengan Navigasi 3D
-│   │   ├── ThemeProvider.tsx  # 🎨 Logic Tema (Tokyo Night)
-│   │   ├── ...
-│   └── App.tsx                #  Routing & Layout Utama
-└── styles/
-    └── theme.css              # 💅 Definisi Variabel CSS & Tokyo Night
+dejavu/
+├── apps/
+│   ├── web/                    # Frontend React application
+│   └── backend/                # API server (coming soon)
+│
+├── packages/
+│   ├── core/                   # Shared types, utils, constants
+│   ├── ui/                     # Shared UI design system
+│   ├── web3/                   # Multi-chain wallet abstraction
+│   └── contracts/              # Contract ABIs & types
+│
+├── contracts/
+│   ├── evm/                    # Solidity (Foundry) - Base, Ethereum
+│   ├── solana/                 # Rust (Anchor) - Solana
+│   └── sui/                    # Move - Sui
+│
+└── docs/                       # Documentation
 ```
 
-## 🚀 Cara Menjalankan
+## ✨ Features
 
-1.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+- **Multi-chain Support**: EVM (Ethereum, Base, Polygon), Solana, Sui
+- **Modular Architecture**: Monorepo dengan Turborepo + pnpm workspaces
+- **Type-safe**: Full TypeScript dengan shared types
+- **Design System**: Reusable UI components dengan Radix UI
+- **Wallet Abstraction**: Unified API untuk semua chain
 
-2.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
+## 🛠️ Tech Stack
 
-3.  **Build for Production**
-    ```bash
-    npm run build
-    ```
+| Layer | Technology |
+|-------|------------|
+| **Monorepo** | Turborepo + pnpm |
+| **Frontend** | React 19 + Vite + TypeScript |
+| **Styling** | Tailwind CSS v4 |
+| **3D** | React Three Fiber + Three.js |
+| **EVM** | Foundry + Solidity 0.8.23 |
+| **Solana** | Anchor + Rust |
+| **Sui** | Move |
+| **Web3** | wagmi + viem + wallet-adapter |
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js >= 20
+- pnpm >= 9.0
+- (Optional) Foundry for EVM contracts
+- (Optional) Anchor for Solana programs
+- (Optional) Sui CLI for Move contracts
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/dejavu.git
+cd dejavu
+
+# Install dependencies
+pnpm install
+
+# Run development server
+pnpm dev
+```
+
+### Development Commands
+
+```bash
+# Development
+pnpm dev                    # Start dev server
+pnpm build                  # Build all packages
+pnpm typecheck              # TypeScript check
+pnpm lint                   # Lint all packages
+
+# Specific packages
+pnpm dev --filter=@dejavu/web     # Dev server only
+pnpm build --filter=@dejavu/core  # Build core only
+
+# Contracts
+cd contracts/evm && forge build   # Build EVM contracts
+cd contracts/solana && anchor build  # Build Solana
+cd contracts/sui && sui move build   # Build Sui
+```
+
+## 📦 Package Overview
+
+### `@dejavu/core`
+Shared utilities, TypeScript types, and constants.
+
+```typescript
+import { formatCurrency, truncateAddress, CHAINS } from '@dejavu/core';
+import type { Market, Chain, User } from '@dejavu/core';
+```
+
+### `@dejavu/ui`
+Reusable React components built on Radix UI.
+
+```typescript
+import { Button, Dialog, Card } from '@dejavu/ui';
+import { cn } from '@dejavu/ui/utils';
+```
+
+### `@dejavu/web3`
+Chain-agnostic wallet connection and blockchain interactions.
+
+```typescript
+import { useWallet, Web3Provider } from '@dejavu/web3';
+import { evmAdapter, solanaAdapter, suiAdapter } from '@dejavu/web3';
+```
+
+## 🔗 Smart Contracts
+
+### EVM (Base, Ethereum, Polygon)
+- Framework: Foundry
+- Language: Solidity 0.8.23
+- Location: `contracts/evm/`
+
+### Solana
+- Framework: Anchor
+- Language: Rust
+- Location: `contracts/solana/`
+
+### Sui
+- Language: Move
+- Location: `contracts/sui/`
+
+## 📝 License
+
+MIT
 
 ---
 
