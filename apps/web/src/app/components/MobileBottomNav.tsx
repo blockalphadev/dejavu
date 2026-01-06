@@ -12,7 +12,7 @@ export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: Mobile
     const { isAuthenticated } = useAuth();
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0f141f]/90 backdrop-blur-xl border-t border-white/5 pb-safe">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-[#0f141f]/90 backdrop-blur-xl border-t border-white/5 pb-safe">
             <div className="flex items-center justify-between px-6 h-[5rem]">
 
                 <BottomNavItem

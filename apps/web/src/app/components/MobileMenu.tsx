@@ -75,49 +75,49 @@ export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMe
                         label="Ranks"
                         onClick={() => { onNavigate('ranks'); onClose(); }}
                     />
-                </div>
 
-                {/* Footer: Auth */}
-                <div className="p-6 border-t border-border/40 bg-accent/5">
-                    {isAuthenticated ? (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 px-2">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                                    {user?.fullName?.[0] || 'U'}
+                    {/* Spacer & Auth Section */}
+                    <div className="pt-6 mt-8 border-t border-border/40">
+                        {isAuthenticated ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 px-2">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                        {user?.fullName?.[0] || 'U'}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium truncate max-w-[150px]">{user?.fullName || 'User'}</span>
+                                        <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="font-medium truncate max-w-[150px]">{user?.fullName || 'User'}</span>
-                                    <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
-                                </div>
+                                <Button
+                                    variant="destructive"
+                                    className="w-full gap-2"
+                                    onClick={() => { logout(); onClose(); }}
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Log Out
+                                </Button>
                             </div>
-                            <Button
-                                variant="destructive"
-                                className="w-full gap-2"
-                                onClick={() => { logout(); onClose(); }}
-                            >
-                                <LogOut className="w-4 h-4" />
-                                Log Out
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="ghost"
-                                className="flex-1 justify-center gap-2 h-10 border border-border/50"
-                                onClick={() => { onOpenAuth(); onClose(); }}
-                            >
-                                <LogIn className="w-4 h-4" />
-                                Log In
-                            </Button>
-                            <Button
-                                className="flex-1 justify-center gap-2 h-10 bg-primary text-primary-foreground"
-                                onClick={() => { onOpenAuth(); onClose(); }}
-                            >
-                                <UserPlus className="w-4 h-4" />
-                                Sign Up
-                            </Button>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="grid grid-cols-2 gap-3 w-full">
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-center gap-2 h-11 border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors"
+                                    onClick={() => { onOpenAuth(); onClose(); }}
+                                >
+                                    <LogIn className="w-4 h-4" />
+                                    Log In
+                                </Button>
+                                <Button
+                                    className="w-full justify-center gap-2 h-11 bg-yellow-400 text-black hover:bg-yellow-500 transition-colors shadow-lg shadow-yellow-400/20 font-medium"
+                                    onClick={() => { onOpenAuth(); onClose(); }}
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                    Sign Up
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </>

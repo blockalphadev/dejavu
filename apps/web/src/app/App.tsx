@@ -36,7 +36,7 @@ function AppContent() {
         activeCategory={activeCategory}
         onSelectCategory={setActiveCategory}
         onOpenAuth={() => setIsAuthModalOpen(true)}
-        onToggleMenu={() => setIsMobileMenuOpen(true)}
+        onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
       <MobileMenu
@@ -72,7 +72,7 @@ function AppContent() {
 
         {/* Sidebar - Desktop */}
         <div className="hidden lg:block">
-          <Sidebar isOpen={false} onClose={() => { }} />
+          <Sidebar isOpen={false} onClose={() => { }} onOpenAuth={() => setIsAuthModalOpen(true)} />
         </div>
       </div>
 
@@ -90,7 +90,7 @@ function AppContent() {
 
       {/* Sidebar - Mobile */}
       <div className="lg:hidden">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onOpenAuth={() => setIsAuthModalOpen(true)} />
       </div>
 
       <Footer />
@@ -106,7 +106,7 @@ function AppContent() {
         <MobileBottomNav
           currentTab={activeTab}
           onNavigate={setActiveTab}
-          onToggleMenu={() => setIsMobileMenuOpen(true)}
+          onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
       </div>
     </div>

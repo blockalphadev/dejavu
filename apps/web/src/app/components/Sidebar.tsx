@@ -1,12 +1,15 @@
-import { TrendingUp, Star, ChevronRight, X } from "lucide-react";
+import { TrendingUp, Star, ChevronRight, X, LogIn, UserPlus, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
+import { useAuth } from "./auth/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenAuth?: () => void;
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
+  const { isAuthenticated, logout } = useAuth();
   return (
     <>
       {/* Mobile Overlay */}
@@ -31,20 +34,60 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <X className="w-5 h-5" />
           </button>
 
-          {/* Portfolio Section */}
-          <div className="rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="w-5 h-5 text-purple-500" />
-              <h3 className="font-semibold">Portfolio</h3>
+          {/* Auth Section (Guest Only) */}
+          {!isAuthenticated && (
+            <div className="rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 p-5">
+              <h3 className="font-semibold mb-2">Join DeJaVu</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Sign up to start predicting and earning rewards.
+              </p>
+              <div className="space-y-2">
+                <Button
+                  className="w-full bg-primary text-primary-foreground"
+                  onClick={onOpenAuth}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Sign Up
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={onOpenAuth}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Log In
+                </Button>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Deposit some cash to start betting
-            </p>
-            <Button className="w-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
-              Deposit
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
+          )}
+
+          {/* Portfolio Section (User Only) */}
+          {isAuthenticated && (
+            <div className="space-y-6">
+              <div className="rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-5 h-5 text-purple-500" />
+                  <h3 className="font-semibold">Portfolio</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Deposit some cash to start betting
+                </p>
+                <Button className="w-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+                  Deposit
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+
+              <Button
+                variant="destructive"
+                className="w-full bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                onClick={logout}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Log Out
+              </Button>
+            </div>
+          )}
 
           {/* Watchlist Section */}
           <div className="rounded-xl bg-accent/50 p-5">
