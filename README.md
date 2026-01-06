@@ -59,7 +59,7 @@ dejavu/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/dejavu.git
+git clone https://github.com/siabang35/dejavu.git
 cd dejavu
 
 # Install dependencies
