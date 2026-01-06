@@ -65,6 +65,11 @@ export const envSchema = z.object({
 
     // Trusted Proxies (for production behind load balancer)
     TRUSTED_PROXIES: z.string().optional(),
+
+    // Privy Wallet Infrastructure (optional, required for wallet generation)
+    PRIVY_APP_ID: z.string().optional(),
+    PRIVY_APP_SECRET: z.string().optional(),
+    PRIVY_JWKS_URL: z.string().url().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

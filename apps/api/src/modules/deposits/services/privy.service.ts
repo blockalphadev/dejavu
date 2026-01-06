@@ -243,7 +243,7 @@ export class PrivyService {
         try {
             this.logger.log(`Creating embedded wallet for user ${privyUserId} on ${chainType}`);
 
-            const response = await fetch(`${this.privyApiUrl}/users/${privyUserId}/embedded_wallets`, {
+            const response = await fetch(`${this.privyApiUrl}/wallets`, {
                 method: 'POST',
                 headers: {
                     'Authorization': this.getAuthHeader(),
@@ -252,7 +252,9 @@ export class PrivyService {
                 },
                 body: JSON.stringify({
                     chain_type: chainType,
-                    wallet_client_type: 'privy',
+                    owner: {
+                        user_id: privyUserId,
+                    },
                 }),
             });
 
@@ -372,6 +374,7 @@ export class PrivyService {
 
     /**
      * Import a user into Privy using custom auth ID (Supabase UUID)
+     * Uses the latest Privy API v2 format
      */
     async importUser(customUserId: string): Promise<PrivyUser> {
         if (!this.appSecret) {
@@ -381,6 +384,8 @@ export class PrivyService {
         try {
             this.logger.log(`Importing user ${customUserId} into Privy`);
 
+            // Privy API v2 format - do not include deprecated create_embedded_wallet
+            // Wallets are created separately after user import
             const response = await fetch(`${this.privyApiUrl}/users`, {
                 method: 'POST',
                 headers: {
@@ -389,7 +394,6 @@ export class PrivyService {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    create_embedded_wallet: false,
                     linked_accounts: [
                         {
                             type: 'custom_auth',
@@ -400,12 +404,22 @@ export class PrivyService {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                // If user already exists (409), we need to handle it.
-                // However, Privy doesn't return the DID in 409 easily.
-                // We might need to assume the user was already imported? 
-                // But we don't know their DID.
-                // For now, allow 409 to throw and we can debug.
+                const errorData = await response.json().catch(() => ({}));
+                const errorText = JSON.stringify(errorData);
+
+                // Handle case where user already exists (409 Conflict)
+                if (response.status === 409) {
+                    this.logger.warn(`User ${customUserId} already exists in Privy, attempting to retrieve`);
+
+                    // Try to find existing user by custom_user_id
+                    const existingUser = await this.findUserByCustomId(customUserId);
+                    if (existingUser) {
+                        return existingUser;
+                    }
+
+                    throw new BadRequestException('User exists but could not be retrieved');
+                }
+
                 this.logger.error(`Privy user import failed: ${response.status} - ${errorText}`);
                 throw new BadRequestException(`Failed to import user: ${errorText}`);
             }
@@ -414,8 +428,54 @@ export class PrivyService {
             this.logger.log(`Imported user ${customUserId} -> ${user.id}`);
             return user;
         } catch (error) {
+            if (error instanceof BadRequestException) {
+                throw error;
+            }
             this.logger.error('Failed to import user', error);
-            throw error;
+            throw new BadRequestException('Failed to create Privy user');
+        }
+    }
+
+    /**
+     * Find a Privy user by their custom_user_id
+     * Useful when handling 409 conflicts during import
+     */
+    async findUserByCustomId(customUserId: string): Promise<PrivyUser | null> {
+        if (!this.appSecret) {
+            return null;
+        }
+
+        try {
+            // Search for user with custom_auth linked account
+            const response = await fetch(
+                `${this.privyApiUrl}/users?custom_user_id=${encodeURIComponent(customUserId)}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': this.getAuthHeader(),
+                        'privy-app-id': this.appId,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                this.logger.warn(`Failed to find user by custom ID: ${response.status}`);
+                return null;
+            }
+
+            const data = await response.json() as any;
+            // The API returns an array of users or a single user
+            const users = Array.isArray(data) ? data : (data.users || [data]);
+
+            if (users.length > 0) {
+                this.logger.debug(`Found existing Privy user for custom_user_id: ${customUserId}`);
+                return users[0] as PrivyUser;
+            }
+
+            return null;
+        } catch (error) {
+            this.logger.error('Error finding user by custom ID', error);
+            return null;
         }
     }
 

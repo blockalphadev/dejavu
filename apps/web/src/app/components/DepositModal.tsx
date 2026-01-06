@@ -193,13 +193,15 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     )}
 
                     {/* Token & Chain Selectors */}
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                         {/* Token Selector */}
                         <div className="flex-1 relative">
-                            <label className="block text-xs text-gray-500 mb-1.5">Supported token</label>
+                            <div className="flex items-center justify-between h-6 mb-1.5">
+                                <label className="block text-xs text-gray-500">Supported token</label>
+                            </div>
                             <button
                                 onClick={() => { setShowTokenDropdown(!showTokenDropdown); setShowChainDropdown(false); }}
-                                className="w-full flex items-center justify-between p-3 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
+                                className="w-full flex items-center justify-between p-2.5 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
                             >
                                 <div className="flex items-center gap-2">
                                     <img src={selectedToken.icon} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = '/images/coin/ethereum.png'; }} />
@@ -230,18 +232,20 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
                         {/* Chain Selector */}
                         <div className="flex-1 relative">
-                            <div className="flex items-center gap-1 mb-1.5">
+                            <div className="flex items-center justify-between h-6 mb-1.5">
                                 <label className="text-xs text-gray-500">Supported chain</label>
-                                <span className="text-xs text-gray-600">Min ${selectedToken.minDeposit}</span>
-                                <Icons.Info />
+                                <div className="flex items-center gap-1.5 bg-gray-800/50 px-2 py-0.5 rounded-full border border-gray-700/50">
+                                    <span className="text-[10px] text-gray-400">Min ${selectedToken.minDeposit}</span>
+                                    <Icons.Info />
+                                </div>
                             </div>
                             <button
                                 onClick={() => { setShowChainDropdown(!showChainDropdown); setShowTokenDropdown(false); }}
-                                className="w-full flex items-center justify-between p-3 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
+                                className="w-full flex items-center justify-between p-2.5 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
                             >
-                                <div className="flex items-center gap-2">
-                                    <img src={selectedChain.icon} alt={selectedChain.name} className="w-6 h-6 rounded-full" />
-                                    <span className="font-medium text-white">{selectedChain.name}</span>
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <img src={selectedChain.icon} alt={selectedChain.name} className="w-6 h-6 rounded-full flex-shrink-0" />
+                                    <span className="font-medium text-white truncate">{selectedChain.name}</span>
                                 </div>
                                 <Icons.ChevronDown />
                             </button>
