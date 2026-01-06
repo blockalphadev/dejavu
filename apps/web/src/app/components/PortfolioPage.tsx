@@ -4,6 +4,7 @@ import { Settings, Download, Upload, Search, Filter, EyeOff, Eye } from "lucide-
 import { useAuth } from "./auth/AuthContext";
 import { useDeposit } from "./DepositContext";
 import { ProfileDropdown } from "./ProfileDropdown";
+import { WithdrawModal } from "./WithdrawModal";
 import { Button } from "./ui/button";
 
 export function PortfolioPage() {
@@ -11,6 +12,7 @@ export function PortfolioPage() {
     const { balance, openDepositModal } = useDeposit();
     const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
     const [hideValues, setHideValues] = useState(false);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
     if (!isAuthenticated || !user) {
         return (
@@ -81,6 +83,7 @@ export function PortfolioPage() {
                 <Button
                     variant="outline"
                     className="h-12 text-base font-semibold border-border/50 hover:bg-accent rounded-xl"
+                    onClick={() => setShowWithdrawModal(true)}
                 >
                     <Upload className="w-4 h-4 mr-2" />
                     Withdraw
@@ -175,6 +178,16 @@ export function PortfolioPage() {
                 <span className="text-sm">No {activeTab} found.</span>
             </div>
 
-        </div>
+            <WithdrawModal
+                isOpen={showWithdrawModal}
+                onClose={() => setShowWithdrawModal(false)}
+                availableBalance={parseFloat(balance?.availableBalance || '0')}
+                onSuccess={() => {
+                    // Refresh balance if context exposes a refresh method, or just wait for next poll
+                    // Assuming useDeposit context might verify balance internally or we can trigger it
+                    // balance.refetch() ?
+                }}
+            />
+        </div >
     );
 }

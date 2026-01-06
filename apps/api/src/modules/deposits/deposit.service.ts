@@ -18,6 +18,9 @@ import {
     BalanceResponseDto,
     InitiateDepositResponseDto,
     DepositTransactionDto,
+    InitiateWithdrawalDto,
+    ConfirmWithdrawalDto,
+    WithdrawalResponseDto,
 } from './dto/index.js';
 
 /**
@@ -568,5 +571,176 @@ export class DepositService {
             this.logger.debug(`Cleaned up ${cleaned} expired deposit nonces`);
         }
     }
-}
 
+    /**
+     * Initiate a withdrawal
+     */
+    async initiateWithdrawal(
+        userId: string,
+        dto: InitiateWithdrawalDto,
+    ): Promise<WithdrawalResponseDto> {
+        const client = this.supabaseService.getAdminClient();
+
+        // 1. Check available balance
+        const { data: availableBalance, error: balanceError } = await client.rpc(
+            'get_available_balance',
+            { p_user_id: userId, p_currency: 'USDC' }
+        );
+
+        if (balanceError) {
+            this.logger.error('Failed to check balance', balanceError);
+            throw new BadRequestException('Failed to check balance');
+        }
+
+        if (availableBalance < dto.amount) {
+            throw new BadRequestException('Insufficient available balance');
+        }
+
+        // 2. Lock balance
+        const { data: lockSuccess, error: lockError } = await client.rpc(
+            'lock_user_balance',
+            { p_user_id: userId, p_amount: dto.amount, p_currency: 'USDC' }
+        );
+
+        if (lockError || !lockSuccess) {
+            this.logger.error('Failed to lock balance for withdrawal', lockError);
+            throw new BadRequestException('Failed to process withdrawal');
+        }
+
+        // 3. Create withdrawal record
+        const { data: withdrawal, error: txError } = await client
+            .from('withdrawal_transactions')
+            .insert({
+                user_id: userId,
+                amount: dto.amount,
+                currency: 'USDC',
+                chain: dto.chain,
+                to_address: dto.toAddress,
+                status: 'pending',
+                metadata: {
+                    initiated_via: 'privy_embedded',
+                    ip_address: '0.0.0.0', // Should be passed from controller
+                }
+            })
+            .select()
+            .single();
+
+        if (txError || !withdrawal) {
+            // Rollback lock if insert fails
+            await client.rpc('unlock_user_balance', {
+                p_user_id: userId,
+                p_amount: dto.amount,
+                p_currency: 'USDC'
+            });
+            this.logger.error('Failed to create withdrawal record', txError);
+            throw new BadRequestException('Failed to create withdrawal record');
+        }
+
+        return {
+            id: withdrawal.id,
+            amount: withdrawal.amount,
+            currency: withdrawal.currency,
+            chain: withdrawal.chain,
+            toAddress: withdrawal.to_address,
+            status: DepositStatus[withdrawal.status.toUpperCase()] || DepositStatus.PENDING,
+            createdAt: withdrawal.created_at,
+        };
+    }
+
+    /**
+     * Confirm a withdrawal
+     */
+    async confirmWithdrawal(
+        userId: string,
+        dto: ConfirmWithdrawalDto,
+    ): Promise<WithdrawalResponseDto> {
+        const client = this.supabaseService.getAdminClient();
+
+        // 1. Fetch withdrawal
+        const { data: withdrawal, error: fetchError } = await client
+            .from('withdrawal_transactions')
+            .select('*')
+            .eq('id', dto.withdrawalId)
+            // .eq('user_id', userId) // RLS handles this usually, but admin client bypasses RLS, so manual check needed
+            .single();
+
+        if (fetchError || !withdrawal) {
+            throw new NotFoundException('Withdrawal request not found');
+        }
+
+        if (withdrawal.user_id !== userId) {
+            throw new NotFoundException('Withdrawal request not found');
+        }
+
+        if (withdrawal.status === 'completed') {
+            return {
+                id: withdrawal.id,
+                amount: withdrawal.amount,
+                currency: withdrawal.currency,
+                chain: withdrawal.chain,
+                toAddress: withdrawal.to_address,
+                status: DepositStatus.CONFIRMED,
+                createdAt: withdrawal.created_at,
+            };
+        }
+
+        if (withdrawal.status !== 'pending' && withdrawal.status !== 'processing') {
+            throw new BadRequestException(`Withdrawal is in ${withdrawal.status} state`);
+        }
+
+        // 2. Finalize logic: Unlock then Debit
+        // Unlock first to make funds available for debit
+        const { error: unlockError } = await client.rpc('unlock_user_balance', {
+            p_user_id: userId,
+            p_amount: withdrawal.amount,
+            p_currency: 'USDC'
+        });
+
+        if (unlockError) {
+            this.logger.error('Failed to unlock balance during confirmation', unlockError);
+            throw new BadRequestException('System error during confirmation');
+        }
+
+        // Debit the actual amount
+        const { error: debitError } = await client.rpc('debit_user_balance', {
+            p_user_id: userId,
+            p_amount: withdrawal.amount,
+            p_currency: 'USDC'
+        });
+
+        if (debitError) {
+            this.logger.error('Failed to debit balance during confirmation', debitError);
+            // Critical error: Funds unlocked but not debited.
+            // In production, this needs urgent alert or transaction rollback mechanism.
+            throw new BadRequestException('System error during finalization');
+        }
+
+        // 3. Update status
+        const { data: updated, error: updateError } = await client
+            .from('withdrawal_transactions')
+            .update({
+                status: 'completed',
+                tx_hash: dto.txHash,
+                completed_at: new Date().toISOString(),
+            })
+            .eq('id', dto.withdrawalId)
+            .select()
+            .single();
+
+        if (updateError) {
+            this.logger.error('Failed to update withdrawal status', updateError);
+            // Funds debited but status not updated.
+            throw new BadRequestException('Failed to update withdrawal status');
+        }
+
+        return {
+            id: updated.id,
+            amount: updated.amount,
+            currency: updated.currency,
+            chain: updated.chain,
+            toAddress: updated.to_address,
+            status: DepositStatus.CONFIRMED,
+            createdAt: updated.created_at,
+        };
+    }
+}

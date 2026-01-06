@@ -30,6 +30,9 @@ import {
     InitiateDepositResponseDto,
     DepositTransactionDto,
     DepositChain,
+    InitiateWithdrawalDto,
+    ConfirmWithdrawalDto,
+    WithdrawalResponseDto,
 } from './dto/index.js';
 
 /**
@@ -218,6 +221,52 @@ export class DepositController {
     ): Promise<{ data: DepositTransactionDto[]; total: number }> {
         this.logger.debug(`Getting deposit history for user ${userId}`);
         return this.depositService.getHistory(userId, query);
+    }
+
+    /**
+     * Initiate a withdrawal
+     */
+    @Post('withdraw')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Initiate withdrawal',
+        description: 'Initiates a withdrawal request, locking user funds.',
+    })
+    @ApiBody({ type: InitiateWithdrawalDto })
+    @ApiResponse({
+        status: HttpStatus.OK,
+        description: 'Withdrawal initiated successfully',
+        type: WithdrawalResponseDto,
+    })
+    async initiateWithdrawal(
+        @CurrentUser('id') userId: string,
+        @Body() dto: InitiateWithdrawalDto,
+    ): Promise<WithdrawalResponseDto> {
+        this.logger.log(`Initiating withdrawal for user ${userId}: ${dto.amount} ${dto.chain}`);
+        return this.depositService.initiateWithdrawal(userId, dto);
+    }
+
+    /**
+     * Confirm a withdrawal
+     */
+    @Post('withdraw/confirm')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Confirm withdrawal',
+        description: 'Confirms a withdrawal transaction after blockchain transfer.',
+    })
+    @ApiBody({ type: ConfirmWithdrawalDto })
+    @ApiResponse({
+        status: HttpStatus.OK,
+        description: 'Withdrawal confirmed successfully',
+        type: WithdrawalResponseDto,
+    })
+    async confirmWithdrawal(
+        @CurrentUser('id') userId: string,
+        @Body() dto: ConfirmWithdrawalDto,
+    ): Promise<WithdrawalResponseDto> {
+        this.logger.log(`Confirming withdrawal for user ${userId}: ${dto.withdrawalId}`);
+        return this.depositService.confirmWithdrawal(userId, dto);
     }
 }
 

@@ -202,3 +202,82 @@ export class DepositTransactionDto {
     @ApiProperty({ example: '2026-01-06T12:01:00Z' })
     confirmedAt: string | null;
 }
+
+/**
+ * DTO for initiating a withdrawal
+ */
+export class InitiateWithdrawalDto {
+    @ApiProperty({
+        description: 'Amount to withdraw in USD',
+        example: 50.00,
+        minimum: 1,
+    })
+    @IsNumber({ maxDecimalPlaces: 8 })
+    @IsPositive()
+    @Min(1, { message: 'Minimum withdrawal amount is $1' })
+    @Type(() => Number)
+    amount: number;
+
+    @ApiProperty({
+        description: 'Blockchain network for withdrawal',
+        enum: DepositChain,
+        example: DepositChain.BASE,
+    })
+    @IsEnum(DepositChain, { message: 'Invalid chain' })
+    chain: DepositChain;
+
+    @ApiProperty({
+        description: 'Destination wallet address',
+        example: '0x1234567890abcdef...',
+    })
+    @IsString()
+    @Matches(/^(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})$/, {
+        message: 'Invalid wallet address format',
+    })
+    toAddress: string;
+}
+
+/**
+ * DTO for confirming a withdrawal
+ */
+export class ConfirmWithdrawalDto {
+    @ApiProperty({
+        description: 'Withdrawal ID (UUID)',
+        example: 'uuid-here',
+    })
+    @IsString()
+    withdrawalId: string;
+
+    @ApiProperty({
+        description: 'Transaction hash from blockchain',
+        example: '0x123...',
+    })
+    @IsString()
+    txHash: string;
+}
+
+/**
+ * Response DTO for withdrawal initiation
+ */
+export class WithdrawalResponseDto {
+    @ApiProperty({ example: 'uuid-here' })
+    id: string;
+
+    @ApiProperty({ example: '50.00' })
+    amount: string;
+
+    @ApiProperty({ example: 'USDC' })
+    currency: string;
+
+    @ApiProperty({ example: 'base' })
+    chain: string;
+
+    @ApiProperty({ example: '0x1234...5678' })
+    toAddress: string;
+
+    @ApiProperty({ enum: DepositStatus, example: 'pending' })
+    status: DepositStatus;
+
+    @ApiProperty({ example: '2026-01-07T12:00:00Z' })
+    createdAt: string;
+}

@@ -287,10 +287,37 @@ export const userApi = {
     },
 };
 
+// ============================================
+// Deposit API
+// ============================================
+
+export const depositApi = {
+    /**
+     * Initiate withdrawal
+     */
+    async initiateWithdrawal(amount: number, chain: string, toAddress: string) {
+        return apiRequest<{ id: string }>('/deposits/withdraw', {
+            method: 'POST',
+            body: { amount, chain, toAddress },
+        });
+    },
+
+    /**
+     * Confirm withdrawal
+     */
+    async confirmWithdrawal(withdrawalId: string, txHash: string) {
+        return apiRequest('/deposits/withdraw/confirm', {
+            method: 'POST',
+            body: { withdrawalId, txHash },
+        });
+    },
+};
+
 export default {
     auth: authApi,
     dashboard: dashboardApi,
     user: userApi,
+    deposit: depositApi,
     isAuthenticated,
     clearTokens,
 };
