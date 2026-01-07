@@ -1,7 +1,7 @@
 # DeJaVu — Enterprise Documentation
 
 > **Decentralized Prediction Market Platform**  
-> Version 1.0 | Last Updated: January 2026
+> Version 1.1.0 | Last Updated: January 7, 2026
 
 ---
 
@@ -630,14 +630,60 @@ npm run build
 NODE_ENV=production npm start
 ```
 
-### Frontend Deployment
+### Frontend Deployment (Vercel)
 
-**Recommended Platforms:** Vercel, Netlify, Cloudflare Pages
+**Recommended Platform:** Vercel (optimized for monorepo)
+
+The project includes a `vercel.json` configuration for seamless deployment:
+
+```json
+{
+  "buildCommand": "cd apps/web && pnpm install && pnpm build",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
+```
+
+**Deployment Steps:**
+1. Connect GitHub repository to Vercel
+2. Vercel auto-detects monorepo structure
+3. Build command executes `cd apps/web && pnpm install && pnpm build`
+4. Output served from `apps/web/dist`
+
+**Security Headers Included:**
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY (clickjacking protection)
+- X-XSS-Protection: enabled
+- Referrer-Policy: strict-origin-when-cross-origin
+
+**Asset Caching:**
+- Static assets cached with `immutable` for 1 year
+- Optimal performance for production
 
 ```bash
+# Local build verification
 cd apps/web
-npm run build
-# Deploy dist/ directory
+pnpm build
+# Output in dist/ directory
 ```
 
 ### Environment Variables
@@ -818,14 +864,21 @@ CREATE TABLE user_balances (
 - [ ] Contract testing and audits
 - [ ] Mainnet deployment
 
-### Phase 4 — Platform Features
+### Phase 4 — UI/UX Enhancements ✅
+- [x] Responsive mobile sidebar
+- [x] Deposit button integration with context
+- [x] Theme-safe logout button styling
+- [x] Mobile navigation improvements
+- [x] Professional hover animations
+
+### Phase 5 — Platform Features
 - [ ] Market creation wizard
 - [ ] Order book implementation
 - [ ] Portfolio tracking
 - [ ] Withdrawal system
 - [ ] Notifications system
 
-### Phase 5 — Scale & Growth
+### Phase 6 — Scale & Growth
 - [ ] Mobile application
 - [ ] Additional chain support
 - [ ] DAO governance

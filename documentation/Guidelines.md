@@ -1,7 +1,7 @@
 # DeJaVu - Project Guidelines & Architecture
 
 > **Comprehensive documentation for developers and maintainers**  
-> Last Updated: January 2026
+> Last Updated: January 7, 2026
 
 ---
 
@@ -189,6 +189,37 @@ apps/web/src/
     ├── theme.css               # CSS variables for theming
     └── components.css          # Component-specific styles
 ```
+
+### Key UI Components
+
+| Component | Path | Description |
+|-----------|------|-------------|
+| `Header.tsx` | `components/Header.tsx` | Main navigation header with desktop menu, theme toggle, search |
+| `Sidebar.tsx` | `components/Sidebar.tsx` | Right sidebar with Portfolio, Watchlist, Trending Topics |
+| `MobileBottomNav.tsx` | `components/MobileBottomNav.tsx` | Mobile bottom navigation (Home, Search, Breaking, Portfolio/More) |
+| `MobileMenu.tsx` | `components/MobileMenu.tsx` | Mobile hamburger menu overlay |
+| `DepositModal.tsx` | `components/DepositModal.tsx` | Deposit modal with chain selection and QR code |
+| `ProfileDropdown.tsx` | `components/ProfileDropdown.tsx` | User profile dropdown with balance, wallet, settings |
+| `AuthModal.tsx` | `components/auth/AuthModal.tsx` | Authentication modal (login/signup) |
+
+### Context Providers
+
+| Context | Path | Purpose |
+|---------|------|---------|
+| `AuthContext` | `components/auth/AuthContext.tsx` | Authentication state management |
+| `DepositContext` | `components/DepositContext.tsx` | Deposit modal state, balance, transactions |
+| `ThemeProvider` | `components/ThemeProvider.tsx` | Theme (light/dark/system) management |
+
+### Navigation Architecture
+
+**Desktop Navigation:**
+- `Header.tsx` shows horizontal nav: Markets, Activity, Ranks, Rewards
+- `Sidebar.tsx` visible on right side with Portfolio, Watchlist, Topics
+
+**Mobile Navigation:**
+- `MobileBottomNav.tsx` fixed at bottom: Home, Search, Breaking, Portfolio/More
+- Portfolio shown when authenticated, More shown when guest
+- `MobileMenu.tsx` for hamburger menu overlay
 
 ### Component Guidelines
 
@@ -754,6 +785,33 @@ npm run build
 # Output in dist/ directory
 ```
 
+### Vercel Deployment (Monorepo)
+
+The project includes a pre-configured `vercel.json` for seamless deployment:
+
+```json
+{
+  "buildCommand": "cd apps/web && pnpm install && pnpm build",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+
+**Key Configuration:**
+- **Build Command**: Navigates to `apps/web` and runs build
+- **Output Directory**: `apps/web/dist` for Vite output
+- **SPA Rewrites**: All routes redirect to `index.html` for client-side routing
+- **Security Headers**: X-Frame-Options, X-XSS-Protection, CSP
+- **Asset Caching**: Immutable cache for static assets
+
+**Deployment Steps:**
+1. Push to GitHub repository
+2. Connect repository to Vercel
+3. Set environment variables in Vercel dashboard
+4. Deploy automatically on push to `master`/`main`
+
 ### Environment Variables Checklist
 
 | Variable | Required | Secret |
@@ -874,6 +932,7 @@ npm install --save-dev @swc/cli @swc/core
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2.0 | Jan 7, 2026 | Vercel deployment config, UI/UX improvements (sidebar, mobile nav, theme-safe logout) |
 | 1.1.0 | Jan 2026 | Added Privy integration, deposit system, comprehensive migrations |
 | 1.0.0 | Jan 2026 | Initial release with multi-auth and multi-chain support |
 
