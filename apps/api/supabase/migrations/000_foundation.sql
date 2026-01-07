@@ -20,6 +20,7 @@ BEGIN
             full_name TEXT,
             avatar_url TEXT,
             wallet_addresses JSONB DEFAULT '[]'::jsonb,
+            bio TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );

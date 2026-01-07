@@ -1,6 +1,4 @@
-import { getAccessToken } from './api';
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3001/api/v1';
+import { apiRequest } from './api';
 
 /**
  * Deposit chain types
@@ -68,25 +66,7 @@ export interface DepositHistoryResponse {
 /**
  * Helper to make authenticated requests
  */
-async function authFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = getAccessToken();
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...options.headers,
-        },
-    });
-
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        throw new Error(error.message || `HTTP ${response.status}`);
-    }
-
-    return response.json();
-}
+// authFetch removed in favor of apiRequest
 
 /**
  * Deposit API Service
@@ -96,16 +76,16 @@ export const depositApi = {
      * Get user's current balance
      */
     async getBalance(): Promise<BalanceResponse> {
-        return authFetch<BalanceResponse>('/deposits/balance');
+        return apiRequest<BalanceResponse>('/deposits/balance');
     },
 
     /**
      * Generate or get wallet address for a chain
      */
     async generateWallet(chain: DepositChain, privyUserId: string): Promise<WalletResponse> {
-        return authFetch<WalletResponse>('/deposits/wallet/generate', {
+        return apiRequest<WalletResponse>('/deposits/wallet/generate', {
             method: 'POST',
-            body: JSON.stringify({ chain, privyUserId }),
+            body: { chain, privyUserId },
         });
     },
 
@@ -114,7 +94,7 @@ export const depositApi = {
      */
     async getWallet(chain: DepositChain): Promise<WalletResponse | null> {
         try {
-            return await authFetch<WalletResponse>(`/deposits/wallet/${chain}`);
+            return await apiRequest<WalletResponse>(`/deposits/wallet/${chain}`);
         } catch {
             return null;
         }
@@ -124,9 +104,9 @@ export const depositApi = {
      * Initiate a new deposit
      */
     async initiateDeposit(amount: number, chain: DepositChain): Promise<InitiateDepositResponse> {
-        return authFetch<InitiateDepositResponse>('/deposits/initiate', {
+        return apiRequest<InitiateDepositResponse>('/deposits/initiate', {
             method: 'POST',
-            body: JSON.stringify({ amount, chain }),
+            body: { amount, chain },
         });
     },
 
@@ -134,9 +114,9 @@ export const depositApi = {
      * Verify/confirm a deposit with transaction hash
      */
     async verifyDeposit(nonce: string, txHash: string, privyToken?: string): Promise<DepositTransaction> {
-        return authFetch<DepositTransaction>('/deposits/verify', {
+        return apiRequest<DepositTransaction>('/deposits/verify', {
             method: 'POST',
-            body: JSON.stringify({ nonce, txHash, privyToken }),
+            body: { nonce, txHash, privyToken },
         });
     },
 
@@ -156,7 +136,7 @@ export const depositApi = {
         if (params?.chain) queryParams.set('chain', params.chain);
 
         const query = queryParams.toString();
-        return authFetch<DepositHistoryResponse>(`/deposits/history${query ? `?${query}` : ''}`);
+        return apiRequest<DepositHistoryResponse>(`/deposits/history${query ? `?${query}` : ''}`);
     },
 };
 

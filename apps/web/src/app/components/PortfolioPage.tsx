@@ -27,30 +27,39 @@ export function PortfolioPage() {
         <div className="pb-24 pt-4 px-4 max-w-md mx-auto min-h-screen">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full overflow-hidden border border-border/50">
-                        {user.avatarUrl ? (
-                            <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold">
-                                {user.fullName?.[0] || 'U'}
-                            </div>
-                        )}
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-border/50">
+                            {user.avatarUrl ? (
+                                <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm text-white font-bold">
+                                    {user.fullName?.[0] || 'U'}
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <h1 className="font-bold text-xl">{user.fullName || 'Portfolio'}</h1>
+                            {user.bio && (
+                                <p className="text-xs text-muted-foreground max-w-[200px] truncate">{user.bio}</p>
+                            )}
+                        </div>
                     </div>
-                    <span className="font-semibold text-lg">Portfolio</span>
-                    <button
-                        onClick={() => setHideValues(!hideValues)}
-                        className="text-muted-foreground hover:text-foreground transition-colors ml-2"
-                    >
-                        {hideValues ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
                 </div>
 
-                <ProfileButton user={user} mobile triggerOnly>
-                    <button className="p-2 hover:bg-accent rounded-full transition-colors">
-                        <Settings className="w-6 h-6 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setHideValues(!hideValues)}
+                        className="p-2 hover:bg-accent rounded-full transition-colors text-muted-foreground"
+                    >
+                        {hideValues ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
-                </ProfileButton>
+                    <ProfileButton user={user} mobile triggerOnly>
+                        <button className="p-2 hover:bg-accent rounded-full transition-colors">
+                            <Settings className="w-6 h-6 text-muted-foreground" />
+                        </button>
+                    </ProfileButton>
+                </div>
             </div>
 
             {/* Total Value Card */}

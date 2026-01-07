@@ -24,6 +24,8 @@ import {
 } from './ui/dropdown-menu';
 import { useAuth } from './auth/AuthContext';
 import { cn } from './ui/utils';
+import { userApi } from '../../services/api';
+import { Toast } from './Toast';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -33,25 +35,74 @@ interface SettingsModalProps {
 type SettingsTab = 'profile' | 'account' | 'wallets' | 'trading' | 'notifications' | 'builder' | 'keys';
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-    const { user, logout, isLoading: isAuthLoading } = useAuth();
+    const { user, logout, isLoading: isAuthLoading, refreshUser } = useAuth();
     const { balance, openDepositModal } = useDeposit();
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const [isLoading, setIsLoading] = useState(false);
-    const [isSuccess, setIsSuccess] = useState(false);
+
+    // Toast state
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     // Form states
     const [email, setEmail] = useState(user?.email || '');
     const [username, setUsername] = useState(user?.fullName || '');
-    const [bio, setBio] = useState('');
+    const [bio, setBio] = useState(user?.bio || '');
 
-    const handleSave = () => {
+    // Wallet form state
+    const [newWalletAddress, setNewWalletAddress] = useState('');
+    const [newWalletChain, setNewWalletChain] = useState('ethereum');
+
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    const handleSave = async () => {
         setIsLoading(true);
-        // Simulate save
-        setTimeout(() => {
+        try {
+            await userApi.updateProfile({
+                fullName: username,
+                bio: bio,
+            });
+            await refreshUser();
+            showToast('Profile updated successfully', 'success');
+        } catch (error) {
+            showToast('Failed to update profile', 'error');
+            console.error(error);
+        } finally {
             setIsLoading(false);
-            setIsSuccess(true);
-            setTimeout(() => setIsSuccess(false), 2000);
-        }, 1000);
+        }
+    };
+
+    const handleAddWallet = async () => {
+        if (!newWalletAddress) return;
+        setIsLoading(true);
+        try {
+            await userApi.addWallet(newWalletAddress, newWalletChain);
+            await refreshUser();
+            setNewWalletAddress('');
+            showToast('Wallet added successfully', 'success');
+        } catch (error) {
+            showToast('Failed to add wallet', 'error');
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRemoveWallet = async (address: string, chain: string) => {
+        if (!confirm('Are you sure you want to remove this wallet?')) return;
+        setIsLoading(true);
+        try {
+            await userApi.removeWallet(address, chain);
+            await refreshUser();
+            showToast('Wallet removed successfully', 'success');
+        } catch (error) {
+            showToast('Failed to remove wallet', 'error');
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const navItems = [
@@ -78,12 +129,42 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 </div>
                             </div>
                             <div className="flex flex-col gap-1.5">
+                                <input
+                                    type="file"
+                                    ref={(input) => {
+                                        if (input) {
+                                            input.style.display = 'none';
+                                            input.onchange = async (e) => {
+                                                const file = (e.target as HTMLInputElement).files?.[0];
+                                                if (file) {
+                                                    setIsLoading(true);
+                                                    try {
+                                                        await userApi.uploadAvatar(file);
+                                                        await refreshUser();
+                                                        showToast('Profile picture updated', 'success');
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        showToast('Failed to upload', 'error');
+                                                    } finally {
+                                                        setIsLoading(false);
+                                                        // Reset input
+                                                        (e.target as HTMLInputElement).value = '';
+                                                    }
+                                                }
+                                            };
+                                        }
+                                    }}
+                                    accept="image/png, image/jpeg, image/webp"
+                                    id="avatar-upload"
+                                />
                                 <Button
                                     variant="secondary"
                                     className="h-9 px-4 text-xs font-medium bg-secondary/50 hover:bg-secondary/70 text-foreground border border-border/40 shadow-sm transition-all duration-200 gap-2"
+                                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                                    disabled={isLoading}
                                 >
                                     <Upload className="w-3.5 h-3.5" />
-                                    Upload
+                                    {isLoading ? 'Uploading...' : 'Upload'}
                                 </Button>
                             </div>
                         </div>
@@ -122,39 +203,35 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">Social Connections</label>
-                                <div className="flex gap-3">
-                                    <Button variant="secondary" className="gap-2 h-10 px-4 bg-secondary/50 border border-border/40 hover:bg-secondary/80 transition-all text-sm font-medium">
-                                        <Twitter className="w-4 h-4" />
+                            <div className="space-y-3 pt-2 pb-12 md:pb-0">
+                                <label className="text-sm font-medium text-muted-foreground block">
+                                    Social Connections
+                                </label>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <Button
+                                        variant="outline"
+                                        className="gap-2 h-10 px-5 bg-card hover:bg-accent hover:text-accent-foreground border-border shadow-sm transition-all duration-200 text-sm font-medium min-w-[140px]"
+                                    >
+                                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-foreground" aria-hidden="true">
+                                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                                        </svg>
                                         Connect X
+                                    </Button>
+
+                                    {/* Mobile Save Button - Placed next to Connect X */}
+                                    <Button
+                                        onClick={handleSave}
+                                        disabled={isLoading}
+                                        className={cn(
+                                            "md:hidden h-10 px-6 rounded-lg transition-all duration-200 font-medium shadow-md active:scale-[0.98]",
+                                            "bg-[#3b82f6] hover:bg-[#2563eb] shadow-blue-500/10 text-white min-w-[120px]"
+                                        )}
+                                    >
+                                        {isLoading ? 'Saving...' : 'Save Changes'}
                                     </Button>
                                 </div>
                             </div>
 
-                            <div className="pt-4">
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={isLoading || isSuccess}
-                                    className={cn(
-                                        "h-11 px-8 rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg active:scale-[0.98]",
-                                        isSuccess
-                                            ? "bg-green-500 hover:bg-green-600 shadow-green-500/10"
-                                            : "bg-[#3b82f6] hover:bg-[#2563eb] shadow-blue-500/10 text-white"
-                                    )}
-                                >
-                                    {isLoading ? (
-                                        'Saving...'
-                                    ) : isSuccess ? (
-                                        <>
-                                            <Check className="w-4 h-4 mr-2" />
-                                            Saved
-                                        </>
-                                    ) : (
-                                        'Save Changes'
-                                    )}
-                                </Button>
-                            </div>
                         </div>
                     </div>
                 );
@@ -182,13 +259,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     Deposit
                                 </Button>
                             </div>
-
-                            {balance && parseFloat(balance.lockedBalance) > 0 && (
-                                <div className="flex items-center gap-2 text-sm text-yellow-500/80 bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/10">
-                                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                                    <span>${balance.lockedBalance} locked in active orders</span>
-                                </div>
-                            )}
                         </div>
 
                         <div className="space-y-4">
@@ -204,7 +274,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             <p className="text-xs text-muted-foreground font-mono">{wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}</p>
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleRemoveWallet(wallet.address, wallet.chain)}
+                                        className="text-muted-foreground hover:text-destructive"
+                                    >
                                         Unlink
                                     </Button>
                                 </div>
@@ -212,6 +287,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             {(!user?.walletAddresses || user.walletAddresses.length === 0) && (
                                 <p className="text-sm text-muted-foreground text-center py-4">No wallets connected</p>
                             )}
+
+                            <div className="pt-4 border-t border-border/50">
+                                <h4 className="font-medium mb-3">Add Wallet</h4>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder="Wallet Address"
+                                            className="w-full h-10 px-3 rounded-lg bg-card/50 border border-border/50 focus:border-primary/50 outline-none text-sm"
+                                            value={newWalletAddress}
+                                            onChange={(e) => setNewWalletAddress(e.target.value)}
+                                        />
+                                    </div>
+                                    <select
+                                        className="h-10 px-3 rounded-lg bg-card/50 border border-border/50 focus:border-primary/50 outline-none text-sm"
+                                        value={newWalletChain}
+                                        onChange={(e) => setNewWalletChain(e.target.value)}
+                                    >
+                                        <option value="ethereum">Ethereum</option>
+                                        <option value="base">Base</option>
+                                        <option value="solana">Solana</option>
+                                        <option value="sui">Sui</option>
+                                    </select>
+                                    <Button onClick={handleAddWallet} disabled={isLoading || !newWalletAddress}>
+                                        Add
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );
@@ -224,7 +327,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-[100vw] h-[100svh] md:max-w-4xl md:h-[700px] p-0 overflow-hidden bg-background/95 backdrop-blur-2xl border-none md:border md:border-white/10 shadow-2xl flex flex-col md:flex-row gap-0">
+            <DialogContent className="max-w-[100vw] h-[100svh] md:max-w-4xl md:h-[85vh] p-0 overflow-hidden bg-background/95 backdrop-blur-2xl border-none md:border md:border-white/10 shadow-2xl flex flex-col md:flex-row gap-0">
 
                 {/* Mobile Header / Close Button */}
                 <div className="md:hidden flex items-center justify-between p-4 border-b border-border/40 bg-background/50 backdrop-blur-md sticky top-0 z-50">
@@ -304,20 +407,41 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 relative">
-                    {/* Desktop Close Button removed - using Dialog's default */}
+                <div className="flex-1 flex flex-col min-h-0 relative bg-background/50">
+                    <div className="flex-1 overflow-y-auto p-6 md:p-10 pb-32 md:pb-10">
+                        <div className="max-w-3xl mx-auto">
+                            <div className="mb-6 md:mb-8">
+                                <h3 className="hidden md:block text-2xl font-bold tracking-tight mb-2 capitalize">{navItems.find(n => n.id === activeTab)?.label}</h3>
+                                <p className="hidden md:block text-muted-foreground text-sm md:text-base">Manage your {activeTab} preferences</p>
+                            </div>
 
-                    <div className="max-w-3xl mx-auto">
-                        <div className="mb-6 md:mb-8">
-                            <h3 className="hidden md:block text-2xl font-bold tracking-tight mb-2 capitalize">{navItems.find(n => n.id === activeTab)?.label}</h3>
-                            <p className="hidden md:block text-muted-foreground text-sm md:text-base">Manage your {activeTab} preferences</p>
+                            {renderContent()}
                         </div>
-
-                        {renderContent()}
                     </div>
+
+                    {/* Fixed Footer for Profile */}
+                    {activeTab === 'profile' && (
+                        <div className="hidden md:block flex-none p-4 md:p-6 border-t border-border/50 bg-background/95 backdrop-blur-xl z-30 shadow-[0_-8px_30px_-5px_rgba(0,0,0,0.1)]">
+                            <div className="max-w-3xl mx-auto flex justify-end">
+                                <Button
+                                    onClick={handleSave}
+                                    disabled={isLoading}
+                                    className={cn(
+                                        "w-full md:w-auto h-11 px-8 rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg active:scale-[0.98]",
+                                        "bg-[#3b82f6] hover:bg-[#2563eb] shadow-blue-500/10 text-white"
+                                    )}
+                                >
+                                    {isLoading ? 'Saving...' : 'Save Changes'}
+                                </Button>
+                            </div>
+                            {/* Mobile bottom safe area spacer if needed, though padding usually handles it */}
+                            <div className="h-4 md:hidden"></div>
+                        </div>
+                    )}
                 </div>
 
             </DialogContent>
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </Dialog>
     );
 }

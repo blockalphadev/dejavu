@@ -465,6 +465,7 @@ export class AuthService {
             email: user.email,
             fullName: user.full_name,
             avatarUrl: user.avatar_url,
+            bio: user.bio,
             walletAddresses: user.wallet_addresses,
             createdAt: user.created_at,
         };

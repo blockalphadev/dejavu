@@ -7,6 +7,7 @@ export interface User {
     email?: string;
     fullName?: string;
     avatarUrl?: string;
+    bio?: string;
     walletAddresses?: Array<{ address: string; chain: string }>;
 }
 

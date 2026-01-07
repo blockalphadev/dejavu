@@ -12,6 +12,8 @@ export interface Profile {
     email: string | null;
     full_name: string | null;
     avatar_url: string | null;
+    bio: string | null;
+    preferences: Record<string, any>;
     wallet_addresses: WalletAddress[];
     created_at: string;
     updated_at: string;
@@ -22,6 +24,8 @@ export interface ProfileInsert {
     email?: string | null;
     full_name?: string | null;
     avatar_url?: string | null;
+    bio?: string | null;
+    preferences?: Record<string, any>;
     wallet_addresses?: WalletAddress[];
 }
 
@@ -29,7 +33,18 @@ export interface ProfileUpdate {
     email?: string | null;
     full_name?: string | null;
     avatar_url?: string | null;
+    bio?: string | null;
+    preferences?: Record<string, any>;
     wallet_addresses?: WalletAddress[];
+}
+
+export interface MulterFile {
+    fieldname: string;
+    originalname: string;
+    encoding: string;
+    mimetype: string;
+    buffer: Buffer;
+    size: number;
 }
 
 /**
@@ -129,6 +144,8 @@ export class UsersService {
                 email: profile.email,
                 full_name: profile.full_name,
                 avatar_url: profile.avatar_url,
+                bio: profile.bio,
+                preferences: profile.preferences || {},
                 wallet_addresses: profile.wallet_addresses || [],
             })
             .select()
@@ -267,5 +284,35 @@ export class UsersService {
             is_primary: boolean;
             created_at: string;
         }>;
+    }
+
+    /**
+     * Upload user avatar
+     */
+    async uploadAvatar(userId: string, file: MulterFile): Promise<string> {
+        const supabase = this.supabaseService.getAdminClient();
+        const fileExt = file.originalname.split('.').pop();
+        const fileName = `${userId}/${Date.now()}.${fileExt}`;
+
+        const { error } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true,
+            });
+
+        if (error) {
+            this.logger.error(`Failed to upload avatar: ${error.message}`);
+            throw new Error(`Failed to upload avatar: ${error.message}`);
+        }
+
+        const { data } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+
+        // Update profile with new avatar URL
+        await this.updateProfile(userId, { avatar_url: data.publicUrl });
+
+        return data.publicUrl;
     }
 }

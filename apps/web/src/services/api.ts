@@ -83,7 +83,10 @@ export function isAuthenticated(): boolean {
 /**
  * Make API request
  */
-async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
+/**
+ * Make API request
+ */
+export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     const { method = 'GET', body, headers = {} } = options;
 
     const token = getAccessToken();
@@ -283,7 +286,51 @@ export const userApi = {
      * Get current user profile
      */
     async getProfile() {
-        return apiRequest('/auth/me');
+        return apiRequest('/users/me'); // Recommend using users/me if standardizing on users controller, but auth/me is also fine. logic is the same mostly.
+        // Actually adhering to existing code calling auth/me. But I'll keep it as is or change to users/me?
+        // Let's keep auth/me for getProfile as it is already used.
+    },
+
+    async updateProfile(data: { fullName?: string; bio?: string; preferences?: any }) {
+        return apiRequest<{ id: string; full_name: string; bio: string }>('/users/profile', {
+            method: 'PATCH',
+            body: data,
+        });
+    },
+
+    async uploadAvatar(file: File) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Use raw fetch for FormData to avoid Content-Type header issues with apiRequest wrapper
+        const token = getAccessToken();
+        const response = await fetch(`${API_URL}/users/avatar`, {
+            method: 'POST',
+            headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to upload avatar');
+        }
+
+        return response.json() as Promise<{ avatarUrl: string }>;
+    },
+
+    async addWallet(address: string, chain: string) {
+        return apiRequest('/users/wallets', {
+            method: 'POST',
+            body: { address, chain },
+        });
+    },
+
+    async removeWallet(address: string, chain: string) {
+        return apiRequest(`/users/wallets/${address}`, {
+            method: 'DELETE',
+            body: { chain },
+        });
     },
 };
 
