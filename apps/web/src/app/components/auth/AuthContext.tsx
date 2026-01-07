@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { authApi, getAccessToken, clearTokens, setAccessToken } from '../../../services/api';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { authApi, getAccessToken } from '../../../services/api';
 
 // Types
 export interface User {
@@ -54,10 +54,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             const userData = await authApi.me() as User;
             setUser(userData);
-        } catch {
-            // Token might be invalid
-            clearTokens();
-            setUser(null);
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+            // Only clear user if we actually lost the token (e.g. 401 handled by api.ts)
+            if (!getAccessToken()) {
+                setUser(null);
+            }
+            // Otherwise, keep the stale user data rather than logging out on a 500/Network error
         } finally {
             setIsLoading(false);
         }
