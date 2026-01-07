@@ -1,8 +1,6 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "buildCommand": "pnpm turbo build --filter=@dejavu/web",
-    "installCommand": "pnpm install",
-    "framework": "vite",
+    "buildCommand": "cd apps/web && pnpm install && pnpm build",
     "outputDirectory": "apps/web/dist",
     "rewrites": [
         {
