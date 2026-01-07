@@ -1,7 +1,7 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "installCommand": "pnpm install",
-    "buildCommand": "pnpm turbo build --filter=@dejavu/web --force",
+    "buildCommand": "pnpm --filter @dejavu/web build",
     "outputDirectory": "apps/web/dist",
     "rewrites": [
         {
