@@ -19,6 +19,11 @@ import { PortfolioPage } from "./components/PortfolioPage";
 import { MobileMenu } from "./components/MobileMenu";
 
 import { SearchPage } from "./components/SearchPage";
+import { AdminLayout } from "./admin/AdminLayout";
+import { AdminOverview } from "./admin/AdminOverview";
+import { AdminUsers } from "./admin/AdminUsers";
+import { AdminFinance } from "./admin/AdminFinance";
+import { AdminSecurity } from "./admin/AdminSecurity";
 
 /**
  * Inner App component that has access to DepositContext
@@ -29,6 +34,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState("markets");
   const [activeCategory, setActiveCategory] = useState("top_pics");
   const [searchQuery, setSearchQuery] = useState("");
+  const [adminPage, setAdminPage] = useState("overview"); // Sub-routing for admin
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const { isDepositModalOpen, closeDepositModal } = useDeposit();
@@ -44,6 +50,22 @@ function AppContent() {
       setActiveCategory(category);
     }
   };
+
+  // Dedicated Admin Route
+  if (activeTab === 'admin') {
+    return (
+      <AdminLayout
+        activePage={adminPage}
+        onNavigate={setAdminPage}
+        onLogout={() => setActiveTab('markets')}
+      >
+        {adminPage === 'overview' && <AdminOverview />}
+        {adminPage === 'users' && <AdminUsers />}
+        {adminPage === 'finance' && <AdminFinance />}
+        {adminPage === 'security' && <AdminSecurity />}
+      </AdminLayout>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -116,13 +138,22 @@ function AppContent() {
         <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isSidebarOpen ? "rotate-180" : "rotate-0"}`} />
       </button>
 
-      {/* Sidebar - Mobile */}
       <div className="lg:hidden">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onOpenAuth={handleOpenAuth} />
       </div>
 
       <div className="hidden lg:block">
         <Footer />
+      </div>
+
+      {/* Admin Entry Point (Hidden/Secret) */}
+      <div className="fixed bottom-4 right-4 z-50 opacity-0 hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => setActiveTab('admin')}
+          className="bg-neutral-900 text-neutral-500 text-xs px-2 py-1 rounded border border-neutral-800"
+        >
+          Admin
+        </button>
       </div>
 
       {/* Deposit Modal */}

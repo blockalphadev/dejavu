@@ -1,504 +1,482 @@
-# DeJaVu — Enterprise Documentation
+# DeJaVu — Enterprise Technical Documentation
 
 > **Decentralized Prediction Market Platform**  
-> Version 1.1.0 | Last Updated: January 7, 2026
+> Version 2.0.0 | Published: January 8, 2026  
+> Classification: Internal Engineering Reference
 
 ---
 
-## Executive Summary
+## Document Information
 
-DeJaVu is an enterprise-grade decentralized prediction market platform designed for scalability, security, and multi-chain interoperability. Built on modern web technologies and blockchain infrastructure, it enables users to create, trade, and settle prediction markets across Ethereum, Solana, Sui, and Base networks.
-
-### Core Value Propositions
-
-| Capability | Description |
-|------------|-------------|
-| **Multi-Chain** | Native support for EVM, Solana, and Sui ecosystems |
-| **Multi-Auth** | Email, OAuth, Magic Link, and wallet-based authentication |
-| **Enterprise Security** | Rate limiting, brute force protection, audit logging, RLS |
-| **Scalable Architecture** | Modular monorepo with clean architecture principles |
+| Attribute | Value |
+|-----------|-------|
+| **Document Type** | Technical Architecture Blueprint |
+| **Target Audience** | Engineers, Architects, DevOps |
+| **Confidentiality** | Internal Use |
+| **Maintainer** | DeJaVu Engineering Team |
 
 ---
 
 ## Table of Contents
 
-1. [System Architecture](#system-architecture)
-2. [Technology Stack](#technology-stack)
-3. [Project Structure](#project-structure)
-4. [Applications](#applications)
-5. [Shared Packages](#shared-packages)
-6. [Smart Contracts](#smart-contracts)
-7. [Domain Model](#domain-model)
-8. [API Reference](#api-reference)
-9. [Authentication & Security](#authentication--security)
-10. [Database Design](#database-design)
-11. [Development Guide](#development-guide)
-12. [Deployment](#deployment)
-13. [Roadmap](#roadmap)
+1. [Executive Summary](#1-executive-summary)
+2. [System Architecture](#2-system-architecture)
+3. [Technology Stack](#3-technology-stack)
+4. [Project Structure](#4-project-structure)
+5. [Frontend Architecture](#5-frontend-architecture)
+6. [Backend Architecture](#6-backend-architecture)
+7. [Database Architecture](#7-database-architecture)
+8. [Security Architecture](#8-security-architecture)
+9. [Smart Contracts](#9-smart-contracts)
+10. [Shared Packages](#10-shared-packages)
+11. [API Reference](#11-api-reference)
+12. [Deployment Architecture](#12-deployment-architecture)
+13. [Appendix](#13-appendix)
 
 ---
 
-## System Architecture
+## 1. Executive Summary
+
+### 1.1 Platform Overview
+
+DeJaVu is an enterprise-grade decentralized prediction market platform enabling users to create, trade, and settle prediction markets across multiple blockchain networks. The platform follows clean architecture principles with emphasis on security, scalability, and developer experience.
+
+### 1.2 Key Capabilities
+
+| Capability | Implementation |
+|------------|----------------|
+| **Multi-Chain Support** | Ethereum, Solana, Sui, Base via abstracted adapters |
+| **Multi-Auth** | Email, OAuth, Magic Link, Privy, Wallet (MetaMask, Phantom) |
+| **Enterprise Security** | OWASP Top 10 compliance, rate limiting, RLS |
+| **Admin Dashboard** | Real-time monitoring, RBAC, audit logging |
+| **Non-Custodial** | User-signed transactions, multisig support |
+
+### 1.3 Architecture Highlights
+
+- **Monorepo Structure**: Turborepo + PNPM workspaces
+- **Backend**: NestJS 10 with 12 feature modules
+- **Frontend**: React 19 with 85+ components
+- **Database**: PostgreSQL 15 via Supabase with RLS
+- **10 SQL Migrations**: 30+ tables, 40+ functions
+
+---
+
+## 2. System Architecture
+
+### 2.1 High-Level Architecture
 
 ```mermaid
 flowchart TB
-    subgraph Clients["Client Layer"]
-        Web["Web App (React)"]
-        Mobile["Mobile (Future)"]
+    subgraph ClientLayer["🖥️ Client Layer"]
+        WebApp["Web Application<br/>(React 19 + Vite)"]
+        AdminUI["Admin Dashboard<br/>(React + Recharts)"]
     end
 
-    subgraph Gateway["API Gateway"]
-        API["NestJS API"]
-        Auth["Auth Module"]
-        Guards["JWT Guards"]
+    subgraph APIGateway["🔌 API Gateway"]
+        NestJS["NestJS 10<br/>REST API"]
+        Swagger["Swagger/OpenAPI<br/>Documentation"]
     end
 
-    subgraph Packages["Shared Packages"]
-        Domain["@dejavu/domain"]
-        Application["@dejavu/application"]
-        Infrastructure["@dejavu/infrastructure"]
-        Web3Pkg["@dejavu/web3"]
+    subgraph SecurityLayer["🔒 Security Layer"]
+        JWT["JWT Auth"]
+        RateLimit["Rate Limiting"]
+        Guards["Role Guards"]
+        Sanitizer["Input Sanitization"]
     end
 
-    subgraph Database["Data Layer"]
-        Supabase["Supabase (PostgreSQL)"]
-        Cache["Redis Cache (Future)"]
+    subgraph BusinessLayer["⚙️ Business Layer"]
+        AuthMod["Auth Module"]
+        UserMod["Users Module"]
+        MarketMod["Markets Module"]
+        OrderMod["Orders Module"]
+        DepositMod["Deposits Module"]
+        AdminMod["Admin Module"]
+        SecMod["Security Module"]
+        NotifMod["Notifications Module"]
+        SetMod["Settings Module"]
+        RefMod["Referrals Module"]
+        TxMod["Transactions Module"]
     end
 
-    subgraph Blockchain["Blockchain Layer"]
+    subgraph DataLayer["💾 Data Layer"]
+        Supabase["Supabase<br/>(PostgreSQL 15)"]
+        RLS["Row Level Security"]
+        Functions["Database Functions"]
+    end
+
+    subgraph BlockchainLayer["⛓️ Blockchain Layer"]
+        Privy["Privy<br/>(Embedded Wallets)"]
         EVM["Ethereum / Base"]
         Solana["Solana"]
         Sui["Sui"]
     end
 
-    Clients --> Gateway
-    Gateway --> Packages
-    Packages --> Database
-    Packages --> Blockchain
-    Web --> Web3Pkg --> Blockchain
+    ClientLayer --> APIGateway
+    APIGateway --> SecurityLayer
+    SecurityLayer --> BusinessLayer
+    BusinessLayer --> DataLayer
+    DepositMod --> BlockchainLayer
+    Privy --> BlockchainLayer
 ```
 
-### Design Principles
+### 2.2 Request Flow
 
-1. **Clean Architecture** — Separation of concerns with dependency inversion
-2. **Domain-Driven Design** — Rich domain models with aggregates and value objects
-3. **Event-Driven** — Loosely coupled components via message bus
-4. **Multi-Chain Native** — Abstracted wallet adapters for all supported chains
-5. **Security First** — Defense in depth with multiple security layers
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Middleware
+    participant Guard
+    participant Controller
+    participant Service
+    participant Database
+
+    Client->>Middleware: HTTP Request
+    Middleware->>Middleware: RequestId → SecurityHeaders → Logger
+    Middleware->>Guard: Validated Request
+    Guard->>Guard: JWT Verify → Role Check → Rate Limit
+    Guard->>Controller: Authorized Request
+    Controller->>Controller: Validate DTO (class-validator)
+    Controller->>Service: Call Service Method
+    Service->>Database: Parameterized Query
+    Database-->>Service: Result
+    Service-->>Controller: Processed Data
+    Controller-->>Client: JSON Response
+```
+
+### 2.3 Design Principles
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Clean Architecture** | Domain, Application, Infrastructure layers |
+| **SOLID** | Single responsibility per module/service |
+| **DDD** | Rich domain models in `packages/domain` |
+| **Security by Design** | Defense in depth, fail-secure defaults |
+| **API-First** | Swagger documentation as source of truth |
 
 ---
 
-## Technology Stack
+## 3. Technology Stack
 
-### Core Technologies
+### 3.1 Core Technologies
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Frontend** | React 19, TypeScript, Vite | Modern SPA with fast builds |
-| **Backend** | NestJS 10, TypeScript | Modular, scalable API server |
-| **Database** | Supabase (PostgreSQL) | Managed database with RLS |
-| **Auth** | Passport.js, JWT, Supabase Auth | Multi-strategy authentication |
-| **Blockchain** | ethers.js, @solana/web3.js, @mysten/sui.js | Multi-chain interactions |
+| Layer | Technology | Version | Purpose |
+|-------|------------|---------|---------|
+| **Frontend** | React | 19.x | UI Framework |
+| **Frontend Build** | Vite | 5.x | Fast bundler with HMR |
+| **Styling** | Tailwind CSS | 3.x | Utility-first CSS |
+| **Backend** | NestJS | 10.x | Modular Node.js framework |
+| **Runtime** | Node.js | 20.x LTS | Server runtime |
+| **Database** | PostgreSQL | 15.x | Primary database |
+| **BaaS** | Supabase | Latest | Auth, Database, Storage |
+| **Language** | TypeScript | 5.x | Type safety |
 
-### Smart Contract Frameworks
+### 3.2 Security & Auth
 
-| Chain | Framework | Language |
-|-------|-----------|----------|
-| EVM (Ethereum, Base) | Foundry | Solidity 0.8.23 |
-| Solana | Anchor | Rust |
-| Sui | Move CLI | Move |
+| Technology | Purpose |
+|------------|---------|
+| **JWT** | Stateless authentication tokens |
+| **Privy** | Embedded wallet creation |
+| **Argon2** | Password hashing |
+| **class-validator** | DTO validation |
+| **Helmet.js** | Security headers |
 
-### Development Tools
+### 3.3 Blockchain
+
+| Chain | Libraries |
+|-------|-----------|
+| **EVM** | ethers.js 6.x, viem |
+| **Solana** | @solana/web3.js |
+| **Sui** | @mysten/sui.js |
+
+### 3.4 Development Tools
 
 | Tool | Purpose |
 |------|---------|
 | **Turborepo** | Monorepo build orchestration |
-| **PNPM** | Fast, efficient package management |
-| **TypeScript** | Type-safe development |
-| **Prettier** | Code formatting |
+| **PNPM** | Package management |
+| **Swagger** | API documentation |
+| **Foundry** | EVM contract testing |
+| **Anchor** | Solana development |
 
 ---
 
-## Project Structure
+## 4. Project Structure
+
+### 4.1 Repository Layout
 
 ```
 dejavu/
-├── apps/                           # Application packages
-│   ├── api/                        # NestJS Backend API
-│   ├── web/                        # React Frontend
-│   └── www/                        # Marketing site (future)
+├── 📁 apps/                            # Application packages
+│   ├── 📁 api/                         # NestJS Backend API
+│   │   ├── 📁 src/
+│   │   │   ├── 📁 common/              # Shared utilities
+│   │   │   │   ├── 📁 filters/         # Exception filters
+│   │   │   │   ├── 📁 interceptors/    # Request interceptors
+│   │   │   │   ├── 📁 middleware/      # HTTP middleware
+│   │   │   │   └── 📁 utils/           # Helper functions
+│   │   │   ├── 📁 config/              # Environment validation
+│   │   │   ├── 📁 database/            # Supabase service
+│   │   │   └── 📁 modules/             # 12 Feature modules
+│   │   │       ├── 📁 admin/           # Admin dashboard
+│   │   │       ├── 📁 auth/            # Authentication
+│   │   │       ├── 📁 dashboard/       # Dashboard APIs
+│   │   │       ├── 📁 deposits/        # Deposit/withdrawal
+│   │   │       ├── 📁 markets/         # Prediction markets
+│   │   │       ├── 📁 notifications/   # User notifications
+│   │   │       ├── 📁 orders/          # Order management
+│   │   │       ├── 📁 referrals/       # Referral system
+│   │   │       ├── 📁 security/        # Security services
+│   │   │       ├── 📁 settings/        # User settings
+│   │   │       ├── 📁 transactions/    # Transaction history
+│   │   │       └── 📁 users/           # User management
+│   │   └── 📁 supabase/
+│   │       └── 📁 migrations/          # 10 SQL migrations
+│   │
+│   └── 📁 web/                         # React Frontend
+│       └── 📁 src/
+│           ├── 📁 app/
+│           │   ├── 📁 admin/           # Admin Dashboard (5 pages)
+│           │   ├── 📁 components/      # 85+ UI components
+│           │   ├── 📁 hooks/           # Custom React hooks
+│           │   └── 📁 utils/           # Helper functions
+│           ├── 📁 services/            # API clients
+│           └── 📁 styles/              # Global styles
 │
-├── packages/                       # Shared packages
-│   ├── domain/                     # DDD: Entities, Value Objects, Aggregates
-│   ├── application/                # Use cases and application services
-│   ├── infrastructure/             # Repository implementations, DB
-│   ├── shared/                     # Common utilities and types
-│   ├── web3/                       # Multi-chain wallet adapters
-│   ├── messaging/                  # Event-driven message bus
-│   ├── caching/                    # Cache abstraction layer
-│   ├── events/                     # Domain and integration events
-│   ├── config/                     # Shared configuration
-│   ├── contracts/                  # Contract ABIs and types
-│   ├── core/                       # Core utilities
-│   ├── testing/                    # Test utilities and fixtures
-│   └── ui/                         # Shared UI components
+├── 📁 packages/                        # 13 Shared packages
+│   ├── 📁 application/                 # Use cases, services
+│   ├── 📁 caching/                     # Cache abstraction
+│   ├── 📁 config/                      # Shared configuration
+│   ├── 📁 contracts/                   # Contract ABIs
+│   ├── 📁 core/                        # Core utilities
+│   ├── 📁 domain/                      # DDD entities
+│   ├── 📁 events/                      # Domain events
+│   ├── 📁 infrastructure/              # Repository impl
+│   ├── 📁 messaging/                   # Message bus
+│   ├── 📁 shared/                      # Common types
+│   ├── 📁 testing/                     # Test utilities
+│   ├── 📁 ui/                          # Shared UI components
+│   └── 📁 web3/                        # Multi-chain adapters
 │
-├── contracts/                      # Smart contracts
-│   ├── evm/                        # Solidity (Foundry)
-│   ├── solana/                     # Anchor programs
-│   └── sui/                        # Move modules
+├── 📁 contracts/                       # Smart contracts
+│   ├── 📁 evm/                         # Solidity (Foundry)
+│   ├── 📁 solana/                      # Anchor programs
+│   └── 📁 sui/                         # Move modules
 │
-└── documentation/                  # Project documentation
+└── 📁 documentation/                   # This documentation
 ```
 
----
-
-## Applications
-
-### Frontend — `apps/web`
-
-The web application is a React 19 SPA built with Vite for optimal performance.
-
-**Key Features:**
-- Server-side rendering ready
-- Theme system (light/dark/system)
-- Responsive design
-- Web3 wallet integration
-
-**Architecture:**
-```
-apps/web/src/
-├── app/
-│   ├── components/         # UI components (auth, dashboard, markets, layout)
-│   ├── hooks/              # Custom React hooks (useAuth, useWallet, useTheme)
-│   └── utils/              # Helper functions
-├── services/               # API clients and external services
-└── styles/                 # Global CSS and theme variables
-```
-
-### Backend API — `apps/api`
-
-Enterprise-grade NestJS application following clean architecture.
-
-**Key Features:**
-- Modular architecture with feature modules
-- JWT-based authentication with refresh tokens
-- Rate limiting and brute force protection
-- Comprehensive audit logging
-- Swagger API documentation
-
-**Module Structure:**
-```
-apps/api/src/
-├── modules/
-│   ├── auth/               # Authentication (multi-strategy)
-│   ├── users/              # User management
-│   ├── markets/            # Prediction markets CRUD
-│   ├── orders/             # Order management
-│   └── dashboard/          # Dashboard aggregations
-├── common/                 # Middleware, filters, interceptors
-├── config/                 # Environment validation
-└── database/               # Supabase service and migrations
-```
-
----
-
-## Shared Packages
-
-### `@dejavu/domain`
-
-Core domain layer implementing DDD patterns.
-
-**Structure:**
-- **Common** — Base entity, aggregate root, value object, domain events
-- **Market** — Market aggregate, outcomes, pricing models
-- **User** — User aggregate, wallet addresses, preferences
-- **Order** — Order entity, trade history
-
-**Key Abstractions:**
-```typescript
-// Aggregate Root pattern
-abstract class AggregateRoot<TId> {
-  protected readonly _domainEvents: DomainEvent[] = [];
-  addDomainEvent(event: DomainEvent): void;
-  clearDomainEvents(): DomainEvent[];
-}
-
-// Value Object pattern  
-abstract class ValueObject<T> {
-  abstract equals(vo?: ValueObject<T>): boolean;
-}
-```
-
-### `@dejavu/application`
-
-Application services orchestrating domain operations.
-
-- Use case implementations
-- Command and query handlers
-- Application services
-
-### `@dejavu/infrastructure`
-
-Infrastructure implementations and integrations.
-
-- Repository implementations
-- Database utilities (Supabase client)
-- External service adapters
-
-### `@dejavu/web3`
-
-Multi-chain wallet abstraction layer.
-
-**Supported Chains:**
-- Ethereum (MetaMask, WalletConnect)
-- Solana (Phantom, Solflare)
-- Sui (Sui Wallet)
-- Base (Coinbase Wallet)
-
-**Usage:**
-```typescript
-import { useWallet } from '@dejavu/web3';
-
-const { connect, disconnect, address, chain, isConnected } = useWallet();
-await connect('ethereum');
-```
-
-### `@dejavu/messaging`
-
-Event-driven communication infrastructure.
-
-- Message bus for inter-module communication
-- Domain event publishing
-- Integration events for external systems
-
----
-
-## Smart Contracts
-
-### EVM Contracts — `contracts/evm`
-
-Solidity contracts for Ethereum-compatible chains.
-
-**PredictionMarket.sol** — Core market contract
-
-| Function | Access | Description |
-|----------|--------|-------------|
-| `createMarket()` | Public | Create a new prediction market |
-| `buyShares()` | Public | Purchase outcome shares |
-| `getMarket()` | View | Retrieve market details |
-| `getOutcomes()` | View | Get market outcomes |
-| `setOracle()` | Owner | Configure oracle address |
-| `setPlatformFee()` | Owner | Set platform fee (max 10%) |
-
-**Market States:**
-```
-Active → Closed → Resolved → (Disputed)
-```
-
-**Development:**
-```bash
-cd contracts/evm
-forge build      # Compile contracts
-forge test       # Run tests
-forge script script/Deploy.s.sol --rpc-url $RPC --broadcast
-```
-
-### Solana Contracts — `contracts/solana`
-
-Anchor programs for Solana blockchain.
-
-**Program Instructions:**
-
-| Instruction | Description |
-|-------------|-------------|
-| `create_market` | Initialize new prediction market |
-| `buy_shares` | Purchase shares for an outcome |
-| `resolve_market` | Settle market with winning outcome |
-
-**Account Structure:**
-```rust
-pub struct Market {
-    pub authority: Pubkey,
-    pub title: String,
-    pub description: String,
-    pub status: MarketStatus,
-    pub outcome_count: u8,
-    pub winning_outcome: Option<u8>,
-    // ... additional fields
-}
-```
-
-**Development:**
-```bash
-cd contracts/solana
-anchor build     # Compile programs
-anchor test      # Run tests
-anchor deploy    # Deploy to network
-```
-
-### Sui Contracts — `contracts/sui`
-
-Move modules for Sui blockchain.
-
-```bash
-cd contracts/sui
-sui move build   # Compile modules
-sui move test    # Run tests
-```
-
----
-
-## Domain Model
+### 4.2 Module Dependency Graph
 
 ```mermaid
-classDiagram
-    class Market {
-        +UUID id
-        +String title
-        +String description
-        +DateTime endTime
-        +MarketStatus status
-        +Money totalVolume
-        +Outcome[] outcomes
-        +createMarket()
-        +addOutcome()
-        +resolve()
-    }
+graph LR
+    subgraph Core
+        DB[Database]
+        Auth[Auth]
+        Security[Security]
+    end
 
-    class Outcome {
-        +UUID id
-        +String name
-        +Decimal probability
-        +Money totalShares
-    }
+    subgraph Features
+        Users[Users]
+        Markets[Markets]
+        Orders[Orders]
+        Deposits[Deposits]
+    end
 
-    class Order {
-        +UUID id
-        +UUID marketId
-        +UUID userId
-        +OrderType type
-        +Decimal shares
-        +Money price
-        +execute()
-        +cancel()
-    }
+    subgraph Extended
+        Notif[Notifications]
+        Settings[Settings]
+        Referrals[Referrals]
+        Transactions[Transactions]
+    end
 
-    class User {
-        +UUID id
-        +Email email
-        +WalletAddress[] wallets
-        +authenticate()
-        +connectWallet()
-    }
+    subgraph Admin
+        AdminMod[Admin]
+    end
 
-    Market "1" --> "*" Outcome
-    Market "1" --> "*" Order
-    User "1" --> "*" Order
-    User "1" --> "*" WalletAddress
+    Auth --> DB
+    Security --> DB
+    Users --> DB
+    Users --> Auth
+    Markets --> DB
+    Orders --> Markets
+    Orders --> Users
+    Deposits --> Users
+    Deposits --> Security
+    Notif --> DB
+    Settings --> DB
+    Referrals --> Users
+    Transactions --> DB
+    AdminMod --> Users
+    AdminMod --> Security
+    AdminMod --> Deposits
 ```
 
 ---
 
-## API Reference
+## 5. Frontend Architecture
 
-### Authentication Endpoints
+### 5.1 Application Structure
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/auth/signup` | Public | Register new user |
-| POST | `/auth/login` | Public | Email/password login |
-| POST | `/auth/magic-link` | Public | Send magic link email |
-| POST | `/auth/wallet/challenge` | Public | Get signing challenge |
-| POST | `/auth/wallet/verify` | Public | Verify wallet signature |
-| GET | `/auth/google` | Public | Initiate Google OAuth |
-| POST | `/auth/refresh` | Public | Refresh access token |
-| POST | `/auth/logout` | JWT | Logout user |
-| GET | `/auth/me` | JWT | Get current user |
+| Directory | Contents | Count |
+|-----------|----------|-------|
+| `admin/` | Admin Dashboard pages | 5 files |
+| `components/` | UI Components | 85+ files |
+| `components/auth/` | Auth modals/forms | 6 files |
+| `components/ui/` | Base primitives | 48 files |
+| `hooks/` | Custom React hooks | 3 files |
 
-### Market Endpoints
+### 5.2 Component Catalog
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/markets` | Public | List all markets |
-| GET | `/markets/:id` | Public | Get market details |
-| POST | `/markets` | JWT | Create new market |
-| PUT | `/markets/:id` | JWT | Update market |
-| DELETE | `/markets/:id` | JWT | Delete market |
+#### Layout Components
 
-### Order Endpoints
+| Component | File | Description |
+|-----------|------|-------------|
+| Header | `Header.tsx` | Main navigation (8KB) |
+| Footer | `Footer.tsx` | Site footer |
+| Sidebar | `Sidebar.tsx` | Right sidebar with widgets |
+| MobileBottomNav | `MobileBottomNav.tsx` | Mobile navigation |
+| MobileMenu | `MobileMenu.tsx` | Mobile hamburger menu |
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/orders` | JWT | Place new order |
-| GET | `/orders` | JWT | List user orders |
-| GET | `/orders/:id` | JWT | Get order details |
-| DELETE | `/orders/:id` | JWT | Cancel order |
+#### Feature Components
 
----
+| Component | File | Size | Description |
+|-----------|------|------|-------------|
+| DepositModal | `DepositModal.tsx` | 18KB | Multi-chain deposit flow |
+| WithdrawModal | `WithdrawModal.tsx` | 11KB | Withdrawal with signing |
+| SettingsModal | `SettingsModal.tsx` | 18KB | User preferences |
+| PortfolioPage | `PortfolioPage.tsx` | 10KB | Portfolio dashboard |
+| ProfileButton | `ProfileButton.tsx` | 8KB | User profile dropdown |
 
-## Authentication & Security
+#### Admin Dashboard
 
-### Authentication Flows
+| Component | File | Description |
+|-----------|------|-------------|
+| AdminLayout | `admin/AdminLayout.tsx` | Dashboard layout |
+| AdminOverview | `admin/AdminOverview.tsx` | Stats, charts |
+| AdminUsers | `admin/AdminUsers.tsx` | User management |
+| AdminFinance | `admin/AdminFinance.tsx` | Withdrawal approvals |
+| AdminSecurity | `admin/AdminSecurity.tsx` | Security monitoring |
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant Backend
-    participant Wallet
-    participant Supabase
+### 5.3 State Management
 
-    alt Email/Password
-        User->>Frontend: Enter credentials
-        Frontend->>Backend: POST /auth/login
-        Backend->>Supabase: Verify user
-        Backend->>Backend: Generate JWT
-        Backend-->>Frontend: { accessToken, refreshToken }
-    end
+| Context | Purpose | Key State |
+|---------|---------|-----------|
+| `AuthContext` | Authentication | user, tokens, isAuthenticated |
+| `DepositContext` | Deposits | balance, transactions, modal state |
+| `ThemeProvider` | Theming | theme (light/dark/system) |
 
-    alt Wallet Auth
-        User->>Frontend: Connect Wallet
-        Frontend->>Wallet: Request accounts
-        Wallet-->>Frontend: Address
-        Frontend->>Backend: POST /auth/wallet/challenge
-        Backend-->>Frontend: { message, nonce }
-        Frontend->>Wallet: Sign message
-        Wallet-->>Frontend: Signature
-        Frontend->>Backend: POST /auth/wallet/verify
-        Backend->>Backend: Verify signature
-        Backend-->>Frontend: { accessToken }
-    end
+### 5.4 Theme System
+
+```css
+/* CSS Variables (theme.css) */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --border-radius: 12px;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #1a1a2e;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent: #8b5cf6;
+}
 ```
 
-### Security Layers
+---
 
-| Layer | Implementation |
-|-------|----------------|
-| **Input Validation** | class-validator decorators on all DTOs |
-| **Rate Limiting** | 100 req/min general, 5 req/min auth |
-| **Brute Force Protection** | Account lockout after 5 failed attempts |
-| **Data Masking** | Passwords/tokens redacted in logs |
-| **CORS** | Strict origin whitelist |
-| **Security Headers** | Helmet.js configuration |
-| **HTTPS** | Secure cookies in production |
+## 6. Backend Architecture
 
-### Production Checklist
+### 6.1 Module Registry
 
-- [ ] `NODE_ENV=production`
-- [ ] `COOKIE_SECURE=true`
-- [ ] `COOKIE_SAME_SITE=strict`
-- [ ] Strong, unique JWT secrets (256-bit minimum)
-- [ ] Database SSL connections enabled
-- [ ] CORS limited to production domains
-- [ ] Rate limiting configured appropriately
-- [ ] Logging level set to `info` or `warn`
+| # | Module | Path | Endpoints | Global |
+|---|--------|------|-----------|--------|
+| 1 | Auth | `/auth` | 10 | No |
+| 2 | Users | `/users` | 4 | No |
+| 3 | Dashboard | `/dashboard` | 2 | No |
+| 4 | Markets | `/markets` | 5 | No |
+| 5 | Orders | `/orders` | 4 | No |
+| 6 | Deposits | `/deposits` | 6 | No |
+| 7 | **Admin** | `/admin` | 10 | No |
+| 8 | **Security** | N/A | Guards | **Yes** |
+| 9 | **Notifications** | `/notifications` | 7 | No |
+| 10 | **Settings** | `/settings` | 9 | No |
+| 11 | **Referrals** | `/referrals` | 5 | No |
+| 12 | **Transactions** | `/transactions` | 4 | No |
+
+### 6.2 Auth Module (609 lines)
+
+**AuthService Methods:**
+
+| Method | Purpose |
+|--------|---------|
+| `signup()` | Email/password registration |
+| `login()` | Email/password authentication |
+| `sendMagicLink()` | Passwordless email login |
+| `getWalletChallenge()` | Generate signing challenge |
+| `verifyWallet()` | Verify wallet signature (EVM/Solana/Sui) |
+| `handleGoogleCallback()` | OAuth flow completion |
+| `refreshTokens()` | JWT rotation |
+| `getCurrentUser()` | Get user from token |
+| `checkAccountLockout()` | Brute force protection |
+| `logLoginAttempt()` | Security logging |
+
+### 6.3 Middleware Stack
+
+| Order | Middleware | Purpose |
+|-------|------------|---------|
+| 1 | `RequestIdMiddleware` | Generate unique request ID |
+| 2 | `SecurityHeadersMiddleware` | Set security headers |
+| 3 | `LoggerMiddleware` | Request/response logging |
+| 4 | `InputSanitizerMiddleware` | XSS/injection prevention |
+
+### 6.4 Guards
+
+| Guard | Scope | Purpose |
+|-------|-------|---------|
+| `JwtAuthGuard` | Per-route | JWT validation |
+| `AdminGuard` | Admin routes | Admin role check |
+| `SuperAdminGuard` | Audit routes | Super admin only |
+| `RateLimitGuard` | Per-route | Request throttling |
+| `IpBlacklistGuard` | Global | Block banned IPs |
+| `DeviceFingerprintGuard` | Per-route | Device tracking |
+
+### 6.5 Interceptors
+
+| Interceptor | Purpose |
+|-------------|---------|
+| `AuditLogInterceptor` | Log all mutations |
 
 ---
 
-## Database Design
+## 7. Database Architecture
 
-### Core Schema
+### 7.1 Migration Registry
+
+| # | Migration | Tables | Functions | Size |
+|---|-----------|--------|-----------|------|
+| 000 | Foundation | Core schema | Utilities | 14KB |
+| 001 | Initial | profiles, wallets | Auth funcs | 8KB |
+| 002 | Deposits | deposits, withdrawals | Balance ops | 13KB |
+| 003 | Notifications | 3 tables | 5 funcs | 12KB |
+| 004 | User Settings | 4 tables | 4 funcs | 13KB |
+| 005 | Referrals | 3 tables, 1 view | 4 funcs | 15KB |
+| 006 | Transactions | 2 tables, 2 views | 5 funcs | 16KB |
+| 007 | Security | 5 tables | 7 funcs | 21KB |
+| 008 | Non-Custodial | 5 tables | 6 funcs | 20KB |
+| 009 | Admin | 6 tables, 3 views | 7 funcs | 29KB |
+
+**Total: ~160KB of SQL, 30+ tables, 40+ functions**
+
+### 7.2 Core Tables
 
 ```mermaid
 erDiagram
@@ -507,9 +485,15 @@ erDiagram
         text email
         text full_name
         text avatar_url
-        jsonb wallet_addresses
+        text account_status
         timestamptz created_at
-        timestamptz updated_at
+    }
+
+    USER_BALANCES {
+        uuid user_id PK,FK
+        decimal balance
+        decimal locked_balance
+        text currency
     }
 
     WALLET_ADDRESSES {
@@ -520,388 +504,382 @@ erDiagram
         boolean is_primary
     }
 
-    LOGIN_ATTEMPTS {
-        uuid id PK
-        text email
-        inet ip_address
-        boolean success
-        text failure_reason
-        timestamptz attempted_at
-    }
-
-    AUDIT_LOGS {
+    NOTIFICATIONS {
         uuid id PK
         uuid user_id FK
-        text action
-        text resource
-        inet ip_address
-        boolean success
-        timestamptz created_at
+        text notification_type
+        text title
+        text message
+        boolean is_read
     }
 
-    PROFILES ||--o{ WALLET_ADDRESSES : has
-    PROFILES ||--o{ AUDIT_LOGS : generates
+    TRANSACTION_LEDGER {
+        uuid id PK
+        uuid user_id FK
+        text transaction_type
+        decimal amount
+        text status
+    }
+
+    PROFILES ||--o{ USER_BALANCES : has
+    PROFILES ||--o{ WALLET_ADDRESSES : owns
+    PROFILES ||--o{ NOTIFICATIONS : receives
+    PROFILES ||--o{ TRANSACTION_LEDGER : generates
 ```
 
-### Row Level Security (RLS)
+### 7.3 Admin Tables
 
-All tables implement RLS policies:
+```mermaid
+erDiagram
+    ADMIN_ROLES {
+        uuid id PK
+        text name
+        jsonb permissions
+        int hierarchy_level
+    }
+
+    ADMIN_USERS {
+        uuid id PK
+        uuid user_id FK
+        uuid role_id FK
+        boolean is_active
+        boolean mfa_required
+    }
+
+    ADMIN_AUDIT_LOG {
+        uuid id PK
+        uuid actor_user_id FK
+        text action
+        text action_category
+        jsonb old_values
+        jsonb new_values
+    }
+
+    WITHDRAWAL_APPROVALS {
+        uuid id PK
+        uuid withdrawal_id FK
+        uuid user_id FK
+        decimal amount
+        int risk_score
+        text status
+    }
+
+    ADMIN_ROLES ||--o{ ADMIN_USERS : assigns
+    ADMIN_USERS ||--o{ ADMIN_AUDIT_LOG : creates
+```
+
+### 7.4 Row Level Security (RLS)
+
+All tables have RLS enabled with policies:
 
 ```sql
--- Users can only read their own profile
-CREATE POLICY "Users can read own profile"
-    ON public.profiles FOR SELECT
-    USING (auth.uid() = id);
+-- User access to own data
+CREATE POLICY "users_own_data" ON public.profiles
+    FOR ALL USING (auth.uid() = id);
 
--- Service role bypasses RLS for admin operations
-CREATE POLICY "Service role can manage all"
-    ON public.profiles FOR ALL
-    USING (auth.role() = 'service_role');
+-- Service role bypass
+CREATE POLICY "service_role_all" ON public.profiles
+    FOR ALL USING (auth.role() = 'service_role');
+
+-- Admin read access
+CREATE POLICY "admin_read" ON public.profiles
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid() AND is_active)
+    );
 ```
 
 ---
 
-## Development Guide
+## 8. Security Architecture
 
-### Prerequisites
+### 8.1 OWASP Top 10 Compliance
 
-- Node.js ≥ 20
-- PNPM ≥ 9.0
-- Git
-- (Optional) Foundry, Anchor CLI, Sui CLI for contracts
+| # | Risk | Implementation | Status |
+|---|------|----------------|--------|
+| A01 | Broken Access Control | RLS + Role Guards + AdminGuard | ✅ |
+| A02 | Cryptographic Failures | Argon2 + JWT RS256 + AES-256 | ✅ |
+| A03 | Injection | Parameterized queries + class-validator | ✅ |
+| A04 | Insecure Design | Defense in depth + fail-secure | ✅ |
+| A05 | Security Misconfiguration | Helmet.js + env validation | ✅ |
+| A06 | Vulnerable Components | npm audit + Dependabot | ✅ |
+| A07 | Auth Failures | Brute force protection + lockout | ✅ |
+| A08 | Software Integrity | Signed transactions | ✅ |
+| A09 | Logging Failures | AuditLogInterceptor + structured logs | ✅ |
+| A10 | SSRF | No user-controlled URLs | ✅ |
 
-### Initial Setup
+### 8.2 Security Layers
+
+```mermaid
+flowchart LR
+    subgraph L1["Layer 1: Network"]
+        CORS["CORS"]
+        HTTPS["HTTPS"]
+        RateLimit["Rate Limiting"]
+    end
+
+    subgraph L2["Layer 2: Application"]
+        Helmet["Security Headers"]
+        Sanitizer["Input Sanitization"]
+        Validator["DTO Validation"]
+    end
+
+    subgraph L3["Layer 3: Authentication"]
+        JWT["JWT Tokens"]
+        MFA["MFA (Optional)"]
+        Lockout["Account Lockout"]
+    end
+
+    subgraph L4["Layer 4: Authorization"]
+        Guards["Role Guards"]
+        RLS["Row Level Security"]
+        Permissions["Permission Matrix"]
+    end
+
+    subgraph L5["Layer 5: Audit"]
+        AuditLog["Audit Logging"]
+        SuspiciousActivity["Anomaly Detection"]
+        AdminLog["Admin Actions"]
+    end
+
+    L1 --> L2 --> L3 --> L4 --> L5
+```
+
+### 8.3 Rate Limiting Configuration
+
+| Endpoint Category | Limit | Window |
+|-------------------|-------|--------|
+| Authentication | 5 req | 60 sec |
+| Standard API | 30 req | 60 sec |
+| Read Operations | 100 req | 60 sec |
+| Admin Operations | 60 req | 60 sec |
+| Exports | 5 req | 300 sec |
+
+### 8.4 Admin Role Matrix
+
+| Permission | Super Admin | Admin | Moderator | Support | Analyst |
+|------------|-------------|-------|-----------|---------|---------|
+| View Users | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Edit Users | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Suspend Users | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Approve Withdrawals | ✅ | ✅ | ❌ | ❌ | ❌ |
+| View Audit Log | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Export Data | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Manage Admins | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+---
+
+## 9. Smart Contracts
+
+### 9.1 Contract Overview
+
+| Chain | Framework | Language | Path |
+|-------|-----------|----------|------|
+| Ethereum/Base | Foundry | Solidity 0.8.23 | `contracts/evm/` |
+| Solana | Anchor | Rust | `contracts/solana/` |
+| Sui | Move CLI | Move | `contracts/sui/` |
+
+### 9.2 EVM Contract Functions
+
+| Function | Access | Description |
+|----------|--------|-------------|
+| `createMarket()` | Public | Create prediction market |
+| `buyShares()` | Public | Purchase outcome shares |
+| `sellShares()` | Public | Sell outcome shares |
+| `resolveMarket()` | Oracle | Settle market |
+| `claimWinnings()` | Public | Claim winning payouts |
+| `setPlatformFee()` | Owner | Set fee (max 10%) |
+
+### 9.3 Development Commands
 
 ```bash
-# Clone repository
-git clone https://github.com/siabang35/dejavu.git
-cd dejavu
+# EVM (Foundry)
+cd contracts/evm
+forge build && forge test
 
-# Install dependencies
-pnpm install
+# Solana (Anchor)
+cd contracts/solana
+anchor build && anchor test
 
-# Configure environment
-cp apps/api/.env.template apps/api/.env
-cp apps/web/.env.template apps/web/.env
-
-# Edit .env files with your credentials
-
-# Start development
-pnpm dev
-```
-
-### Common Commands
-
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start all apps in development |
-| `pnpm build` | Build all packages |
-| `pnpm typecheck` | TypeScript validation |
-| `pnpm lint` | Lint all packages |
-| `pnpm test` | Run test suites |
-| `pnpm clean` | Clean build artifacts |
-
-### Git Workflow
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Commit with conventional commits
-3. Push and create Pull Request
-4. Merge after review
-
-**Commit Format:**
-```
-feat(auth): add wallet authentication
-fix(ui): correct mobile navigation
-docs: update API documentation
-refactor(api): improve error handling
+# Sui (Move)
+cd contracts/sui
+sui move build && sui move test
 ```
 
 ---
 
-## Deployment
+## 10. Shared Packages
 
-### Backend Deployment
+### 10.1 Package Registry
 
-**Recommended Platforms:** Railway, Render, Fly.io, AWS ECS
+| Package | Path | Purpose | Dependencies |
+|---------|------|---------|--------------|
+| `@dejavu/domain` | `packages/domain/` | DDD entities, aggregates | None |
+| `@dejavu/application` | `packages/application/` | Use cases, services | domain |
+| `@dejavu/infrastructure` | `packages/infrastructure/` | Repository implementations | domain, application |
+| `@dejavu/web3` | `packages/web3/` | Multi-chain wallet adapters | ethers, solana |
+| `@dejavu/core` | `packages/core/` | Utilities, constants | None |
+| `@dejavu/shared` | `packages/shared/` | Common types | None |
+| `@dejavu/ui` | `packages/ui/` | Shared React components | react |
+| `@dejavu/events` | `packages/events/` | Domain events | None |
+| `@dejavu/messaging` | `packages/messaging/` | Message bus | events |
+| `@dejavu/caching` | `packages/caching/` | Cache abstraction | None |
+| `@dejavu/config` | `packages/config/` | Shared configuration | None |
+| `@dejavu/contracts` | `packages/contracts/` | Contract ABIs | None |
+| `@dejavu/testing` | `packages/testing/` | Test utilities | None |
 
-```bash
-cd apps/api
-npm run build
-NODE_ENV=production npm start
+### 10.2 Domain Package Structure
+
+```
+packages/domain/src/
+├── common/
+│   ├── aggregate-root.ts
+│   ├── entity.ts
+│   ├── value-object.ts
+│   └── domain-event.ts
+├── market/
+│   ├── market.aggregate.ts
+│   ├── outcome.entity.ts
+│   └── market.events.ts
+├── user/
+│   ├── user.aggregate.ts
+│   └── wallet-address.value-object.ts
+└── order/
+    ├── order.entity.ts
+    └── order.events.ts
 ```
 
-### Frontend Deployment (Vercel)
+---
 
-**Recommended Platform:** Vercel (optimized for monorepo)
+## 11. API Reference
 
-The project includes a `vercel.json` configuration for seamless deployment:
+### 11.1 Endpoint Summary
 
-```json
-{
-  "buildCommand": "cd apps/web && pnpm install && pnpm build",
-  "outputDirectory": "apps/web/dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-      ]
-    },
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ]
-}
-```
+| Category | Base Path | Endpoints | Auth |
+|----------|-----------|-----------|------|
+| Authentication | `/auth` | 10 | Mixed |
+| Users | `/users` | 4 | JWT |
+| Markets | `/markets` | 5 | Mixed |
+| Orders | `/orders` | 4 | JWT |
+| Deposits | `/deposits` | 6 | JWT |
+| Dashboard | `/dashboard` | 2 | JWT |
+| Admin | `/admin` | 10 | Admin |
+| Notifications | `/notifications` | 7 | JWT |
+| Settings | `/settings` | 9 | JWT |
+| Referrals | `/referrals` | 5 | JWT |
+| Transactions | `/transactions` | 4 | JWT |
 
-**Deployment Steps:**
-1. Connect GitHub repository to Vercel
-2. Vercel auto-detects monorepo structure
-3. Build command executes `cd apps/web && pnpm install && pnpm build`
-4. Output served from `apps/web/dist`
+### 11.2 Authentication Endpoints
 
-**Security Headers Included:**
-- X-Content-Type-Options: nosniff
-- X-Frame-Options: DENY (clickjacking protection)
-- X-XSS-Protection: enabled
-- Referrer-Policy: strict-origin-when-cross-origin
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/signup` | Public | Register with email |
+| POST | `/auth/login` | Public | Login with email |
+| POST | `/auth/magic-link` | Public | Send magic link |
+| POST | `/auth/wallet/challenge` | Public | Get signing challenge |
+| POST | `/auth/wallet/verify` | Public | Verify signature |
+| GET | `/auth/google` | Public | Initiate OAuth |
+| GET | `/auth/google/callback` | Public | OAuth callback |
+| POST | `/auth/refresh` | Public | Refresh tokens |
+| POST | `/auth/logout` | JWT | Logout |
+| GET | `/auth/me` | JWT | Get current user |
 
-**Asset Caching:**
-- Static assets cached with `immutable` for 1 year
-- Optimal performance for production
+### 11.3 Admin Endpoints
 
-```bash
-# Local build verification
-cd apps/web
-pnpm build
-# Output in dist/ directory
-```
+| Method | Path | Guard | Description |
+|--------|------|-------|-------------|
+| GET | `/admin/stats` | Admin | Platform statistics |
+| GET | `/admin/users` | Admin | List users |
+| GET | `/admin/users/:id` | Admin | User details |
+| PATCH | `/admin/users/:id/status` | Admin | Update status |
+| GET | `/admin/withdrawals/pending` | Admin | Pending withdrawals |
+| POST | `/admin/withdrawals/:id/approve` | Admin | Approve |
+| POST | `/admin/withdrawals/:id/reject` | Admin | Reject |
+| GET | `/admin/alerts` | Admin | System alerts |
+| PATCH | `/admin/alerts/:id` | Admin | Update alert |
+| GET | `/admin/audit-log` | SuperAdmin | Audit log |
 
-### Environment Variables
+---
+
+## 12. Deployment Architecture
+
+### 12.1 Environment Configuration
+
+#### Backend Environment Variables
 
 | Variable | Required | Secret | Description |
 |----------|----------|--------|-------------|
+| `NODE_ENV` | ✅ | ❌ | Environment mode |
+| `PORT` | ✅ | ❌ | Server port (3001) |
 | `SUPABASE_URL` | ✅ | ❌ | Supabase project URL |
-| `SUPABASE_ANON_KEY` | ✅ | ❌ | Public API key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | ✅ | Admin API key |
-| `DATABASE_URL` | ✅ | ✅ | PostgreSQL connection string |
-| `JWT_SECRET` | ✅ | ✅ | Token signing secret |
+| `JWT_SECRET` | ✅ | ✅ | JWT signing secret |
 | `JWT_REFRESH_SECRET` | ✅ | ✅ | Refresh token secret |
-| `GOOGLE_CLIENT_ID` | ⚪ | ❌ | OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | ⚪ | ✅ | OAuth client secret |
 | `PRIVY_APP_ID` | ✅ | ✅ | Privy application ID |
 | `PRIVY_APP_SECRET` | ✅ | ✅ | Privy API secret |
+| `CORS_ORIGINS` | ✅ | ❌ | Allowed origins |
+| `RATE_LIMIT_MAX` | ❌ | ❌ | General rate limit |
+
+#### Frontend Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_URL` | ✅ | Backend API URL |
+| `VITE_SUPABASE_URL` | ✅ | Supabase URL |
+| `VITE_SUPABASE_ANON_KEY` | ✅ | Public API key |
+| `VITE_PRIVY_APP_ID` | ✅ | Privy app ID |
+
+### 12.2 Deployment Platforms
+
+| Component | Recommended | Alternative |
+|-----------|-------------|-------------|
+| Frontend | Vercel | Netlify, Cloudflare |
+| Backend | Railway | Render, Fly.io |
+| Database | Supabase | Self-hosted PostgreSQL |
+| Monitoring | Sentry | Datadog |
+
+### 12.3 Production Checklist
+
+- [ ] `NODE_ENV=production`
+- [ ] JWT secrets are 256-bit minimum
+- [ ] `COOKIE_SECURE=true`
+- [ ] `COOKIE_SAME_SITE=strict`
+- [ ] CORS limited to production domains
+- [ ] Rate limiting configured
+- [ ] Database SSL enabled
+- [ ] All RLS policies active
+- [ ] Admin user created
+- [ ] Monitoring configured
 
 ---
 
-## Privy Integration
+## 13. Appendix
 
-DeJaVu integrates with [Privy](https://privy.io) for embedded wallet creation and authentication.
+### 13.1 Glossary
 
-### Configuration
+| Term | Definition |
+|------|------------|
+| **RLS** | Row Level Security - PostgreSQL feature for data isolation |
+| **DDD** | Domain-Driven Design - Software design approach |
+| **JWT** | JSON Web Token - Authentication standard |
+| **OWASP** | Open Web Application Security Project |
+| **EVM** | Ethereum Virtual Machine |
 
-```bash
-# Backend .env
-PRIVY_APP_ID=cmk2rk1w400bqju0c8tvu4fq4
-PRIVY_APP_SECRET=your_secret_here
-PRIVY_JWKS_URL=https://auth.privy.io/api/v1/apps/{app_id}/jwks.json
-```
+### 13.2 Version History
 
-### Privy Service Features
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.0.0 | Jan 8, 2026 | Added 6 backend modules, admin dashboard |
+| 1.1.0 | Jan 7, 2026 | Initial documentation |
+| 1.0.0 | Jan 6, 2026 | Project foundation |
 
-| Feature | Description |
-|---------|-------------|
-| **JWKS Verification** | RS256 JWT validation with cached key rotation |
-| **Embedded Wallets** | Auto-generate wallets per user per chain |
-| **Token Validation** | Issuer, audience, and expiration checks |
+### 13.3 Contact
 
-### Privy Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant PrivySDK
-    participant Backend
-    participant PrivyAPI
-
-    User->>Frontend: Click Login
-    Frontend->>PrivySDK: privy.login()
-    PrivySDK->>User: Auth Modal
-    User->>PrivySDK: Authenticate
-    PrivySDK-->>Frontend: { accessToken, user }
-    Frontend->>Backend: API Request + Privy Token
-    Backend->>PrivyAPI: Verify JWKS
-    PrivyAPI-->>Backend: Valid
-    Backend-->>Frontend: Response
-```
+| Role | Contact |
+|------|---------|
+| Lead Engineer | engineering@dejavu.io |
+| Security | security@dejavu.io |
+| DevOps | devops@dejavu.io |
 
 ---
 
-## Deposit System
-
-### Overview
-
-The deposit system enables users to fund their accounts via blockchain transfers with Privy-generated wallet addresses.
-
-### Deposit Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/deposits/balance` | JWT | Get user balance |
-| POST | `/deposits/wallet/generate` | JWT | Generate Privy wallet |
-| GET | `/deposits/wallet/:chain` | JWT | Get wallet for chain |
-| POST | `/deposits/initiate` | JWT | Initiate deposit |
-| POST | `/deposits/verify` | JWT | Verify transaction |
-| GET | `/deposits/history` | JWT | Get deposit history |
-
-### Deposit Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant Backend
-    participant PrivyAPI
-    participant Blockchain
-
-    User->>Frontend: Click Deposit
-    Frontend->>Backend: POST /wallet/generate
-    Backend->>PrivyAPI: Create embedded wallet
-    PrivyAPI-->>Backend: { address }
-    Backend-->>Frontend: { depositAddress, chain }
-    User->>Blockchain: Transfer funds
-    Blockchain-->>User: txHash
-    User->>Frontend: Enter txHash
-    Frontend->>Backend: POST /verify { nonce, txHash }
-    Backend->>Blockchain: Verify transaction
-    Backend->>Backend: Credit balance
-    Backend-->>Frontend: { confirmed }
-```
-
-### Security Features
-
-| Feature | Implementation |
-|---------|----------------|
-| **Nonce Protection** | Time-limited nonces (5 min) prevent replay |
-| **Amount Bounds** | Min $1, Max $100,000 per transaction |
-| **Atomic Updates** | Database functions for balance operations |
-| **RLS Policies** | Users can only see their own data |
-
----
-
-## Database Migrations
-
-### Migration Files
-
-Located in `apps/api/supabase/migrations/`:
-
-| File | Tables |
-|------|--------|
-| `000_foundation.sql` | profiles, wallet_addresses, login_attempts, audit_logs, user_sessions |
-| `001_initial_schema.sql` | markets, positions, orders, liquidity_positions, security_events |
-| `002_deposits.sql` | user_balances, privy_wallets, deposit_transactions, withdrawal_transactions |
-
-### Key Tables Added
-
-**privy_wallets**
-```sql
-CREATE TABLE privy_wallets (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES profiles(id),
-    privy_user_id TEXT NOT NULL,
-    wallet_address TEXT NOT NULL,
-    chain TEXT NOT NULL,
-    wallet_type TEXT DEFAULT 'embedded',
-    is_active BOOLEAN DEFAULT true,
-    UNIQUE(user_id, chain)
-);
-```
-
-**user_balances**
-```sql
-CREATE TABLE user_balances (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id),
-    currency TEXT DEFAULT 'USDC',
-    balance DECIMAL(20,8) NOT NULL DEFAULT 0,
-    locked_balance DECIMAL(20,8) NOT NULL DEFAULT 0,
-    UNIQUE(user_id, currency),
-    CONSTRAINT balance_gte_locked CHECK (balance >= locked_balance)
-);
-```
-
----
-
-## Roadmap
-
-### Phase 1 — Foundation ✅
-- [x] Monorepo architecture setup
-- [x] Frontend application (React)
-- [x] Backend API (NestJS)
-- [x] Multi-auth implementation
-- [x] Database schema with RLS
-
-### Phase 2 — Privy & Deposits ✅
-- [x] Privy integration (JWKS, embedded wallets)
-- [x] Deposit module (initiate, verify, history)
-- [x] Balance management
-- [x] Comprehensive migrations
-
-### Phase 3 — Smart Contracts 🔄
-- [x] EVM contract scaffolding
-- [x] Solana program scaffolding
-- [ ] AMM implementation (LMSR)
-- [ ] Contract testing and audits
-- [ ] Mainnet deployment
-
-### Phase 4 — UI/UX Enhancements ✅
-- [x] Responsive mobile sidebar
-- [x] Deposit button integration with context
-- [x] Theme-safe logout button styling
-- [x] Mobile navigation improvements
-- [x] Professional hover animations
-
-### Phase 5 — Platform Features
-- [ ] Market creation wizard
-- [ ] Order book implementation
-- [ ] Portfolio tracking
-- [ ] Withdrawal system
-- [ ] Notifications system
-
-### Phase 6 — Scale & Growth
-- [ ] Mobile application
-- [ ] Additional chain support
-- [ ] DAO governance
-- [ ] Analytics dashboard
-
----
-
-## Support & Resources
-
-| Resource | Location |
-|----------|----------|
-| Technical Documentation | This document |
-| Guidelines | [Guidelines.md](./Guidelines.md) |
-| API Docs | `http://localhost:3001/api/docs` |
-| Issues | GitHub Issues |
-
----
-
-<div align="center">
-
-**DeJaVu Platform** — *Predict the Future, Decentralized*
-
-Built with enterprise-grade quality for scalability and security.
-
-</div>
-
+*This document is maintained by the DeJaVu Engineering Team. For updates or corrections, please submit a pull request.*

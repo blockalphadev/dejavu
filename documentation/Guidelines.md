@@ -1,942 +1,980 @@
-# DeJaVu - Project Guidelines & Architecture
+# DeJaVu — Development Guidelines
 
-> **Comprehensive documentation for developers and maintainers**  
-> Last Updated: January 7, 2026
+> **Engineering Standards & Best Practices**  
+> Version 2.0.0 | Published: January 8, 2026  
+> Target Audience: Software Engineers, Code Reviewers
+
+---
+
+## Document Purpose
+
+This document establishes coding standards, architectural patterns, and development workflows for the DeJaVu project. All contributors must follow these guidelines to ensure code quality, security, and maintainability.
 
 ---
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Repository Structure](#repository-structure)
-3. [Architecture Overview](#architecture-overview)
-4. [Frontend (apps/web)](#frontend-appsweb)
-5. [Backend API (apps/api)](#backend-api-appsapi)
-6. [Smart Contracts](#smart-contracts)
-7. [Shared Packages](#shared-packages)
-8. [Environment Configuration](#environment-configuration)
-9. [Authentication Flow](#authentication-flow)
-10. [Database Schema](#database-schema)
-11. [Security Best Practices](#security-best-practices)
-12. [Development Workflow](#development-workflow)
-13. [Deployment Guide](#deployment-guide)
-14. [Troubleshooting](#troubleshooting)
+1. [Getting Started](#1-getting-started)
+2. [Code Standards](#2-code-standards)
+3. [Frontend Development](#3-frontend-development)
+4. [Backend Development](#4-backend-development)
+5. [Database Guidelines](#5-database-guidelines)
+6. [Security Guidelines](#6-security-guidelines)
+7. [Testing Standards](#7-testing-standards)
+8. [API Design](#8-api-design)
+9. [Git Workflow](#9-git-workflow)
+10. [Code Review Checklist](#10-code-review-checklist)
+11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
-## Project Overview
+## 1. Getting Started
 
-**DeJaVu** is a decentralized prediction market platform supporting multiple blockchain networks (Ethereum, Solana, Sui, Base). The platform enables users to create and participate in prediction markets using cryptocurrency wallets or traditional authentication methods.
+### 1.1 Prerequisites
 
-### Key Features
-- 🔐 **Multi-Auth**: Email/password, Magic Link, Google OAuth, Wallet (MetaMask, Phantom)
-- ⛓️ **Multi-Chain**: Ethereum, Solana, Sui, Base support
-- 📊 **Prediction Markets**: Create and trade on market outcomes
-- 🎨 **Modern UI**: React 19 with responsive design, light/dark themes
-- 🔒 **Enterprise Security**: Rate limiting, brute force protection, audit logging
+| Requirement | Version | Installation |
+|-------------|---------|--------------|
+| Node.js | ≥ 20.x LTS | [nodejs.org](https://nodejs.org) |
+| PNPM | ≥ 9.0 | `npm install -g pnpm` |
+| Git | ≥ 2.40 | [git-scm.com](https://git-scm.com) |
+| VS Code | Latest | [code.visualstudio.com](https://code.visualstudio.com) |
 
-### Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, TypeScript, Vite, CSS Modules |
-| Backend | NestJS 10, TypeScript, Express |
-| Database | Supabase (PostgreSQL) with RLS |
-| Authentication | Passport.js, JWT, Supabase Auth |
-| Blockchain | ethers.js, @solana/web3.js, @mysten/sui.js |
-| Smart Contracts | Solidity (Foundry), Anchor (Solana), Move (Sui) |
-
----
-
-## Repository Structure
-
-```
-dejavu/
-├── apps/                       # Application packages
-│   ├── api/                    # NestJS Backend API
-│   │   ├── src/
-│   │   │   ├── common/         # Shared utilities (middleware, filters, interceptors)
-│   │   │   ├── config/         # Environment validation
-│   │   │   ├── database/       # Supabase service, migrations
-│   │   │   └── modules/        # Feature modules (auth, users, dashboard)
-│   │   ├── .env.template       # Environment variables template
-│   │   └── package.json
-│   │
-│   └── web/                    # React Frontend
-│       ├── src/
-│       │   ├── app/            # Main application
-│       │   │   ├── components/ # UI components
-│       │   │   ├── hooks/      # Custom React hooks
-│       │   │   └── utils/      # Helper functions
-│       │   ├── services/       # API services
-│       │   └── styles/         # Global styles, themes
-│       ├── .env.template       # Frontend env template
-│       └── package.json
-│
-├── contracts/                  # Smart contracts
-│   ├── evm/                    # Ethereum/Base (Solidity + Foundry)
-│   ├── solana/                 # Solana (Anchor)
-│   └── sui/                    # Sui (Move)
-│
-├── packages/                   # Shared packages
-│   ├── config/                 # Shared configuration
-│   ├── contracts/              # Contract ABIs and types
-│   ├── core/                   # Core utilities
-│   ├── ui/                     # Shared UI components
-│   └── web3/                   # Web3 adapters and hooks
-│
-├── guidelines/                 # Documentation (this file)
-├── .env.example                # Root environment reference
-├── package.json                # Root package.json
-├── pnpm-workspace.yaml         # PNPM workspace config
-├── tsconfig.base.json          # Base TypeScript config
-└── turbo.json                  # Turborepo pipeline config
-```
-
----
-
-## Architecture Overview
-
-```mermaid
-graph TB
-    subgraph Client["Frontend (React)"]
-        UI[UI Components]
-        Hooks[Custom Hooks]
-        Services[API Services]
-        Web3[Web3 Adapters]
-    end
-
-    subgraph Server["Backend (NestJS)"]
-        Auth[Auth Module]
-        Users[Users Module]
-        Dashboard[Dashboard Module]
-        Guards[JWT Guards]
-    end
-
-    subgraph Database["Supabase"]
-        PG[(PostgreSQL)]
-        AuthSvc[Supabase Auth]
-        RLS[Row Level Security]
-    end
-
-    subgraph Blockchain["Smart Contracts"]
-        EVM[Ethereum/Base]
-        SOL[Solana]
-        SUI[Sui]
-    end
-
-    UI --> Hooks
-    Hooks --> Services
-    Services --> Auth
-    Web3 --> EVM
-    Web3 --> SOL
-    Web3 --> SUI
-    Auth --> AuthSvc
-    Auth --> PG
-    Users --> PG
-    Dashboard --> PG
-    PG --> RLS
-```
-### Clean Architecture
-
-![Clean Architecture](../apps/web/public/images/architecture/architectures.png)
-
-### Design Principles
-
-1. **Clean Architecture**: Separation of concerns with modular design
-2. **Type Safety**: Full TypeScript coverage with strict mode
-3. **Security First**: Defense in depth with multiple security layers
-4. **Scalability**: Horizontal scaling ready with stateless backend
-5. **Multi-Chain Native**: Abstracted wallet adapters for all chains
-
----
-
-## Frontend (apps/web)
-
-### Technology Stack
-- **Framework**: React 19 with concurrent features
-- **Build Tool**: Vite for fast HMR and builds
-- **Styling**: CSS Modules + global theme system
-- **State Management**: React hooks + context
-- **Web3**: wagmi, @solana/wallet-adapter, @mysten/wallet-standard
-
-### Directory Structure
-
-```
-apps/web/src/
-├── app/
-│   ├── App.tsx                 # Root component with routing
-│   ├── components/
-│   │   ├── auth/               # Authentication components
-│   │   │   ├── LoginForm.tsx
-│   │   │   ├── SignupForm.tsx
-│   │   │   └── WalletConnect.tsx
-│   │   ├── dashboard/          # Dashboard components
-│   │   ├── layout/             # Header, Footer, Navigation
-│   │   ├── markets/            # Prediction market components
-│   │   └── ui/                 # Base UI primitives
-│   ├── hooks/
-│   │   ├── useAuth.ts          # Authentication state
-│   │   ├── useWallet.ts        # Wallet connection
-│   │   └── useTheme.ts         # Theme management
-│   └── utils/
-│       └── helpers.ts
-├── services/
-│   ├── api.ts                  # Backend API client
-│   └── polymarket.ts           # Market data service
-└── styles/
-    ├── globals.css             # Global styles
-    ├── theme.css               # CSS variables for theming
-    └── components.css          # Component-specific styles
-```
-
-### Key UI Components
-
-| Component | Path | Description |
-|-----------|------|-------------|
-| `Header.tsx` | `components/Header.tsx` | Main navigation header with desktop menu, theme toggle, search |
-| `Sidebar.tsx` | `components/Sidebar.tsx` | Right sidebar with Portfolio, Watchlist, Trending Topics |
-| `MobileBottomNav.tsx` | `components/MobileBottomNav.tsx` | Mobile bottom navigation (Home, Search, Breaking, Portfolio/More) |
-| `MobileMenu.tsx` | `components/MobileMenu.tsx` | Mobile hamburger menu overlay |
-| `DepositModal.tsx` | `components/DepositModal.tsx` | Deposit modal with chain selection and QR code |
-| `ProfileDropdown.tsx` | `components/ProfileDropdown.tsx` | User profile dropdown with balance, wallet, settings |
-| `AuthModal.tsx` | `components/auth/AuthModal.tsx` | Authentication modal (login/signup) |
-
-### Context Providers
-
-| Context | Path | Purpose |
-|---------|------|---------|
-| `AuthContext` | `components/auth/AuthContext.tsx` | Authentication state management |
-| `DepositContext` | `components/DepositContext.tsx` | Deposit modal state, balance, transactions |
-| `ThemeProvider` | `components/ThemeProvider.tsx` | Theme (light/dark/system) management |
-
-### Navigation Architecture
-
-**Desktop Navigation:**
-- `Header.tsx` shows horizontal nav: Markets, Activity, Ranks, Rewards
-- `Sidebar.tsx` visible on right side with Portfolio, Watchlist, Topics
-
-**Mobile Navigation:**
-- `MobileBottomNav.tsx` fixed at bottom: Home, Search, Breaking, Portfolio/More
-- Portfolio shown when authenticated, More shown when guest
-- `MobileMenu.tsx` for hamburger menu overlay
-
-### Component Guidelines
-
-```tsx
-// ✅ Good: Functional component with TypeScript
-interface ButtonProps {
-  variant?: 'primary' | 'secondary';
-  children: React.ReactNode;
-  onClick?: () => void;
-}
-
-export function Button({ variant = 'primary', children, onClick }: ButtonProps) {
-  return (
-    <button className={`btn btn-${variant}`} onClick={onClick}>
-      {children}
-    </button>
-  );
-}
-
-// ❌ Avoid: Class components, any types, inline styles
-```
-
-### Theme System
-
-The app supports three theme modes: `light`, `dark`, and `system`.
-
-```css
-/* styles/theme.css */
-:root {
-  --bg-primary: #ffffff;
-  --text-primary: #1a1a2e;
-  --accent: #7c3aed;
-}
-
-[data-theme="dark"] {
-  --bg-primary: #0a0a1a;
-  --text-primary: #e2e8f0;
-  --accent: #8b5cf6;
-}
-```
-
----
-
-## Backend API (apps/api)
-
-### Technology Stack
-- **Framework**: NestJS 10 with modular architecture
-- **Language**: TypeScript with strict mode
-- **Database**: Supabase (PostgreSQL) via @supabase/supabase-js
-- **Auth**: Passport.js with JWT + multiple strategies
-
-### Module Structure
-
-```
-apps/api/src/
-├── main.ts                     # Application bootstrap
-├── app.module.ts               # Root module
-├── common/                     # Shared utilities
-│   ├── middleware/
-│   │   └── logger.middleware.ts    # Request logging with data masking
-│   ├── filters/
-│   │   └── global-exception.filter.ts
-│   └── interceptors/
-│       └── audit-log.interceptor.ts
-├── config/
-│   └── env.validation.ts       # Zod schema for env vars
-├── database/
-│   ├── database.module.ts
-│   ├── supabase.service.ts     # Supabase client provider
-│   ├── types.ts                # Database types
-│   └── migrations/
-│       ├── 001_initial_schema.sql
-│       └── 002_audit_and_sessions.sql
-└── modules/
-    ├── auth/
-    │   ├── auth.module.ts
-    │   ├── auth.controller.ts
-    │   ├── auth.service.ts
-    │   ├── dto/                # Data Transfer Objects
-    │   ├── guards/             # JWT, Google guards
-    │   ├── strategies/         # Passport strategies
-    │   ├── decorators/         # @CurrentUser, @Public
-    │   └── validators/         # Password strength
-    ├── users/
-    │   ├── users.module.ts
-    │   └── users.service.ts
-    └── dashboard/
-        ├── dashboard.module.ts
-        ├── dashboard.controller.ts
-        └── dashboard.service.ts
-```
-
-### API Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/auth/signup` | Public | Register new user |
-| POST | `/auth/login` | Public | Login with email/password |
-| POST | `/auth/magic-link` | Public | Send magic link email |
-| POST | `/auth/wallet/challenge` | Public | Get wallet signing challenge |
-| POST | `/auth/wallet/verify` | Public | Verify wallet signature |
-| GET | `/auth/google` | Public | Initiate Google OAuth |
-| POST | `/auth/refresh` | Public | Refresh access token |
-| POST | `/auth/logout` | JWT | Logout user |
-| GET | `/auth/me` | JWT | Get current user |
-| GET | `/dashboard` | JWT | Get dashboard data |
-| GET | `/health` | Public | Health check |
-
-### Creating a New Module
-
-```bash
-# Generate module scaffolding
-cd apps/api
-npx nest g module modules/markets
-npx nest g controller modules/markets
-npx nest g service modules/markets
-```
-
-```typescript
-// modules/markets/markets.module.ts
-import { Module } from '@nestjs/common';
-import { MarketsController } from './markets.controller';
-import { MarketsService } from './markets.service';
-import { DatabaseModule } from '../../database/database.module';
-
-@Module({
-  imports: [DatabaseModule],
-  controllers: [MarketsController],
-  providers: [MarketsService],
-  exports: [MarketsService],
-})
-export class MarketsModule {}
-```
-
----
-
-## Smart Contracts
-
-### EVM Contracts (Ethereum/Base)
-
-Built with **Foundry** for testing and deployment.
-
-```
-contracts/evm/
-├── src/
-│   └── PredictionMarket.sol    # Main contract
-├── test/                       # Forge tests
-├── script/                     # Deployment scripts
-├── foundry.toml                # Foundry config
-└── package.json
-```
-
-**Development Commands:**
-```bash
-cd contracts/evm
-
-# Build contracts
-forge build
-
-# Run tests
-forge test
-
-# Deploy (example for Sepolia)
-forge script script/Deploy.s.sol --rpc-url $SEPOLIA_RPC --broadcast
-```
-
-### Solana Contracts
-
-Built with **Anchor** framework.
-
-```
-contracts/solana/
-├── programs/
-│   └── prediction_market/
-│       └── src/
-│           └── lib.rs
-├── tests/
-├── Anchor.toml
-└── Cargo.toml
-```
-
-**Development Commands:**
-```bash
-cd contracts/solana
-
-# Build
-anchor build
-
-# Test
-anchor test
-
-# Deploy
-anchor deploy
-```
-
-### Sui Contracts
-
-Built with **Move** language.
-
-```
-contracts/sui/
-├── sources/
-│   └── prediction_market.move
-├── tests/
-└── Move.toml
-```
-
----
-
-## Shared Packages
-
-### packages/web3
-
-Multi-chain wallet adapter abstraction.
-
-```typescript
-// Example usage
-import { useWallet } from '@dejavu/web3';
-
-function ConnectButton() {
-  const { connect, disconnect, address, chain, isConnected } = useWallet();
-  
-  return isConnected ? (
-    <button onClick={disconnect}>
-      {address?.slice(0, 6)}...{address?.slice(-4)}
-    </button>
-  ) : (
-    <button onClick={() => connect('ethereum')}>Connect Wallet</button>
-  );
-}
-```
-
-**Supported Chains:**
-- Ethereum (MetaMask, WalletConnect)
-- Solana (Phantom, Solflare)
-- Sui (Sui Wallet)
-- Base (MetaMask)
-
-### packages/ui
-
-Shared UI components library.
-
-```typescript
-import { Button, Card, Modal, Input } from '@dejavu/ui';
-```
-
-### packages/core
-
-Core utilities and types.
-
-```typescript
-import { formatAddress, formatCurrency, validateEmail } from '@dejavu/core';
-```
-
----
-
-## Environment Configuration
-
-### Backend (apps/api/.env)
-
-```bash
-# Server
-NODE_ENV=development
-PORT=3001
-API_PREFIX=api/v1
-
-# Supabase
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Database
-DATABASE_URL=postgresql://postgres:password@db.xxx.supabase.co:5432/postgres
-
-# JWT (generate with: openssl rand -base64 48)
-JWT_SECRET=your_jwt_secret_minimum_32_characters
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_SECRET=your_refresh_secret_minimum_32_characters
-JWT_REFRESH_EXPIRES_IN=7d
-
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_CALLBACK_URL=http://localhost:3001/api/v1/auth/google/callback
-
-# Security
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000
-RATE_LIMIT_MAX=100
-RATE_LIMIT_AUTH_MAX=5
-LOCKOUT_THRESHOLD=5
-LOCKOUT_DURATION_MINUTES=15
-
-# Cookies
-COOKIE_DOMAIN=localhost
-COOKIE_SECURE=false
-COOKIE_SAME_SITE=lax
-
-# Logging
-LOG_LEVEL=debug
-ENABLE_AUDIT_LOG=true
-```
-
-### Frontend (apps/web/.env)
-
-```bash
-# API
-VITE_API_URL=http://localhost:3001/api/v1
-
-# Supabase (public keys only!)
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key
-
-# Feature Flags
-VITE_ENABLE_WALLET_AUTH=true
-VITE_ENABLE_GOOGLE_AUTH=true
-VITE_ENABLE_EMAIL_AUTH=true
-
-# Wallet Config
-VITE_SUPPORTED_CHAINS=ethereum,solana,sui,base
-```
-
----
-
-## Authentication Flow
-
-### Email/Password Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant Backend
-    participant Supabase
-
-    User->>Frontend: Enter email/password
-    Frontend->>Backend: POST /auth/signup
-    Backend->>Backend: Validate password strength
-    Backend->>Supabase: Create user
-    Supabase-->>Backend: User created
-    Backend->>Backend: Generate JWT tokens
-    Backend-->>Frontend: { user, tokens }
-    Frontend->>Frontend: Store access token
-    Frontend-->>User: Redirect to dashboard
-```
-
-### Wallet Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant Wallet
-    participant Backend
-    participant Supabase
-
-    User->>Frontend: Click "Connect Wallet"
-    Frontend->>Wallet: Request accounts
-    Wallet-->>Frontend: Return address
-    Frontend->>Backend: POST /auth/wallet/challenge
-    Backend-->>Frontend: { message, nonce }
-    Frontend->>Wallet: Sign message
-    Wallet-->>Frontend: Signature
-    Frontend->>Backend: POST /auth/wallet/verify
-    Backend->>Backend: Verify signature (EVM/Solana/Sui)
-    Backend->>Supabase: Find or create user
-    Backend-->>Frontend: { user, tokens }
-```
-
----
-
-## Database Schema
-
-### Core Tables
-
-```sql
--- User Profiles
-CREATE TABLE public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id),
-    email TEXT,
-    full_name TEXT,
-    avatar_url TEXT,
-    wallet_addresses JSONB DEFAULT '[]',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Wallet Addresses
-CREATE TABLE public.wallet_addresses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
-    address TEXT NOT NULL,
-    chain TEXT CHECK (chain IN ('ethereum', 'solana', 'sui', 'base')),
-    is_primary BOOLEAN DEFAULT false,
-    UNIQUE(address, chain)
-);
-
--- Login Attempts (for brute force protection)
-CREATE TABLE public.login_attempts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email TEXT,
-    wallet_address TEXT,
-    ip_address INET,
-    success BOOLEAN,
-    failure_reason TEXT,
-    attempted_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Audit Logs
-CREATE TABLE public.audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES auth.users(id),
-    action TEXT,
-    resource TEXT,
-    ip_address INET,
-    success BOOLEAN,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### Row Level Security (RLS)
-
-All tables have RLS enabled with policies:
-
-```sql
--- Users can only read their own profile
-CREATE POLICY "Users can read own profile"
-    ON public.profiles FOR SELECT
-    USING (auth.uid() = id);
-
--- Service role bypasses RLS for admin operations
-CREATE POLICY "Service role can manage all"
-    ON public.profiles FOR ALL
-    USING (auth.role() = 'service_role');
-```
-
----
-
-## Security Best Practices
-
-### Backend Security
-
-1. **Input Validation**: All DTOs use class-validator decorators
-2. **Rate Limiting**: 100 req/min general, 5 req/min for auth
-3. **Brute Force Protection**: Account lockout after 5 failed attempts
-4. **Sensitive Data Masking**: Passwords/tokens redacted in logs
-5. **CORS**: Strict origin whitelist
-6. **Helmet**: Security headers configured
-7. **HTTPS Only**: Secure cookies in production
-
-### Frontend Security
-
-1. **No secrets in client code**: Only public keys
-2. **XSS Prevention**: React auto-escapes, no dangerouslySetInnerHTML
-3. **CSRF Protection**: SameSite cookies
-4. **Token Storage**: Access tokens in memory, refresh in HTTP-only cookie
-
-### Production Checklist
-
-- [ ] `NODE_ENV=production`
-- [ ] `COOKIE_SECURE=true`
-- [ ] `COOKIE_SAME_SITE=strict`
-- [ ] Strong, unique JWT secrets (256-bit)
-- [ ] Database connection uses SSL
-- [ ] CORS only allows production domains
-- [ ] Rate limiting configured appropriately
-- [ ] Logging level set to `info` or `warn`
-
----
-
-## Development Workflow
-
-### Prerequisites
-
-- Node.js 20+
-- PNPM 8+
-- Git
-
-### Initial Setup
-
-```bash
-# Clone repository
-git clone https://github.com/your-org/dejavu.git
-cd dejavu
-
-# Install dependencies
-pnpm install
-
-# Copy environment templates
-cp apps/api/.env.template apps/api/.env
-cp apps/web/.env.template apps/web/.env
-
-# Configure your credentials in .env files
-
-# Run database migrations in Supabase SQL Editor
-```
-
-### Development Commands
-
-```bash
-# Start all apps in development mode
-pnpm dev
-
-# Start only backend
-pnpm --filter @dejavu/api dev
-
-# Start only frontend
-pnpm --filter @dejavu/web dev
-
-# Type check all packages
-pnpm typecheck
-
-# Build all packages
-pnpm build
-
-# Run tests
-pnpm test
-
-# Lint code
-pnpm lint
-```
-
-### Git Workflow
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes and commit with conventional commits
-3. Push and create Pull Request
-4. After review, merge to `main`
-
-**Commit Messages:**
-```
-feat(auth): add wallet authentication
-fix(ui): correct mobile navigation
-docs: update API documentation
-refactor(api): improve error handling
-```
-
----
-
-## Deployment Guide
-
-### Backend Deployment
-
-**Recommended Platforms:** Railway, Render, Fly.io, AWS ECS
-
-```bash
-# Build production
-cd apps/api
-npm run build
-
-# Start production server
-NODE_ENV=production npm start
-```
-
-### Frontend Deployment
-
-**Recommended Platforms:** Vercel, Netlify, Cloudflare Pages
-
-```bash
-# Build production
-cd apps/web
-npm run build
-
-# Output in dist/ directory
-```
-
-### Vercel Deployment (Monorepo)
-
-The project includes a pre-configured `vercel.json` for seamless deployment:
+### 1.2 Recommended VS Code Extensions
 
 ```json
 {
-  "buildCommand": "cd apps/web && pnpm install && pnpm build",
-  "outputDirectory": "apps/web/dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "prisma.prisma",
+    "ms-azuretools.vscode-docker"
   ]
 }
 ```
 
-**Key Configuration:**
-- **Build Command**: Navigates to `apps/web` and runs build
-- **Output Directory**: `apps/web/dist` for Vite output
-- **SPA Rewrites**: All routes redirect to `index.html` for client-side routing
-- **Security Headers**: X-Frame-Options, X-XSS-Protection, CSP
-- **Asset Caching**: Immutable cache for static assets
+### 1.3 Project Setup
 
-**Deployment Steps:**
-1. Push to GitHub repository
-2. Connect repository to Vercel
-3. Set environment variables in Vercel dashboard
-4. Deploy automatically on push to `master`/`main`
+```bash
+# 1. Clone repository
+git clone https://github.com/siabang35/dejavu.git
+cd dejavu
 
-### Environment Variables Checklist
+# 2. Install dependencies
+pnpm install
 
-| Variable | Required | Secret |
-|----------|----------|--------|
-| `SUPABASE_URL` | ✅ | ❌ |
-| `SUPABASE_ANON_KEY` | ✅ | ❌ |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | ✅ |
-| `DATABASE_URL` | ✅ | ✅ |
-| `JWT_SECRET` | ✅ | ✅ |
-| `JWT_REFRESH_SECRET` | ✅ | ✅ |
-| `GOOGLE_CLIENT_SECRET` | ⚪ | ✅ |
-| `PRIVY_APP_ID` | ✅ | ❌ |
-| `PRIVY_APP_SECRET` | ✅ | ✅ |
+# 3. Configure environment
+cp apps/api/.env.template apps/api/.env
+cp apps/web/.env.template apps/web/.env
+
+# 4. Start development
+pnpm dev
+```
+
+### 1.4 Development URLs
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:3001 |
+| Swagger | http://localhost:3001/api/docs |
 
 ---
 
-## Privy Integration
+## 2. Code Standards
 
-DeJaVu uses [Privy](https://privy.io) for embedded wallet creation.
+### 2.1 TypeScript Configuration
 
-### Backend Configuration
+All code must be TypeScript with strict mode enabled.
 
-```bash
-# apps/api/.env
-PRIVY_APP_ID=cmk2rk1w400bqju0c8tvu4fq4
-PRIVY_APP_SECRET=your_secret_here
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  }
+}
 ```
 
-### Privy Service (`apps/api/src/modules/deposits/services/privy.service.ts`)
+### 2.2 Naming Conventions
 
-| Method | Description |
-|--------|-------------|
-| `verifyToken(token)` | Verify Privy JWT via JWKS |
-| `getOrCreateWallet(userId, chain)` | Get or create embedded wallet |
-| `getEmbeddedWallets(userId)` | Get all user wallets |
+| Type | Convention | Example |
+|------|------------|---------|
+| Files (components) | PascalCase | `UserProfile.tsx` |
+| Files (utilities) | kebab-case | `format-date.ts` |
+| Classes | PascalCase | `UserService` |
+| Interfaces/Types | PascalCase | `UserDto` |
+| Functions | camelCase | `getUserById()` |
+| Constants | SCREAMING_SNAKE | `MAX_RETRY_COUNT` |
+| Enum Values | SCREAMING_SNAKE | `OrderStatus.PENDING` |
 
-### Frontend Integration
+### 2.3 Import Order
 
 ```typescript
-import { usePrivy } from '@privy-io/react-auth';
+// 1. Node.js built-ins
+import { createHash } from 'crypto';
 
-const { user, authenticated, getAccessToken } = usePrivy();
-const privyUserId = user?.id; // "did:privy:xxx"
+// 2. External packages
+import { Injectable } from '@nestjs/common';
+import { ApiProperty } from '@nestjs/swagger';
+
+// 3. Internal packages (@dejavu/*)
+import { User } from '@dejavu/domain';
+
+// 4. Relative imports
+import { UsersService } from './users.service.js';
+import { UserDto } from './dto/index.js';
+```
+
+### 2.4 File Structure
+
+```typescript
+// 1. Imports
+
+// 2. Types/Interfaces
+
+// 3. Constants
+
+// 4. Main export (class/function)
+
+// 5. Helper functions (if not in separate file)
 ```
 
 ---
 
-## Deposits Module
+## 3. Frontend Development
 
-### API Endpoints
+### 3.1 Component Structure
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/deposits/balance` | JWT | Get user balance |
-| POST | `/deposits/wallet/generate` | JWT | Generate Privy wallet |
-| GET | `/deposits/wallet/:chain` | JWT | Get wallet for chain |
-| POST | `/deposits/initiate` | JWT | Initiate deposit |
-| POST | `/deposits/verify` | JWT | Verify transaction |
-| GET | `/deposits/history` | JWT | Get deposit history |
+```
+components/
+└── UserProfile/
+    ├── UserProfile.tsx       # Main component
+    ├── UserProfile.test.tsx  # Tests
+    ├── UserProfile.module.css # Styles (if not Tailwind)
+    └── index.ts              # Barrel export
+```
 
-### Wallet Generation Flow
+### 3.2 Component Template
 
-1. Frontend calls `POST /deposits/wallet/generate` with `{ chain, privyUserId }`
-2. Backend calls Privy API to create embedded wallet
-3. Wallet address stored in `privy_wallets` table
-4. Address returned to frontend for deposit
+```tsx
+import { useState, useCallback, memo } from 'react';
 
-### Database Tables
+// Types
+interface UserProfileProps {
+  userId: string;
+  onUpdate?: (user: User) => void;
+}
 
-Located in `apps/api/supabase/migrations/`:
+// Component
+export const UserProfile = memo(function UserProfile({
+  userId,
+  onUpdate,
+}: UserProfileProps) {
+  // State
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Handlers
+  const handleUpdate = useCallback(() => {
+    // ...
+  }, []);
 
-| Migration | Tables |
-|-----------|--------|
-| `000_foundation.sql` | profiles, wallet_addresses, login_attempts, audit_logs |
-| `001_initial_schema.sql` | markets, positions, orders, liquidity_positions |
-| `002_deposits.sql` | user_balances, privy_wallets, deposit_transactions |
+  // Render
+  if (isLoading) return <Spinner />;
+
+  return (
+    <div className="user-profile">
+      {/* Content */}
+    </div>
+  );
+});
+
+// Default export (optional)
+export default UserProfile;
+```
+
+### 3.3 Hooks Guidelines
+
+```tsx
+// ✅ Custom hook pattern
+export function useUser(userId: string) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    
+    async function fetchUser() {
+      try {
+        setIsLoading(true);
+        const data = await api.getUser(userId);
+        if (!cancelled) setUser(data);
+      } catch (err) {
+        if (!cancelled) setError(err as Error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    fetchUser();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  return { user, isLoading, error };
+}
+```
+
+### 3.4 Context Guidelines
+
+```tsx
+// 1. Create context with type
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+// 2. Create hook with error handling
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}
+
+// 3. Create provider
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // Implementation
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+```
+
+### 3.5 Styling Guidelines
+
+```tsx
+// ✅ Use Tailwind utility classes
+<button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
+  Submit
+</button>
+
+// ✅ Use CSS variables for theme
+<div style={{ background: 'var(--bg-primary)' }}>
+
+// ❌ Avoid inline styles for static values
+<div style={{ padding: 16, marginTop: 8 }}>
+
+// ❌ Avoid magic numbers
+<div className="p-[17px] mt-[9px]">
+```
 
 ---
 
-## Troubleshooting
+## 4. Backend Development
 
-### Common Issues
+### 4.1 Module Structure
 
-**Build fails with SWC error:**
+```
+modules/
+└── users/
+    ├── dto/
+    │   ├── create-user.dto.ts
+    │   ├── update-user.dto.ts
+    │   └── index.ts
+    ├── guards/
+    │   └── user-owner.guard.ts
+    ├── users.controller.ts
+    ├── users.service.ts
+    ├── users.module.ts
+    └── users.spec.ts
+```
+
+### 4.2 DTO Guidelines
+
+```typescript
+import { 
+  IsString, 
+  IsEmail, 
+  IsOptional, 
+  MinLength, 
+  MaxLength,
+  Matches,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateUserDto {
+  @ApiProperty({ 
+    description: 'User email address',
+    example: 'user@example.com',
+  })
+  @IsEmail({}, { message: 'Invalid email format' })
+  email: string;
+
+  @ApiProperty({ 
+    minLength: 8,
+    maxLength: 100,
+  })
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @MaxLength(100)
+  @Matches(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+    { message: 'Password must contain uppercase, lowercase, and number' }
+  )
+  password: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  fullName?: string;
+}
+```
+
+### 4.3 Service Guidelines
+
+```typescript
+@Injectable()
+export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private readonly supabaseService: SupabaseService,
+  ) {}
+
+  /**
+   * Find user by ID
+   * @throws NotFoundException if user not found
+   */
+  async findById(id: string): Promise<User> {
+    this.logger.debug(`Finding user: ${id}`);
+
+    const { data, error } = await this.supabaseService
+      .getAdminClient()
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      this.logger.warn(`User not found: ${id}`);
+      throw new NotFoundException('User not found');
+    }
+
+    return this.mapToUser(data);
+  }
+
+  /**
+   * Map database row to domain entity
+   */
+  private mapToUser(row: any): User {
+    return {
+      id: row.id,
+      email: row.email,
+      fullName: row.full_name,
+      avatarUrl: row.avatar_url,
+      createdAt: new Date(row.created_at),
+    };
+  }
+}
+```
+
+### 4.4 Controller Guidelines
+
+```typescript
+@ApiTags('Users')
+@ApiBearerAuth()
+@Controller('users')
+@UseGuards(JwtAuthGuard)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, type: UserDto })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUser(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<UserDto> {
+    return this.usersService.findById(id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update user' })
+  @HttpCode(HttpStatus.OK)
+  async updateUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<UserDto> {
+    // Authorization check
+    if (req.user.sub !== id) {
+      throw new ForbiddenException('Cannot update other users');
+    }
+    return this.usersService.update(id, dto);
+  }
+}
+```
+
+### 4.5 Error Handling
+
+```typescript
+// ✅ Use NestJS built-in exceptions
+throw new NotFoundException('User not found');
+throw new BadRequestException('Invalid email format');
+throw new ForbiddenException('Insufficient permissions');
+throw new ConflictException('Email already exists');
+
+// ✅ Log errors with context
+this.logger.error(`Failed to create user: ${error.message}`, error.stack);
+
+// ❌ Avoid generic errors
+throw new Error('Something went wrong');
+```
+
+---
+
+## 5. Database Guidelines
+
+### 5.1 Migration Naming
+
+```
+{sequence}_{description}.sql
+
+Examples:
+001_initial_schema.sql
+002_add_user_preferences.sql
+010_fix_balance_trigger.sql
+```
+
+### 5.2 Table Design
+
+```sql
+-- ✅ Standard table structure
+CREATE TABLE public.users (
+    -- Primary key
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    
+    -- Required fields
+    email TEXT NOT NULL,
+    
+    -- Optional fields
+    full_name TEXT,
+    avatar_url TEXT,
+    
+    -- Status field with constraint
+    status TEXT DEFAULT 'active' 
+        CHECK (status IN ('active', 'suspended', 'deleted')),
+    
+    -- Timestamps (always include)
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    
+    -- Constraints
+    CONSTRAINT users_email_unique UNIQUE (email)
+);
+
+-- Enable RLS
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Create updated_at trigger
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Create indexes
+CREATE INDEX idx_users_email ON public.users(email);
+CREATE INDEX idx_users_status ON public.users(status);
+```
+
+### 5.3 RLS Policies
+
+```sql
+-- Users can read own data
+CREATE POLICY "users_read_own"
+    ON public.users FOR SELECT
+    USING (auth.uid() = id);
+
+-- Users can update own data
+CREATE POLICY "users_update_own"
+    ON public.users FOR UPDATE
+    USING (auth.uid() = id);
+
+-- Service role has full access
+CREATE POLICY "service_role_all"
+    ON public.users FOR ALL
+    USING (auth.role() = 'service_role');
+```
+
+### 5.4 Query Guidelines
+
+```typescript
+// ✅ Always use parameterized queries (Supabase handles this)
+const { data } = await supabase
+  .from('users')
+  .select('*')
+  .eq('id', userId);
+
+// ✅ Select only needed columns
+const { data } = await supabase
+  .from('users')
+  .select('id, email, full_name');
+
+// ✅ Use pagination
+const { data } = await supabase
+  .from('users')
+  .select('*', { count: 'exact' })
+  .range(0, 19);
+
+// ❌ Never interpolate user input
+const query = `SELECT * FROM users WHERE id = '${userId}'`; // SQL Injection!
+```
+
+---
+
+## 6. Security Guidelines
+
+### 6.1 Input Validation
+
+```typescript
+// ✅ Always validate all inputs
+@Post()
+async create(@Body() dto: CreateUserDto) {
+  // dto is automatically validated by class-validator
+}
+
+// ✅ Validate path parameters
+@Get(':id')
+async get(@Param('id', ParseUUIDPipe) id: string) {
+  // id is validated as UUID
+}
+
+// ✅ Validate query parameters
+@Get()
+async list(@Query() query: ListQueryDto) {
+  // query is validated
+}
+```
+
+### 6.2 Authentication
+
+```typescript
+// ✅ Use guards for authentication
+@UseGuards(JwtAuthGuard)
+@Get('me')
+async getMe(@Req() req: AuthenticatedRequest) {
+  return req.user;
+}
+
+// ✅ Use proper auth decorators
+@Public() // Mark as public endpoint
+@Post('login')
+async login() {}
+```
+
+### 6.3 Authorization
+
+```typescript
+// ✅ Check resource ownership
+@Patch(':id')
+async updateUser(
+  @Param('id') id: string,
+  @Req() req: AuthenticatedRequest,
+) {
+  if (req.user.sub !== id) {
+    throw new ForbiddenException();
+  }
+}
+
+// ✅ Use role guards
+@UseGuards(AdminGuard)
+@Get('admin/users')
+async listUsers() {}
+```
+
+### 6.4 Sensitive Data
+
+```typescript
+// ✅ Never log sensitive data
+this.logger.log(`Login attempt: ${maskEmail(email)}`);
+
+// ✅ Exclude sensitive fields from responses
+class UserDto {
+  id: string;
+  email: string;
+  // password: string; ❌ Never expose
+}
+
+// ✅ Use @Exclude() decorator
+import { Exclude } from 'class-transformer';
+
+class User {
+  @Exclude()
+  password: string;
+}
+```
+
+### 6.5 Rate Limiting
+
+```typescript
+// ✅ Apply rate limits to sensitive endpoints
+@RateLimit(RateLimits.STRICT) // 5 req/min
+@Post('auth/login')
+async login() {}
+
+@RateLimit({ limit: 100, windowSeconds: 60 })
+@Get('data')
+async getData() {}
+```
+
+---
+
+## 7. Testing Standards
+
+### 7.1 Test File Naming
+
+```
+component.tsx          → component.test.tsx
+service.ts            → service.spec.ts
+user.controller.ts    → user.controller.spec.ts
+```
+
+### 7.2 Unit Test Template
+
+```typescript
+describe('UsersService', () => {
+  let service: UsersService;
+  let supabaseService: jest.Mocked<SupabaseService>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: SupabaseService,
+          useValue: {
+            getAdminClient: jest.fn().mockReturnValue({
+              from: jest.fn().mockReturnThis(),
+              select: jest.fn().mockReturnThis(),
+              eq: jest.fn().mockReturnThis(),
+              single: jest.fn(),
+            }),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get(UsersService);
+    supabaseService = module.get(SupabaseService);
+  });
+
+  describe('findById', () => {
+    it('should return user when found', async () => {
+      // Arrange
+      const mockUser = { id: '1', email: 'test@test.com' };
+      supabaseService.getAdminClient().single.mockResolvedValue({
+        data: mockUser,
+        error: null,
+      });
+
+      // Act
+      const result = await service.findById('1');
+
+      // Assert
+      expect(result).toEqual(expect.objectContaining({
+        id: '1',
+        email: 'test@test.com',
+      }));
+    });
+
+    it('should throw NotFoundException when not found', async () => {
+      // Arrange
+      supabaseService.getAdminClient().single.mockResolvedValue({
+        data: null,
+        error: { message: 'Not found' },
+      });
+
+      // Act & Assert
+      await expect(service.findById('999'))
+        .rejects.toThrow(NotFoundException);
+    });
+  });
+});
+```
+
+### 7.3 E2E Test Template
+
+```typescript
+describe('Auth (e2e)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('POST /auth/login', () => {
+    it('should return tokens on valid credentials', () => {
+      return request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'test@example.com',
+          password: 'ValidPass123',
+        })
+        .expect(200)
+        .expect(res => {
+          expect(res.body.tokens.accessToken).toBeDefined();
+          expect(res.body.tokens.refreshToken).toBeDefined();
+        });
+    });
+
+    it('should return 401 on invalid credentials', () => {
+      return request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'test@example.com',
+          password: 'wrong',
+        })
+        .expect(401);
+    });
+  });
+});
+```
+
+---
+
+## 8. API Design
+
+### 8.1 REST Conventions
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/resources` | List all |
+| GET | `/resources/:id` | Get one |
+| POST | `/resources` | Create |
+| PATCH | `/resources/:id` | Partial update |
+| PUT | `/resources/:id` | Full replace |
+| DELETE | `/resources/:id` | Delete |
+
+### 8.2 Response Format
+
+```typescript
+// Success (single)
+{
+  "data": { ... }
+}
+
+// Success (list)
+{
+  "data": [...],
+  "total": 100,
+  "page": 1,
+  "limit": 20
+}
+
+// Error
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "error": "Bad Request"
+}
+```
+
+### 8.3 Status Codes
+
+| Code | Usage |
+|------|-------|
+| 200 | Success (GET, PATCH, PUT) |
+| 201 | Created (POST) |
+| 204 | No Content (DELETE) |
+| 400 | Bad Request (validation error) |
+| 401 | Unauthorized (no auth) |
+| 403 | Forbidden (no permission) |
+| 404 | Not Found |
+| 409 | Conflict (duplicate) |
+| 429 | Too Many Requests |
+| 500 | Internal Server Error |
+
+---
+
+## 9. Git Workflow
+
+### 9.1 Branch Naming
+
+```
+feature/add-user-authentication
+fix/login-button-not-working
+hotfix/critical-security-patch
+refactor/improve-error-handling
+docs/update-api-documentation
+```
+
+### 9.2 Commit Messages
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types:**
+
+| Type | Description |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting (no code change) |
+| `refactor` | Code restructure |
+| `test` | Add/update tests |
+| `chore` | Maintenance |
+
+**Examples:**
+
+```
+feat(auth): add wallet authentication
+fix(ui): correct mobile navigation overflow
+docs(api): update swagger descriptions
+refactor(users): extract validation logic
+test(orders): add unit tests for order service
+chore(deps): update nestjs to v10.3
+```
+
+### 9.3 Pull Request Template
+
+```markdown
+## Description
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+- [ ] Unit tests pass
+- [ ] E2E tests pass (if applicable)
+- [ ] Manual testing completed
+
+## Checklist
+- [ ] Code follows style guidelines
+- [ ] Self-reviewed my code
+- [ ] Commented complex logic
+- [ ] Updated documentation
+- [ ] No new warnings
+```
+
+---
+
+## 10. Code Review Checklist
+
+### 10.1 Security
+
+- [ ] No hardcoded secrets
+- [ ] Input validated on all endpoints
+- [ ] Authorization checks present
+- [ ] Sensitive data not logged
+- [ ] SQL injection prevented
+
+### 10.2 Code Quality
+
+- [ ] TypeScript types properly defined
+- [ ] No `any` types (unless justified)
+- [ ] Error handling present
+- [ ] Logging appropriate
+- [ ] Comments for complex logic
+
+### 10.3 Performance
+
+- [ ] No N+1 queries
+- [ ] Proper pagination
+- [ ] Indexes considered
+- [ ] No memory leaks
+
+### 10.4 Testing
+
+- [ ] Unit tests for business logic
+- [ ] Edge cases covered
+- [ ] Error scenarios tested
+
+---
+
+## 11. Troubleshooting
+
+### 11.1 Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| `Module not found` | Run `pnpm install` |
+| CORS errors | Check `CORS_ORIGINS` in backend |
+| JWT expired | Implement token refresh in frontend |
+| Rate limited | Wait for window reset |
+| RLS blocking queries | Check Supabase policies |
+
+### 11.2 Debug Commands
+
 ```bash
-npm install --save-dev @swc/cli @swc/core
+# Check backend logs
+cd apps/api && npm run start:dev
+
+# Check TypeScript errors
+pnpm typecheck
+
+# Run linting
+pnpm lint
+
+# Test database connection
+cd apps/api && npm run db:test
 ```
 
-**Supabase connection fails:**
-- Verify `SUPABASE_URL` is correct (no trailing slash)
-- Check service role key has correct permissions
-- Ensure database migrations are run
+### 11.3 Useful Queries
 
-**Wallet connection fails:**
-- Verify wallet extension is installed
-- Check browser console for errors
-- Ensure correct chain is selected in wallet
+```sql
+-- Check RLS policies
+SELECT * FROM pg_policies WHERE tablename = 'users';
 
-**JWT validation fails:**
-- Check JWT_SECRET is at least 32 characters
-- Verify token hasn't expired
-- Ensure secrets match between token generation and validation
+-- Check indexes
+SELECT * FROM pg_indexes WHERE tablename = 'users';
 
-**Privy wallet creation fails:**
-- Verify `PRIVY_APP_SECRET` is configured
-- Check Privy dashboard for app settings
-- Ensure user has valid Privy session
-
-### Support
-
-- **Documentation**: Check this file and `/docs` folder
-- **Issues**: Create GitHub issue with reproduction steps
-- **Emergency**: Contact lead developer
+-- Check table sizes
+SELECT pg_size_pretty(pg_total_relation_size('users'));
+```
 
 ---
 
-## Version History
+## Changelog
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.2.0 | Jan 7, 2026 | Vercel deployment config, UI/UX improvements (sidebar, mobile nav, theme-safe logout) |
-| 1.1.0 | Jan 2026 | Added Privy integration, deposit system, comprehensive migrations |
-| 1.0.0 | Jan 2026 | Initial release with multi-auth and multi-chain support |
+| 2.0.0 | Jan 8, 2026 | Complete rewrite with enterprise standards |
+| 1.0.0 | Jan 6, 2026 | Initial guidelines |
 
 ---
 
-*This document should be updated whenever significant architectural changes are made.*
-
+*Maintained by DeJaVu Engineering Team. For questions, contact engineering@dejavu.io*

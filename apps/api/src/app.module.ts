@@ -6,6 +6,12 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { MarketsModule } from './modules/markets/markets.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { DepositModule } from './modules/deposits/deposit.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
+import { SecurityModule } from './modules/security/security.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { SettingsModule } from './modules/settings/settings.module.js';
+import { ReferralsModule } from './modules/referrals/referrals.module.js';
+import { TransactionsModule } from './modules/transactions/transactions.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthController } from './health.controller.js';
 import { envSchema } from './config/env.validation.js';
@@ -30,13 +36,23 @@ import { AuditLogInterceptor } from './common/interceptors/index.js';
         // Database
         DatabaseModule,
 
-        // Feature Modules
+        // Security (Global)
+        SecurityModule,
+
+        // Core Feature Modules
         AuthModule,
         UsersModule,
         DashboardModule,
         MarketsModule,
         OrdersModule,
         DepositModule,
+
+        // New Modules
+        AdminModule,
+        NotificationsModule,
+        SettingsModule,
+        ReferralsModule,
+        TransactionsModule,
     ],
     controllers: [HealthController],
     providers: [
