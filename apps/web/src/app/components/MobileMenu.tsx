@@ -9,10 +9,12 @@ import {
     BarChart2,
     LogOut,
     LogIn,
-    UserPlus
+    UserPlus,
+    Shield
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "./auth/AuthContext";
+import { useAdmin } from "../contexts/AdminContext";
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -23,6 +25,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMenuProps) {
     const { user, isAuthenticated, logout } = useAuth();
+    const { isAdmin } = useAdmin();
 
     return (
         <>
@@ -81,6 +84,14 @@ export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMe
                         label="Rewards"
                         onClick={() => { onNavigate('rewards'); onClose(); }}
                     />
+
+                    {isAdmin && (
+                        <MenuItem
+                            icon={<Shield className="w-5 h-5 text-purple-500" />}
+                            label="Admin Panel"
+                            onClick={() => { onNavigate('admin'); onClose(); }}
+                        />
+                    )}
 
                     {/* Spacer & Auth Section */}
                     <div className="pt-6 mt-8 border-t border-border/40">

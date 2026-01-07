@@ -1,16 +1,20 @@
-import { TrendingUp, Star, ChevronRight, X, LogIn, UserPlus, LogOut } from "lucide-react";
+import { TrendingUp, Star, ChevronRight, X, LogIn, UserPlus, LogOut, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "./auth/AuthContext";
+import { useAdmin } from "../contexts/AdminContext";
 import { useDeposit } from "./DepositContext";
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenAuth?: (mode?: 'login' | 'signup') => void;
+  // Add onNavigate prop to sidebar to allow navigation
+  onNavigate?: (tab: string) => void;
 }
 
-export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
-  const { isAuthenticated, logout } = useAuth();
+export function Sidebar({ isOpen, onClose, onOpenAuth, onNavigate }: SidebarProps) {
+  const { isAuthenticated, logout, user } = useAuth();
+  const { isAdmin } = useAdmin();
   const { openDepositModal } = useDeposit();
   return (
     <>
@@ -39,6 +43,38 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
               <X className="w-5 h-5" />
             </button>
           </div>
+
+          {/* Mobile Profile Header (Authenticated) */}
+          {isAuthenticated && (
+            <div className="lg:hidden flex items-center gap-3 mb-2 p-3 rounded-xl bg-secondary/30 border border-border/50">
+              {/* Use the user data from useAuth, assuming it's available in the context */}
+              {/* We need to access 'user' from useAuth, so let's make sure it's destructured */}
+              <div className="relative">
+                {/* Try avatarUrl, and fallback to initials if missing or broken */}
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName || 'Profile'}
+                    className="w-10 h-10 rounded-full object-cover border border-border bg-muted"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium border border-border ${user?.avatarUrl ? 'hidden' : ''}`}>
+                  {user?.fullName
+                    ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                    : user?.email?.[0].toUpperCase() || 'U'}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm truncate">{user?.fullName || 'User'}</h3>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              </div>
+            </div>
+          )}
 
           {/* Auth Section (Guest Only) */}
           {!isAuthenticated && (
@@ -85,6 +121,22 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
+
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  className="w-full border border-yellow-500/20 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500/10 hover:border-yellow-500/40 transition-all duration-300 group"
+                  onClick={() => {
+                    if (onNavigate) {
+                      onNavigate('admin');
+                      onClose();
+                    }
+                  }}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin Dashboard
+                </Button>
+              )}
 
               <Button
                 variant="ghost"

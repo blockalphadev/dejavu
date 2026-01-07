@@ -29,7 +29,12 @@ import {
 } from './dto/index.js';
 
 interface AuthenticatedRequest extends Request {
-    user: { sub: string };
+    user: {
+        id: string;
+        email?: string;
+        walletAddress?: string;
+        chain?: string;
+    };
 }
 
 @ApiTags('Notifications')
@@ -46,14 +51,14 @@ export class NotificationsController {
         @Query() query: NotificationsQueryDto,
         @Req() req: AuthenticatedRequest,
     ) {
-        return this.notificationsService.getNotifications(req.user.sub, query);
+        return this.notificationsService.getNotifications(req.user.id, query);
     }
 
     @Get('unread-count')
     @ApiOperation({ summary: 'Get unread notification count' })
     @ApiResponse({ status: 200, type: UnreadCountDto })
     async getUnreadCount(@Req() req: AuthenticatedRequest): Promise<UnreadCountDto> {
-        const count = await this.notificationsService.getUnreadCount(req.user.sub);
+        const count = await this.notificationsService.getUnreadCount(req.user.id);
         return { count };
     }
 
@@ -65,14 +70,14 @@ export class NotificationsController {
         @Param('id', ParseUUIDPipe) id: string,
         @Req() req: AuthenticatedRequest,
     ) {
-        return this.notificationsService.markAsRead(req.user.sub, id);
+        return this.notificationsService.markAsRead(req.user.id, id);
     }
 
     @Patch('read-all')
     @ApiOperation({ summary: 'Mark all notifications as read' })
     @ApiResponse({ status: 200 })
     async markAllAsRead(@Req() req: AuthenticatedRequest) {
-        return this.notificationsService.markAllAsRead(req.user.sub);
+        return this.notificationsService.markAllAsRead(req.user.id);
     }
 
     @Delete(':id')
@@ -83,14 +88,14 @@ export class NotificationsController {
         @Param('id', ParseUUIDPipe) id: string,
         @Req() req: AuthenticatedRequest,
     ) {
-        return this.notificationsService.archiveNotification(req.user.sub, id);
+        return this.notificationsService.archiveNotification(req.user.id, id);
     }
 
     @Get('preferences')
     @ApiOperation({ summary: 'Get notification preferences' })
     @ApiResponse({ status: 200, type: NotificationPreferencesDto })
     async getPreferences(@Req() req: AuthenticatedRequest): Promise<NotificationPreferencesDto> {
-        return this.notificationsService.getPreferences(req.user.sub);
+        return this.notificationsService.getPreferences(req.user.id);
     }
 
     @Patch('preferences')
@@ -100,6 +105,6 @@ export class NotificationsController {
         @Body() dto: UpdateNotificationPreferencesDto,
         @Req() req: AuthenticatedRequest,
     ): Promise<NotificationPreferencesDto> {
-        return this.notificationsService.updatePreferences(req.user.sub, dto);
+        return this.notificationsService.updatePreferences(req.user.id, dto);
     }
 }

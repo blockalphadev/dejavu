@@ -30,6 +30,7 @@ interface AuthResponse {
 
 // Token management
 let accessToken: string | null = null;
+let refreshTokenValue: string | null = null;
 let tokenExpiresAt: number | null = null;
 
 /**
@@ -40,6 +41,29 @@ export function setAccessToken(token: string, expiresIn: number): void {
     tokenExpiresAt = Date.now() + expiresIn * 1000;
     localStorage.setItem('dejavu_access_token', token);
     localStorage.setItem('dejavu_token_expires', tokenExpiresAt.toString());
+}
+
+/**
+ * Set refresh token
+ */
+export function setRefreshToken(token: string): void {
+    refreshTokenValue = token;
+    localStorage.setItem('dejavu_refresh_token', token);
+}
+
+/**
+ * Get refresh token
+ */
+function getRefreshToken(): string | null {
+    if (refreshTokenValue) {
+        return refreshTokenValue;
+    }
+    const stored = localStorage.getItem('dejavu_refresh_token');
+    if (stored) {
+        refreshTokenValue = stored;
+        return refreshTokenValue;
+    }
+    return null;
 }
 
 /**
@@ -68,8 +92,10 @@ export function getAccessToken(): string | null {
  */
 export function clearTokens(): void {
     accessToken = null;
+    refreshTokenValue = null;
     tokenExpiresAt = null;
     localStorage.removeItem('dejavu_access_token');
+    localStorage.removeItem('dejavu_refresh_token');
     localStorage.removeItem('dejavu_token_expires');
 }
 
@@ -99,6 +125,11 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
         requestHeaders['Authorization'] = `Bearer ${token}`;
     }
 
+    // Debug logging
+    if (endpoint.includes('/admin/')) {
+        console.log(`[API DEBUG] ${method} ${endpoint} - Token present: ${!!token}, Token length: ${token?.length || 0}`);
+    }
+
     const response = await fetch(`${API_URL}${endpoint}`, {
         method,
         headers: requestHeaders,
@@ -109,11 +140,17 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Request failed' }));
 
+        // Debug logging for errors
+        if (endpoint.includes('/admin/')) {
+            console.log(`[API DEBUG] ${method} ${endpoint} - FAILED ${response.status}: ${error.message}`);
+        }
+
         // Handle token expiration
         if (response.status === 401) {
             const refreshed = await refreshToken();
             if (refreshed) {
                 // Retry request with new token
+                console.log(`[API DEBUG] Token refreshed, retrying ${endpoint}`);
                 return apiRequest(endpoint, options);
             }
             clearTokens();
@@ -131,11 +168,16 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
  */
 async function refreshToken(): Promise<boolean> {
     try {
+        const storedRefreshToken = getRefreshToken();
+        if (!storedRefreshToken) {
+            return false;
+        }
+
         const response = await fetch(`${API_URL}/auth/refresh`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken: '' }), // Cookie will be used
+            body: JSON.stringify({ refreshToken: storedRefreshToken }),
         });
 
         if (!response.ok) return false;
@@ -143,6 +185,9 @@ async function refreshToken(): Promise<boolean> {
         const data = await response.json();
         if (data.accessToken) {
             setAccessToken(data.accessToken, data.expiresIn);
+            if (data.refreshToken) {
+                setRefreshToken(data.refreshToken);
+            }
             return true;
         }
         return false;
@@ -165,6 +210,7 @@ export const authApi = {
             body: { email, password, fullName },
         });
         setAccessToken(response.tokens.accessToken, response.tokens.expiresIn);
+        setRefreshToken(response.tokens.refreshToken);
         return response;
     },
 
@@ -177,6 +223,7 @@ export const authApi = {
             body: { email, password },
         });
         setAccessToken(response.tokens.accessToken, response.tokens.expiresIn);
+        setRefreshToken(response.tokens.refreshToken);
         return response;
     },
 
@@ -214,6 +261,7 @@ export const authApi = {
             body: { address, chain, signature, message },
         });
         setAccessToken(response.tokens.accessToken, response.tokens.expiresIn);
+        setRefreshToken(response.tokens.refreshToken);
         return response;
     },
 
@@ -360,11 +408,49 @@ export const depositApi = {
     },
 };
 
+// ============================================
+// Notification API
+// ============================================
+
+export interface Notification {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    is_read: boolean;
+    created_at: string;
+    data?: any;
+    action_url?: string;
+}
+
+export const notificationApi = {
+    async getAll() {
+        return apiRequest<Notification[]>('/notifications');
+    },
+
+    async getUnreadCount() {
+        return apiRequest<{ count: number }>('/notifications/unread-count');
+    },
+
+    async markAsRead(id: string) {
+        return apiRequest(`/notifications/${id}/read`, {
+            method: 'PATCH',
+        });
+    },
+
+    async markAllAsRead() {
+        return apiRequest('/notifications/read-all', {
+            method: 'PATCH',
+        });
+    },
+};
+
 export default {
     auth: authApi,
     dashboard: dashboardApi,
     user: userApi,
     deposit: depositApi,
+    notifications: notificationApi,
     isAuthenticated,
     clearTokens,
 };

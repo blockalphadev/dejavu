@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./components/auth/AuthContext";
+import { AdminProvider } from "./contexts/AdminContext";
 import { AuthModal } from "./components/auth/AuthModal";
 import { DepositProvider, useDeposit } from "./components/DepositContext";
 import { DepositModal } from "./components/DepositModal";
@@ -19,11 +20,13 @@ import { PortfolioPage } from "./components/PortfolioPage";
 import { MobileMenu } from "./components/MobileMenu";
 
 import { SearchPage } from "./components/SearchPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 import { AdminLayout } from "./admin/AdminLayout";
 import { AdminOverview } from "./admin/AdminOverview";
 import { AdminUsers } from "./admin/AdminUsers";
 import { AdminFinance } from "./admin/AdminFinance";
 import { AdminSecurity } from "./admin/AdminSecurity";
+import { AdminRoute } from "./components/auth/AdminGuard";
 
 /**
  * Inner App component that has access to DepositContext
@@ -54,16 +57,18 @@ function AppContent() {
   // Dedicated Admin Route
   if (activeTab === 'admin') {
     return (
-      <AdminLayout
-        activePage={adminPage}
-        onNavigate={setAdminPage}
-        onLogout={() => setActiveTab('markets')}
-      >
-        {adminPage === 'overview' && <AdminOverview />}
-        {adminPage === 'users' && <AdminUsers />}
-        {adminPage === 'finance' && <AdminFinance />}
-        {adminPage === 'security' && <AdminSecurity />}
-      </AdminLayout>
+      <AdminRoute>
+        <AdminLayout
+          activePage={adminPage}
+          onNavigate={setAdminPage}
+          onLogout={() => setActiveTab('markets')}
+        >
+          {adminPage === 'overview' && <AdminOverview />}
+          {adminPage === 'users' && <AdminUsers />}
+          {adminPage === 'finance' && <AdminFinance />}
+          {adminPage === 'security' && <AdminSecurity />}
+        </AdminLayout>
+      </AdminRoute>
     );
   }
 
@@ -114,6 +119,7 @@ function AppContent() {
           )}
           {activeTab === 'dashboards' && <PortfolioPage />}
           {activeTab === 'search' && <SearchPage onNavigate={handleNavigate} />}
+          {activeTab === 'notifications' && <NotificationsPage />}
           {activeTab === 'breaking' && <div className="p-8 text-center text-muted-foreground">Top Markets View Coming Soon</div>}
           {activeTab === 'activity' && <div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>}
           {activeTab === 'ranks' && <div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>}
@@ -122,7 +128,12 @@ function AppContent() {
 
         {/* Sidebar - Desktop */}
         <div className="hidden lg:block">
-          <Sidebar isOpen={false} onClose={() => { }} onOpenAuth={handleOpenAuth} />
+          <Sidebar
+            isOpen={false}
+            onClose={() => { }}
+            onOpenAuth={handleOpenAuth}
+            onNavigate={handleNavigate}
+          />
         </div>
       </div>
 
@@ -139,21 +150,16 @@ function AppContent() {
       </button>
 
       <div className="lg:hidden">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onOpenAuth={handleOpenAuth} />
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onOpenAuth={handleOpenAuth}
+          onNavigate={handleNavigate} // Pass navigation handler
+        />
       </div>
 
       <div className="hidden lg:block">
         <Footer />
-      </div>
-
-      {/* Admin Entry Point (Hidden/Secret) */}
-      <div className="fixed bottom-4 right-4 z-50 opacity-0 hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => setActiveTab('admin')}
-          className="bg-neutral-900 text-neutral-500 text-xs px-2 py-1 rounded border border-neutral-800"
-        >
-          Admin
-        </button>
       </div>
 
       {/* Deposit Modal */}
@@ -181,7 +187,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <DepositProvider>
-            <AppContent />
+            <AdminProvider>
+              <AppContent />
+            </AdminProvider>
           </DepositProvider>
         </AuthProvider>
       </ThemeProvider>

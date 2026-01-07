@@ -1,4 +1,4 @@
-import { Search, Bell, Sun, Moon, Laptop, Menu } from "lucide-react";
+import { Search, Bell, Sun, Moon, Laptop, Menu, ShieldCheck } from "lucide-react";
 import React from "react";
 import { useTheme } from "./ThemeProvider";
 import { Button } from "./ui/button";
@@ -12,8 +12,10 @@ import {
 
 import { NavIcons } from "./NavIcons";
 import { useAuth } from "./auth/AuthContext";
+import { useAdmin } from "../contexts/AdminContext";
 import { ProfileButton } from "./ProfileButton";
 import { motion } from "motion/react";
+import { useNotifications } from "../hooks/useNotifications";
 
 interface HeaderProps {
   currentTab?: string;
@@ -25,6 +27,7 @@ interface HeaderProps {
 export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggleMenu }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAdmin } = useAdmin();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
@@ -89,6 +92,16 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
               >
                 Rewards
               </NavLink>
+
+              {isAdmin && (
+                <NavLink
+                  icon={<ShieldCheck className={`w-4 h-4 ${currentTab === 'admin' ? 'text-primary' : ''}`} />}
+                  active={currentTab === 'admin'}
+                  onClick={() => onNavigate?.('admin')}
+                >
+                  Admin
+                </NavLink>
+              )}
             </nav>
           </div>
 
@@ -132,9 +145,18 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
             </DropdownMenu>
 
             {/* Notification Bell */}
-            <button className="relative p-2 hover:bg-accent/50 rounded-full transition-colors w-9 h-9 flex items-center justify-center">
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  onOpenAuth('login');
+                } else {
+                  onNavigate?.('notifications');
+                }
+              }}
+              className="relative p-2 hover:bg-accent/50 rounded-full transition-colors w-9 h-9 flex items-center justify-center"
+            >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-background"></span>
+              <NotificationBadge />
             </button>
 
             {/* Auth Buttons / Profile */}
@@ -188,6 +210,16 @@ function NavLink({ icon, children, active = false, onClick }: { icon: React.Reac
       <span className="flex items-center justify-center">{icon}</span>
       <span className={`text-sm font-medium ${active ? "font-semibold" : ""}`}>{children}</span>
     </button>
+  );
+}
+
+function NotificationBadge() {
+  const { unreadCount } = useNotifications();
+
+  if (unreadCount === 0) return null;
+
+  return (
+    <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-background"></span>
   );
 }
 
