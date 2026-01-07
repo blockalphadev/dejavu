@@ -10,11 +10,12 @@ import { EmailForm } from './EmailForm';
 interface AuthModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialMode?: 'login' | 'signup';
 }
 
 type AuthView = 'MAIN' | 'EMAIL' | 'WALLET_CONNECTING';
 
-export function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
     const [view, setView] = useState<AuthView>('MAIN');
     const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
     const [agreed, setAgreed] = useState(false);
@@ -42,7 +43,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
     const renderContent = () => {
         if (view === 'EMAIL') {
-            return <EmailForm onBack={() => setView('MAIN')} onSuccess={onClose} />;
+            return <EmailForm initialMode={initialMode} onBack={() => setView('MAIN')} onSuccess={onClose} />;
         }
 
         if (view === 'WALLET_CONNECTING') {
@@ -70,8 +71,14 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         return (
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center space-y-1.5">
-                    <h2 className="text-2xl font-bold tracking-tight">Welcome to DeJaVu</h2>
-                    <p className="text-muted-foreground text-sm">Sign in to trade, predict, and win.</p>
+                    <h2 className="text-2xl font-bold tracking-tight">
+                        {initialMode === 'signup' ? 'Create an Account' : 'Welcome to DeJaVu'}
+                    </h2>
+                    <p className="text-muted-foreground text-sm">
+                        {initialMode === 'signup'
+                            ? 'Sign up to trade, predict, and win.'
+                            : 'Sign in to trade, predict, and win.'}
+                    </p>
                 </div>
 
                 <div className="space-y-3">

@@ -30,7 +30,13 @@ function AppContent() {
   const [activeCategory, setActiveCategory] = useState("top_pics");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const { isDepositModalOpen, closeDepositModal } = useDeposit();
+
+  const handleOpenAuth = (mode?: 'login' | 'signup') => {
+    setAuthMode(mode || 'login');
+    setIsAuthModalOpen(true);
+  };
 
   const handleNavigate = (tab: string, category?: string) => {
     setActiveTab(tab);
@@ -44,7 +50,7 @@ function AppContent() {
       <Header
         currentTab={activeTab}
         onNavigate={setActiveTab}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAuth={handleOpenAuth}
         onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
 
@@ -52,7 +58,7 @@ function AppContent() {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         onNavigate={setActiveTab}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAuth={handleOpenAuth}
       />
 
       {activeTab === 'markets' && (
@@ -94,7 +100,7 @@ function AppContent() {
 
         {/* Sidebar - Desktop */}
         <div className="hidden lg:block">
-          <Sidebar isOpen={false} onClose={() => { }} onOpenAuth={() => setIsAuthModalOpen(true)} />
+          <Sidebar isOpen={false} onClose={() => { }} onOpenAuth={handleOpenAuth} />
         </div>
       </div>
 
@@ -112,7 +118,7 @@ function AppContent() {
 
       {/* Sidebar - Mobile */}
       <div className="lg:hidden">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onOpenAuth={() => setIsAuthModalOpen(true)} />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onOpenAuth={handleOpenAuth} />
       </div>
 
       <div className="hidden lg:block">
@@ -123,7 +129,7 @@ function AppContent() {
       <DepositModal isOpen={isDepositModalOpen} onClose={closeDepositModal} />
 
       {/* Auth Modal */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialMode={authMode} />
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden">

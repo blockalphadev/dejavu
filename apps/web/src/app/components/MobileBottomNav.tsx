@@ -1,5 +1,5 @@
 import React from "react";
-import { House, Search, LayoutGrid, PieChart, TrendingUp } from "lucide-react";
+import { House, Search, LayoutGrid, PieChart, Activity } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
 
 
@@ -20,8 +20,8 @@ export function MobileBottomNav({ currentTab, activeCategory, onNavigate, onTogg
                 <BottomNavItem
                     icon={<House className="w-6 h-6" />}
                     label="Home"
-                    active={currentTab === 'markets' && activeCategory !== 'top_pics'}
-                    onClick={() => onNavigate('markets', 'Live')}
+                    active={currentTab === 'markets' && activeCategory === 'top_pics'}
+                    onClick={() => onNavigate('markets', 'top_pics')}
                 />
 
                 <BottomNavItem
@@ -32,10 +32,10 @@ export function MobileBottomNav({ currentTab, activeCategory, onNavigate, onTogg
                 />
 
                 <BottomNavItem
-                    icon={<TrendingUp className="w-6 h-6" />}
-                    label="Top Markets"
-                    active={currentTab === 'markets' && activeCategory === 'top_pics'}
-                    onClick={() => onNavigate('markets', 'top_pics')}
+                    icon={<Activity className="w-6 h-6" />}
+                    label="For You"
+                    active={currentTab === 'markets' && activeCategory === 'for_you'}
+                    onClick={() => onNavigate('markets', 'for_you')}
                 />
 
 

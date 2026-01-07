@@ -5,14 +5,15 @@ import { cn } from '../ui/utils';
 import { useAuth } from './AuthContext';
 
 interface EmailFormProps {
+    initialMode?: FormMode;
     onBack: () => void;
     onSuccess: () => void;
 }
 
 type FormMode = 'login' | 'signup';
 
-export function EmailForm({ onBack, onSuccess }: EmailFormProps) {
-    const [mode, setMode] = useState<FormMode>('login');
+export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFormProps) {
+    const [mode, setMode] = useState<FormMode>(initialMode);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -20,6 +21,7 @@ export function EmailForm({ onBack, onSuccess }: EmailFormProps) {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const { login, signup } = useAuth();
 
@@ -142,9 +144,22 @@ export function EmailForm({ onBack, onSuccess }: EmailFormProps) {
                     )}
                 </div>
 
+                <div className="flex items-start gap-2 px-1">
+                    <input
+                        type="checkbox"
+                        id="terms"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="terms" className="text-xs text-muted-foreground leading-snug cursor-pointer select-none">
+                        I agree to the <span className="text-primary hover:underline">Terms of Service</span> and <span className="text-primary hover:underline">Privacy Policy</span>.
+                    </label>
+                </div>
+
                 <Button
                     type="submit"
-                    disabled={loading || !email || !password}
+                    disabled={loading || !email || !password || !termsAccepted}
                     className={cn(
                         "w-full h-12 rounded-xl text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/20 transition-all",
                         loading && "opacity-80"

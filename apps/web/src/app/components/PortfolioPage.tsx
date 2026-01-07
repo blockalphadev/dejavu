@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Settings, Download, Upload, Search, Filter, EyeOff, Eye } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
 import { useDeposit } from "./DepositContext";
-import { ProfileDropdown } from "./ProfileDropdown";
+import { ProfileButton } from "./ProfileButton";
 import { WithdrawModal } from "./WithdrawModal";
 import { Button } from "./ui/button";
 
@@ -46,11 +46,11 @@ export function PortfolioPage() {
                     </button>
                 </div>
 
-                <ProfileDropdown user={user} mobile triggerOnly>
+                <ProfileButton user={user} mobile triggerOnly>
                     <button className="p-2 hover:bg-accent rounded-full transition-colors">
                         <Settings className="w-6 h-6 text-muted-foreground" />
                     </button>
-                </ProfileDropdown>
+                </ProfileButton>
             </div>
 
             {/* Total Value Card */}

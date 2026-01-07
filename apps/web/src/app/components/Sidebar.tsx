@@ -6,7 +6,7 @@ import { useDeposit } from "./DepositContext";
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenAuth?: () => void;
+  onOpenAuth?: (mode?: 'login' | 'signup') => void;
 }
 
 export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
@@ -50,7 +50,7 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
               <div className="space-y-2">
                 <Button
                   className="w-full bg-primary text-primary-foreground"
-                  onClick={onOpenAuth}
+                  onClick={() => onOpenAuth?.('signup')}
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
                   Sign Up
@@ -58,7 +58,7 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={onOpenAuth}
+                  onClick={() => onOpenAuth?.('login')}
                 >
                   <LogIn className="w-4 h-4 mr-2" />
                   Log In

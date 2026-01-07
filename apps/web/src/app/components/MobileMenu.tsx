@@ -4,9 +4,9 @@ import {
     Twitter,
     Instagram,
     Facebook,
-    Linkedin,
     Trophy,
-    Activity,
+    History,
+    Gift,
     BarChart2,
     LogOut,
     LogIn,
@@ -14,14 +14,12 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "./auth/AuthContext";
-import { useTheme } from "./ThemeProvider";
-import { Logo3D } from "./Logo3D";
 
 interface MobileMenuProps {
     isOpen: boolean;
     onClose: () => void;
     onNavigate: (tab: string) => void;
-    onOpenAuth: () => void;
+    onOpenAuth: (mode?: 'login' | 'signup') => void;
 }
 
 export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMenuProps) {
@@ -66,14 +64,19 @@ export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMe
                         onClick={() => { onNavigate('markets'); onClose(); }}
                     />
                     <MenuItem
-                        icon={<Activity className="w-5 h-5 text-green-500" />}
+                        icon={<Trophy className="w-5 h-5 text-yellow-500" />}
+                        label="Ranks"
+                        onClick={() => { onNavigate('ranks'); onClose(); }}
+                    />
+                    <MenuItem
+                        icon={<History className="w-5 h-5 text-cyan-500" />}
                         label="Activity"
                         onClick={() => { onNavigate('activity'); onClose(); }}
                     />
                     <MenuItem
-                        icon={<Trophy className="w-5 h-5 text-yellow-500" />}
-                        label="Ranks"
-                        onClick={() => { onNavigate('ranks'); onClose(); }}
+                        icon={<Gift className="w-5 h-5 text-pink-500" />}
+                        label="Rewards"
+                        onClick={() => { onNavigate('rewards'); onClose(); }}
                     />
 
                     {/* Spacer & Auth Section */}
@@ -103,14 +106,14 @@ export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMe
                                 <Button
                                     variant="outline"
                                     className="w-full justify-center gap-2 h-11 border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors"
-                                    onClick={() => { onOpenAuth(); onClose(); }}
+                                    onClick={() => { onOpenAuth('login'); onClose(); }}
                                 >
                                     <LogIn className="w-4 h-4" />
                                     Log In
                                 </Button>
                                 <Button
                                     className="w-full justify-center gap-2 h-11 bg-yellow-400 text-black hover:bg-yellow-500 transition-colors shadow-lg shadow-yellow-400/20 font-medium"
-                                    onClick={() => { onOpenAuth(); onClose(); }}
+                                    onClick={() => { onOpenAuth('signup'); onClose(); }}
                                 >
                                     <UserPlus className="w-4 h-4" />
                                     Sign Up

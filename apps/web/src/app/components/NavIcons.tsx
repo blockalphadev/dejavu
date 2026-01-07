@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { BarChart2, Activity, Trophy, Gift, LayoutDashboard } from "lucide-react";
+import { BarChart2, History, Trophy, Gift, LayoutDashboard } from "lucide-react";
 
 interface NavIconProps {
     active?: boolean;
@@ -43,11 +43,11 @@ export function DashboardIcon({ active = false }: NavIconProps) {
     );
 }
 
-// 3. Activity: Pulse
+// 3. Activity: History
 export function ActivityIcon({ active = false }: NavIconProps) {
     return (
         <div className="relative flex items-center justify-center w-6 h-6">
-            <Activity
+            <History
                 className={`w-5 h-5 transition-colors duration-300 ${active ? "text-cyan-400" : "text-muted-foreground group-hover:text-foreground"}`}
             />
             {active && (

@@ -12,13 +12,13 @@ import {
 
 import { NavIcons } from "./NavIcons";
 import { useAuth } from "./auth/AuthContext";
-import { ProfileDropdown } from "./ProfileDropdown";
+import { ProfileButton } from "./ProfileButton";
 import { motion } from "motion/react";
 
 interface HeaderProps {
   currentTab?: string;
   onNavigate?: (tab: string) => void;
-  onOpenAuth: () => void;
+  onOpenAuth: (mode?: 'login' | 'signup') => void;
   onToggleMenu?: () => void;
 }
 
@@ -67,19 +67,21 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
               </NavLink>
 
               <NavLink
-                icon={<NavIcons.Activity active={currentTab === 'activity'} />}
-                active={currentTab === 'activity'}
-                onClick={() => onNavigate?.('activity')}
-              >
-                Activity
-              </NavLink>
-              <NavLink
                 icon={<NavIcons.Ranks active={currentTab === 'ranks'} />}
                 active={currentTab === 'ranks'}
                 onClick={() => onNavigate?.('ranks')}
               >
                 Ranks
               </NavLink>
+
+              <NavLink
+                icon={<NavIcons.Activity active={currentTab === 'activity'} />}
+                active={currentTab === 'activity'}
+                onClick={() => onNavigate?.('activity')}
+              >
+                Activity
+              </NavLink>
+
               <NavLink
                 icon={<NavIcons.Rewards active={currentTab === 'rewards'} />}
                 active={currentTab === 'rewards'}
@@ -138,16 +140,16 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
             {/* Auth Buttons / Profile */}
             {isAuthenticated && user ? (
               <div className="hidden sm:block">
-                <ProfileDropdown user={user} onNavigate={onNavigate} />
+                <ProfileButton user={user} onNavigate={onNavigate} />
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <Button variant="ghost" className="rounded-full font-medium" onClick={onOpenAuth} disabled={isLoading}>
+                <Button variant="ghost" className="rounded-full font-medium" onClick={() => onOpenAuth('login')} disabled={isLoading}>
                   Log In
                 </Button>
                 <Button
                   className="rounded-full px-6 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-                  onClick={onOpenAuth}
+                  onClick={() => onOpenAuth('signup')}
                   disabled={isLoading}
                 >
                   Sign Up
