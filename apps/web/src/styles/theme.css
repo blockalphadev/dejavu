@@ -170,7 +170,7 @@
 }
 
 .dark.tokyo-night {
-  /* Tokyo Night Theme (Deep Ocean Blue) */
+  /* Tokyo Night Theme (Deep Ocean Blue) - Brightened for Better UX */
   --background: #1a1b26;
   /* Tokyo Night Main BG */
   --foreground: #c0caf5;
@@ -187,17 +187,17 @@
   /* Tokyo Night Blue */
   --primary-foreground: #15161e;
 
-  --secondary: #24283b;
-  /* Tokyo Night Storm */
+  --secondary: #2f334d;
+  /* Lighter Storm for better visibility */
   --secondary-foreground: #c0caf5;
 
-  --muted: #24283b;
-  --muted-foreground: #565f89;
-  /* Tokyo Night Comment */
+  --muted: #2f334d;
+  --muted-foreground: #9aa5ce;
+  /* Brighter muted text (was #565f89) */
 
-  --accent: #292e42;
-  /* Tokyo Night Selection */
-  --accent-foreground: #7aa2f7;
+  --accent: #3b4261;
+  /* Lighter selection color */
+  --accent-foreground: #c0caf5;
 
   --destructive: #f7768e;
   /* Tokyo Night Red */

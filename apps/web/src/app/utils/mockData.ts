@@ -33,7 +33,7 @@ export interface Signal {
 }
 
 export const CATEGORIES = [
-    { id: "top_pics", label: "Top Pics", icon: TrendingUp },
+    { id: "top_pics", label: "Top Markets", icon: TrendingUp },
     { id: "for_you", label: "For You", icon: Activity },
     { id: "signals", label: "Signals", icon: Newspaper },
     { id: "latest", label: "Latest", icon: Zap },

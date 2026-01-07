@@ -36,9 +36,6 @@ export function ThemeProvider({
 
       // Apply initial system theme
       root.classList.add(systemTheme.matches ? "dark" : "light");
-      if (systemTheme.matches) {
-        root.classList.add("tokyo-night");
-      }
 
       // Listener for system theme changes
       // Using addEventListener for modern browser support (React 19+)
@@ -46,9 +43,6 @@ export function ThemeProvider({
         const newTheme = e.matches ? "dark" : "light";
         root.classList.remove("light", "dark", "tokyo-night");
         root.classList.add(newTheme);
-        if (e.matches) {
-          root.classList.add("tokyo-night");
-        }
       };
 
       systemTheme.addEventListener("change", listener);
@@ -56,6 +50,9 @@ export function ThemeProvider({
     }
 
     root.classList.add(theme);
+    if (theme === "dark") {
+      root.classList.add("tokyo-night");
+    }
   }, [theme]);
 
   const value = {

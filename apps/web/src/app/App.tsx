@@ -79,7 +79,7 @@ function AppContent() {
           )}
           {activeTab === 'dashboards' && <PortfolioPage />}
           {activeTab === 'search' && <div className="p-8 text-center text-muted-foreground">Search View Coming Soon</div>}
-          {activeTab === 'breaking' && <div className="p-8 text-center text-muted-foreground">Breaking News View Coming Soon</div>}
+          {activeTab === 'breaking' && <div className="p-8 text-center text-muted-foreground">Top Markets View Coming Soon</div>}
           {activeTab === 'activity' && <div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>}
           {activeTab === 'ranks' && <div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>}
           {activeTab === 'rewards' && <div className="p-8 text-center text-muted-foreground">Rewards & Airdrops Coming Soon</div>}

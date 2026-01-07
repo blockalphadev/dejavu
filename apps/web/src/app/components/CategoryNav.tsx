@@ -1,4 +1,4 @@
-import { CATEGORIES, CategoryId } from "../utils/mockData";
+import { CATEGORIES } from "../utils/mockData";
 
 interface CategoryNavProps {
     activeCategory: string;
@@ -19,10 +19,10 @@ export function CategoryNav({ activeCategory, onSelectCategory }: CategoryNavPro
                                 key={cat.id}
                                 onClick={() => onSelectCategory(cat.id)}
                                 className={`
-                  flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all duration-200
+                  flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all duration-200 border
                   ${isActive
-                                        ? "bg-primary text-primary-foreground shadow-sm scale-105"
-                                        : "bg-accent/50 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                        ? "bg-primary text-primary-foreground border-primary shadow-sm scale-105"
+                                        : "bg-secondary border-transparent text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                                     }
                 `}
                             >

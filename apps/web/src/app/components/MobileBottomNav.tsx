@@ -13,7 +13,7 @@ export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: Mobile
     const { isAuthenticated } = useAuth();
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-[#0f141f]/90 backdrop-blur-xl border-t border-white/5 pb-safe">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-background/80 backdrop-blur-xl border-t border-border pb-safe transition-colors duration-300">
             <div className="flex items-center justify-between px-6 h-[5rem]">
 
                 <BottomNavItem
@@ -32,7 +32,7 @@ export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: Mobile
 
                 <BottomNavItem
                     icon={<Zap className="w-6 h-6" />}
-                    label="Breaking"
+                    label="Top Markets"
                     active={currentTab === 'breaking'}
                     onClick={() => onNavigate('breaking')}
                 />
@@ -69,15 +69,15 @@ function BottomNavItem({ icon, label, active, onClick }: { icon: React.ReactNode
             <div className={`
                 relative p-1.5 rounded-xl transition-all duration-300
                 ${active
-                    ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]'
-                    : 'text-muted-foreground group-hover:text-white'
+                    ? 'bg-primary/10 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]'
+                    : 'text-muted-foreground group-hover:text-foreground hover:bg-accent'
                 }
             `}>
                 {icon}
             </div>
             <span className={`
                 text-[10px] font-medium tracking-wide transition-colors duration-300
-                ${active ? 'text-blue-400' : 'text-muted-foreground group-hover:text-white'}
+                ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}
             `}>
                 {label}
             </span>
