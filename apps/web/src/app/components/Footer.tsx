@@ -48,7 +48,7 @@ export function Footer() {
                         <div className="w-8 h-8">
                             <Logo3D className="w-full h-full" />
                         </div>
-                        <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">DeJaVu</span>
+                        <span className="font-rajdhani font-bold text-xl tracking-wider text-foreground">DeJaVu</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
                         © 2026 DeJaVu. All rights reserved.

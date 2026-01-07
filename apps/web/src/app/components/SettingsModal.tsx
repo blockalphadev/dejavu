@@ -8,7 +8,6 @@ import {
     Upload,
     Check,
     X,
-    Twitter,
     LogOut,
     Plus,
     ChevronDown
