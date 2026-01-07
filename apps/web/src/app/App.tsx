@@ -18,6 +18,8 @@ import { MobileBottomNav } from "./components/MobileBottomNav";
 import { PortfolioPage } from "./components/PortfolioPage";
 import { MobileMenu } from "./components/MobileMenu";
 
+import { SearchPage } from "./components/SearchPage";
+
 /**
  * Inner App component that has access to DepositContext
  */
@@ -30,13 +32,18 @@ function AppContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { isDepositModalOpen, closeDepositModal } = useDeposit();
 
+  const handleNavigate = (tab: string, category?: string) => {
+    setActiveTab(tab);
+    if (category) {
+      setActiveCategory(category);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header
         currentTab={activeTab}
         onNavigate={setActiveTab}
-        activeCategory={activeCategory}
-        onSelectCategory={setActiveCategory}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />
@@ -78,7 +85,7 @@ function AppContent() {
             </>
           )}
           {activeTab === 'dashboards' && <PortfolioPage />}
-          {activeTab === 'search' && <div className="p-8 text-center text-muted-foreground">Search View Coming Soon</div>}
+          {activeTab === 'search' && <SearchPage onNavigate={handleNavigate} />}
           {activeTab === 'breaking' && <div className="p-8 text-center text-muted-foreground">Top Markets View Coming Soon</div>}
           {activeTab === 'activity' && <div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>}
           {activeTab === 'ranks' && <div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>}
@@ -122,7 +129,8 @@ function AppContent() {
       <div className="lg:hidden">
         <MobileBottomNav
           currentTab={activeTab}
-          onNavigate={setActiveTab}
+          activeCategory={activeCategory}
+          onNavigate={handleNavigate}
           onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
       </div>

@@ -7,6 +7,35 @@
 import type { Chain, ChainId } from '../types';
 
 // ============================================================================
+// Environment Helper
+// ============================================================================
+
+// Type declaration to avoid requiring @types/node
+declare const process: { env: Record<string, string | undefined> } | undefined;
+
+/**
+ * Safely retrieves environment variables from either Vite (import.meta.env)
+ * or Node.js (process.env) environments.
+ */
+function getEnvVar(key: string, fallback: string = ''): string {
+    // Check for Vite environment first
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const env = (import.meta as any)?.env as Record<string, string | undefined> | undefined;
+        if (env && key in env) {
+            return env[key] ?? fallback;
+        }
+    } catch {
+        // import.meta not available
+    }
+    // Fallback to Node.js environment
+    if (typeof process !== 'undefined' && process?.env) {
+        return process.env[key] ?? fallback;
+    }
+    return fallback;
+}
+
+// ============================================================================
 // Chain Configurations
 // ============================================================================
 
@@ -81,7 +110,7 @@ export const CHAINS: Record<ChainId, Chain> = {
 // ============================================================================
 
 export const API_CONFIG = {
-    baseUrl: import.meta.env?.VITE_API_URL || 'http://localhost:3001',
+    baseUrl: getEnvVar('VITE_API_URL', 'http://localhost:3001'),
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 1000,
@@ -158,8 +187,7 @@ export const SPORT_TYPES = [
 // Wallet Constants
 // ============================================================================
 
-export const WALLET_CONNECT_PROJECT_ID =
-    import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID || '';
+export const WALLET_CONNECT_PROJECT_ID = getEnvVar('VITE_WALLET_CONNECT_PROJECT_ID', '');
 
 export const SUPPORTED_WALLETS = {
     evm: ['metamask', 'walletconnect', 'coinbase', 'rainbow'],

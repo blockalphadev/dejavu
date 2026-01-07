@@ -27,8 +27,8 @@
             "import": "./src/hooks/index.ts"
         },
         "./providers": {
-            "types": "./src/providers/index.ts",
-            "import": "./src/providers/index.ts"
+            "types": "./src/providers/index.tsx",
+            "import": "./src/providers/index.tsx"
         }
     },
     "scripts": {

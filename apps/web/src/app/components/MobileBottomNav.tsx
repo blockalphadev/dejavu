@@ -1,15 +1,16 @@
 import React from "react";
-import { House, Search, Zap, LayoutGrid, PieChart } from "lucide-react";
+import { House, Search, LayoutGrid, PieChart, TrendingUp } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
 
 
 interface MobileBottomNavProps {
     currentTab: string;
-    onNavigate: (tab: string) => void;
+    activeCategory?: string;
+    onNavigate: (tab: string, category?: string) => void;
     onToggleMenu?: () => void;
 }
 
-export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: MobileBottomNavProps) {
+export function MobileBottomNav({ currentTab, activeCategory, onNavigate, onToggleMenu }: MobileBottomNavProps) {
     const { isAuthenticated } = useAuth();
 
     return (
@@ -19,8 +20,8 @@ export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: Mobile
                 <BottomNavItem
                     icon={<House className="w-6 h-6" />}
                     label="Home"
-                    active={currentTab === 'markets'}
-                    onClick={() => onNavigate('markets')}
+                    active={currentTab === 'markets' && activeCategory !== 'top_pics'}
+                    onClick={() => onNavigate('markets', 'Live')}
                 />
 
                 <BottomNavItem
@@ -31,10 +32,10 @@ export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: Mobile
                 />
 
                 <BottomNavItem
-                    icon={<Zap className="w-6 h-6" />}
+                    icon={<TrendingUp className="w-6 h-6" />}
                     label="Top Markets"
-                    active={currentTab === 'breaking'}
-                    onClick={() => onNavigate('breaking')}
+                    active={currentTab === 'markets' && activeCategory === 'top_pics'}
+                    onClick={() => onNavigate('markets', 'top_pics')}
                 />
 
 
