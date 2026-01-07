@@ -62,13 +62,7 @@ export function Header({ currentTab = 'markets', onNavigate, activeCategory = 'L
               >
                 Markets
               </NavLink>
-              <NavLink
-                icon={<NavIcons.Dashboards active={currentTab === 'dashboards'} />}
-                active={currentTab === 'dashboards'}
-                onClick={() => onNavigate?.('dashboards')}
-              >
-                Dashboards
-              </NavLink>
+
               <NavLink
                 icon={<NavIcons.Activity active={currentTab === 'activity'} />}
                 active={currentTab === 'activity'}
@@ -163,25 +157,7 @@ export function Header({ currentTab = 'markets', onNavigate, activeCategory = 'L
 
       </div>
 
-      {/* Category Navigation */}
-      <div className="border-t border-border/40 bg-background/50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-4 overflow-x-auto py-3 scrollbar-hide">
-            <CategoryBadge active={activeCategory === 'Live'} onClick={() => onSelectCategory?.('Live')}>🔴 Live</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'All'} onClick={() => onSelectCategory?.('All')}>All</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'For You'} onClick={() => onSelectCategory?.('For You')}>For You</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Politics'} onClick={() => onSelectCategory?.('Politics')}>Politics</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Sports'} onClick={() => onSelectCategory?.('Sports')}>Sports</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Crypto'} onClick={() => onSelectCategory?.('Crypto')}>Crypto</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Global Elections'} onClick={() => onSelectCategory?.('Global Elections')}>Global Elections</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Mentions'} onClick={() => onSelectCategory?.('Mentions')}>Mentions</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Creators'} onClick={() => onSelectCategory?.('Creators')}>Creators</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Pop Culture'} onClick={() => onSelectCategory?.('Pop Culture')}>Pop Culture</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Business'} onClick={() => onSelectCategory?.('Business')}>Business</CategoryBadge>
-            <CategoryBadge active={activeCategory === 'Science'} onClick={() => onSelectCategory?.('Science')}>Science</CategoryBadge>
-          </div>
-        </div>
-      </div>
+
 
 
     </header >
@@ -204,17 +180,3 @@ function NavLink({ icon, children, active = false, onClick }: { icon: React.Reac
 }
 
 
-
-function CategoryBadge({ children, active = false, onClick }: { children: React.ReactNode; active?: boolean; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-colors text-sm ${active
-        ? "bg-primary text-primary-foreground"
-        : "bg-accent/50 hover:bg-accent text-foreground"
-        }`}
-    >
-      {children}
-    </button>
-  );
-}

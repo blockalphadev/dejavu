@@ -1,6 +1,7 @@
 import { TrendingUp, Star, ChevronRight, X, LogIn, UserPlus, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "./auth/AuthContext";
+import { useDeposit } from "./DepositContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
   const { isAuthenticated, logout } = useAuth();
+  const { openDepositModal } = useDeposit();
   return (
     <>
       {/* Mobile Overlay */}
@@ -26,13 +28,17 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
           }`}
       >
         <div className="p-6 space-y-6">
-          {/* Close Button - Mobile Only */}
-          <button
-            onClick={onClose}
-            className="lg:hidden absolute top-4 right-4 p-2 hover:bg-accent rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Mobile Header */}
+          <div className="flex items-center justify-between lg:hidden mb-2">
+            <span className="font-rajdhani font-bold text-xl tracking-wide">Menu</span>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-accent rounded-full transition-colors active:scale-95"
+              aria-label="Close Menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
           {/* Auth Section (Guest Only) */}
           {!isAuthenticated && (
@@ -72,18 +78,20 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
                 <p className="text-sm text-muted-foreground mb-4">
                   Deposit some cash to start betting
                 </p>
-                <Button className="w-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+                <Button
+                  onClick={openDepositModal}
+                  className="w-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
                   Deposit
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
 
               <Button
-                variant="destructive"
-                className="w-full bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                variant="ghost"
+                className="w-full border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 hover:border-red-300 dark:hover:border-red-800 transition-all duration-300 group"
                 onClick={logout}
               >
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-300" />
                 Log Out
               </Button>
             </div>

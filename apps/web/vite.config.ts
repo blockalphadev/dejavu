@@ -23,6 +23,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // Listen on all addresses, needed for tunneling
     port: 5173,
     proxy: {
       '/api/polymarket': {

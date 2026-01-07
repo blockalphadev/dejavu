@@ -1,6 +1,7 @@
 import React from "react";
-import { House, Search, Zap, PieChart, LayoutGrid } from "lucide-react";
+import { House, Search, Zap, LayoutGrid, PieChart } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
+
 
 interface MobileBottomNavProps {
     currentTab: string;
@@ -36,6 +37,7 @@ export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: Mobile
                     onClick={() => onNavigate('breaking')}
                 />
 
+
                 {isAuthenticated ? (
                     <BottomNavItem
                         icon={<PieChart className="w-6 h-6" />}
@@ -51,6 +53,7 @@ export function MobileBottomNav({ currentTab, onNavigate, onToggleMenu }: Mobile
                         onClick={() => onToggleMenu?.()}
                     />
                 )}
+
 
             </div>
         </div>

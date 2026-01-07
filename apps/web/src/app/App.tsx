@@ -12,6 +12,7 @@ import { Sidebar } from "./components/Sidebar";
 import { ChevronLeft } from "lucide-react";
 import { Footer } from "./components/Footer";
 import { MarketGrid } from "./components/MarketGrid";
+import { CategoryNav } from "./components/CategoryNav";
 import SportsCategory from "./components/SportsCategory";
 import { MobileBottomNav } from "./components/MobileBottomNav";
 import { PortfolioPage } from "./components/PortfolioPage";
@@ -24,7 +25,8 @@ function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("markets");
-  const [activeCategory, setActiveCategory] = useState("Live");
+  const [activeCategory, setActiveCategory] = useState("top_pics");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { isDepositModalOpen, closeDepositModal } = useDeposit();
 
@@ -46,6 +48,13 @@ function AppContent() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
       />
 
+      {activeTab === 'markets' && (
+        <CategoryNav
+          activeCategory={activeCategory}
+          onSelectCategory={setActiveCategory}
+        />
+      )}
+
       <div className="flex">
         {/* Main Content */}
         <main className="flex-1 min-w-0">
@@ -55,9 +64,15 @@ function AppContent() {
                 <SportsCategory />
               ) : (
                 <>
-                  <HeroSection />
-                  <FilterSection />
-                  <MarketGrid />
+                  {activeCategory === 'signals' && <HeroSection />}
+                  <FilterSection
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                  />
+                  <MarketGrid
+                    activeCategory={activeCategory}
+                    searchQuery={searchQuery}
+                  />
                 </>
               )}
             </>
@@ -93,7 +108,9 @@ function AppContent() {
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onOpenAuth={() => setIsAuthModalOpen(true)} />
       </div>
 
-      <Footer />
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
 
       {/* Deposit Modal */}
       <DepositModal isOpen={isDepositModalOpen} onClose={closeDepositModal} />

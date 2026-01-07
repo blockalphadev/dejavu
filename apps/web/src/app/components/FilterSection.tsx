@@ -1,16 +1,19 @@
 import { Search, SlidersHorizontal, LayoutGrid, List } from "lucide-react";
 import { useState, useCallback } from "react";
-import { useDebounce } from "../hooks/useDebounce";
 
-export function FilterSection() {
+
+interface FilterSectionProps {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}
+
+export function FilterSection({ searchQuery, onSearchChange }: FilterSectionProps) {
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  }, []);
+    onSearchChange(e.target.value);
+  }, [onSearchChange]);
 
   const handleToggleAnimations = useCallback(() => {
     setAnimationsEnabled(prev => !prev);
@@ -48,14 +51,12 @@ export function FilterSection() {
             <span className="text-sm text-muted-foreground">Animations</span>
             <button
               onClick={handleToggleAnimations}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                animationsEnabled ? "bg-cyan-500" : "bg-accent"
-              }`}
+              className={`relative w-11 h-6 rounded-full transition-colors ${animationsEnabled ? "bg-cyan-500" : "bg-accent"
+                }`}
             >
               <div
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                  animationsEnabled ? "translate-x-5" : "translate-x-0"
-                }`}
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${animationsEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
               />
             </button>
           </div>
@@ -67,21 +68,19 @@ export function FilterSection() {
           <div className="flex items-center gap-1 bg-accent rounded-lg p-1">
             <button
               onClick={() => handleViewModeChange("grid")}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === "grid"
-                  ? "bg-background shadow-sm"
-                  : "hover:bg-background/50"
-              }`}
+              className={`p-1.5 rounded transition-colors ${viewMode === "grid"
+                ? "bg-background shadow-sm"
+                : "hover:bg-background/50"
+                }`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => handleViewModeChange("list")}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === "list"
-                  ? "bg-background shadow-sm"
-                  : "hover:bg-background/50"
-              }`}
+              className={`p-1.5 rounded transition-colors ${viewMode === "list"
+                ? "bg-background shadow-sm"
+                : "hover:bg-background/50"
+                }`}
             >
               <List className="w-4 h-4" />
             </button>
@@ -97,30 +96,6 @@ export function FilterSection() {
         </div>
       </div>
 
-      {/* Category Pills */}
-      <div className="flex items-center gap-2 mt-4 overflow-x-auto scrollbar-hide pb-2">
-        <CategoryPill active>All</CategoryPill>
-        <CategoryPill>Wildfire</CategoryPill>
-        <CategoryPill>Breaking News</CategoryPill>
-        <CategoryPill>Canada</CategoryPill>
-        <CategoryPill>Trump Inauguration</CategoryPill>
-        <CategoryPill>Mentions</CategoryPill>
-        <CategoryPill>Creators</CategoryPill>
-      </div>
     </div>
-  );
-}
-
-function CategoryPill({ children, active = false }: { children: React.ReactNode; active?: boolean }) {
-  return (
-    <button
-      className={`px-4 py-1.5 rounded-full whitespace-nowrap transition-all text-sm ${
-        active
-          ? "bg-primary text-primary-foreground shadow-md"
-          : "bg-accent/50 hover:bg-accent text-foreground"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
