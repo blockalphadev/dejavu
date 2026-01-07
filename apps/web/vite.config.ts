@@ -34,7 +34,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../../dist',
+    outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
       onwarn(warning, warn) {
