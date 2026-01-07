@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { TrendingUp, Star, ChevronRight, X, LogIn, UserPlus, LogOut, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "./auth/AuthContext";
@@ -16,6 +17,14 @@ export function Sidebar({ isOpen, onClose, onOpenAuth, onNavigate }: SidebarProp
   const { isAuthenticated, logout, user } = useAuth();
   const { isAdmin } = useAdmin();
   const { openDepositModal } = useDeposit();
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    if (user?.avatarUrl) {
+      setImgError(false);
+    }
+  }, [user?.avatarUrl]);
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -51,19 +60,16 @@ export function Sidebar({ isOpen, onClose, onOpenAuth, onNavigate }: SidebarProp
               {/* We need to access 'user' from useAuth, so let's make sure it's destructured */}
               <div className="relative">
                 {/* Try avatarUrl, and fallback to initials if missing or broken */}
-                {user?.avatarUrl ? (
+                {user?.avatarUrl && !imgError ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.fullName || 'Profile'}
                     className="w-10 h-10 rounded-full object-cover border border-border bg-muted"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
+                    onError={() => setImgError(true)}
                   />
                 ) : null}
 
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium border border-border ${user?.avatarUrl ? 'hidden' : ''}`}>
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium border border-border ${user?.avatarUrl && !imgError ? 'hidden' : ''}`}>
                   {user?.fullName
                     ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                     : user?.email?.[0].toUpperCase() || 'U'}

@@ -269,7 +269,12 @@ export const authApi = {
      * Get current user
      */
     async me() {
-        return apiRequest('/auth/me');
+        return apiRequest('/auth/me', {
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
     },
 
     /**
