@@ -156,14 +156,25 @@ async function bootstrap() {
     // ===================
     // Swagger Documentation
     // ===================
+    const config = new DocumentBuilder()
+        .setTitle('DeJaVu API')
+        .setDescription('The DeJaVu API documentation')
+        .setVersion('1.0')
+        .addBearerAuth()
+        .build();
+    const document = SwaggerModule.createDocument(app, config);
+    
+    // Setup Swagger at /api endpoint (as requested)
+    SwaggerModule.setup('api', app, document, {
+        swaggerOptions: {
+            persistAuthorization: true,
+            tagsSorter: 'alpha',
+            operationsSorter: 'alpha',
+        },
+    });
+    
+    // Also keep /docs for backward compatibility (only in non-production)
     if (nodeEnv !== 'production') {
-        const config = new DocumentBuilder()
-            .setTitle('DeJaVu API')
-            .setDescription('The DeJaVu API documentation')
-            .setVersion('1.0')
-            .addBearerAuth()
-            .build();
-        const document = SwaggerModule.createDocument(app, config);
         SwaggerModule.setup('docs', app, document);
     }
 
@@ -179,8 +190,9 @@ async function bootstrap() {
     await app.listen(port);
 
     logger.log(`🚀 DeJaVu API running on http://localhost:${port}/${apiPrefix}`);
+    logger.log(`📚 Swagger UI: http://localhost:${port}/api`);
     if (nodeEnv !== 'production') {
-        logger.log(`📚 Swagger UI: http://localhost:${port}/docs`);
+        logger.log(`📚 Swagger UI (legacy): http://localhost:${port}/docs`);
     }
     logger.log(`📝 Environment: ${nodeEnv}`);
     logger.log(`🔒 CORS enabled for: ${corsOrigins}`);

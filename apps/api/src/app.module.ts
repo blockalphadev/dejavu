@@ -12,6 +12,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { ReferralsModule } from './modules/referrals/referrals.module.js';
 import { TransactionsModule } from './modules/transactions/transactions.module.js';
+import { SportsModule } from './modules/sports/sports.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthController } from './health.controller.js';
 import { envSchema } from './config/env.validation.js';
@@ -53,6 +54,7 @@ import { AuditLogInterceptor } from './common/interceptors/index.js';
         SettingsModule,
         ReferralsModule,
         TransactionsModule,
+        SportsModule,
     ],
     controllers: [HealthController],
     providers: [
