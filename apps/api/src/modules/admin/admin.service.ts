@@ -272,7 +272,7 @@ export class AdminService {
             id: w.id,
             withdrawalId: w.withdrawal_id,
             userId: w.user_id,
-            userEmail: w.user?.email || 'Unknown',
+            userEmail: (w.user as any)?.email || 'Unknown',
             amount: parseFloat(w.amount),
             currency: w.currency,
             chain: w.chain,
