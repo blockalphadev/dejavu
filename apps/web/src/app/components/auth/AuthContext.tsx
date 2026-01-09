@@ -44,8 +44,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
      * Fetch current user from API
      */
     const refreshUser = useCallback(async () => {
+        // Check if we have any auth credentials before making API call
         const token = getAccessToken();
-        if (!token) {
+        const hasRefreshToken = !!localStorage.getItem('dejavu_refresh_token');
+
+        if (!token && !hasRefreshToken) {
+            // No credentials at all, user is definitely logged out
             setUser(null);
             setIsLoading(false);
             return;
@@ -53,9 +57,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         try {
             const userData = await authApi.me() as User;
+            console.log('[AuthContext] User data fetched:', userData);
             setUser(userData);
         } catch (error) {
-            console.error('Failed to refresh user:', error);
+            console.error('[AuthContext] Failed to refresh user:', error);
             // Only clear user if we actually lost the token (e.g. 401 handled by api.ts)
             if (!getAccessToken()) {
                 setUser(null);

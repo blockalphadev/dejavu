@@ -40,11 +40,50 @@ const CHAINS = [
     { id: 'sui', name: 'Sui', icon: '/images/coin/sui.png', chainId: 901 },
 ];
 
+// Helper function to validate Solana address (base58)
+const isValidSolanaAddress = (addr: string): boolean => {
+    // Solana addresses are 32-44 characters, base58 encoded
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    return base58Regex.test(addr);
+};
+
+// Helper function to validate Sui address
+const isValidSuiAddress = (addr: string): boolean => {
+    // Sui addresses are 66 characters (0x + 64 hex chars)
+    const suiRegex = /^0x[a-fA-F0-9]{64}$/;
+    return suiRegex.test(addr);
+};
+
+// Get address placeholder based on chain
+const getAddressPlaceholder = (chainId: string): string => {
+    switch (chainId) {
+        case 'solana':
+            return 'Enter Solana address...';
+        case 'sui':
+            return '0x... (64 characters)';
+        default:
+            return '0x...';
+    }
+};
+
+// Validate address based on selected chain
+const isValidAddress = (addr: string, chainId: string): boolean => {
+    if (!addr) return false;
+    switch (chainId) {
+        case 'solana':
+            return isValidSolanaAddress(addr);
+        case 'sui':
+            return isValidSuiAddress(addr);
+        default:
+            return isAddress(addr); // Ethereum validation
+    }
+};
+
 export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: WithdrawModalProps) {
     const { wallets } = useWallets();
     const [amount, setAmount] = useState('');
     const [address, setAddress] = useState('');
-    const [selectedChain, setSelectedChain] = useState(CHAINS[1]); // Default to Base
+    const [selectedChain, setSelectedChain] = useState(CHAINS[0]); // Default to Ethereum
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState<'input' | 'processing' | 'success'>('input');
     const [error, setError] = useState<string | null>(null);
@@ -61,8 +100,13 @@ export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: 
             setError('Insufficient balance');
             return;
         }
-        if (!address || !isAddress(address)) {
-            setError('Invalid Wallet Address');
+        if (!isValidAddress(address, selectedChain.id)) {
+            const errorMsg = selectedChain.id === 'solana'
+                ? 'Invalid Solana Address (must be base58 format)'
+                : selectedChain.id === 'sui'
+                    ? 'Invalid Sui Address (must be 0x followed by 64 hex characters)'
+                    : 'Invalid Wallet Address';
+            setError(errorMsg);
             return;
         }
 
@@ -168,7 +212,11 @@ export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: 
                                 {CHAINS.map(chain => (
                                     <button
                                         key={chain.id}
-                                        onClick={() => setSelectedChain(chain)}
+                                        onClick={() => {
+                                            setSelectedChain(chain);
+                                            setAddress(''); // Clear address when chain changes
+                                            setError(null);
+                                        }}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${selectedChain.id === chain.id
                                             ? 'bg-blue-600/20 border-blue-500 text-white'
                                             : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-800'
@@ -208,7 +256,7 @@ export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: 
                                 value={address}
                                 onChange={(e) => setAddress(e.target.value)}
                                 className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 font-mono text-sm"
-                                placeholder="0x..."
+                                placeholder={getAddressPlaceholder(selectedChain.id)}
                             />
                         </div>
 

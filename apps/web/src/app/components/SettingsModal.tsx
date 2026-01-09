@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     User,
     Shield,
@@ -47,6 +47,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [username, setUsername] = useState(user?.fullName || '');
     const [bio, setBio] = useState(user?.bio || '');
 
+    // Sync form state with user data
+    useEffect(() => {
+        if (user) {
+            setEmail(user.email || '');
+            setUsername(user.fullName || '');
+            setBio(user.bio || '');
+        }
+    }, [user]);
+
     // Wallet form state
     const [newWalletAddress, setNewWalletAddress] = useState('');
     const [newWalletChain, setNewWalletChain] = useState('ethereum');
@@ -58,16 +67,26 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     const handleSave = async () => {
         setIsLoading(true);
+
+        const payload = {
+            fullName: username,
+            bio: bio,
+        };
+
+        console.log('[SettingsModal] Sending profile update:', JSON.stringify(payload));
+
         try {
-            await userApi.updateProfile({
-                fullName: username,
-                bio: bio,
-            });
+            const updatedUser = await userApi.updateProfile(payload);
+            console.log('[SettingsModal] Server response:', JSON.stringify(updatedUser));
+
+            // Force refresh to get the latest state including any server-side transformations
             await refreshUser();
+            console.log('[SettingsModal] User refreshed successfully');
+
             showToast('Profile updated successfully', 'success');
         } catch (error) {
-            showToast('Failed to update profile', 'error');
-            console.error(error);
+            showToast('Failed to update profile. Please try again.', 'error');
+            console.error('[SettingsModal] Profile update failed:', error);
         } finally {
             setIsLoading(false);
         }
@@ -138,12 +157,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                 if (file) {
                                                     setIsLoading(true);
                                                     try {
-                                                        await userApi.uploadAvatar(file);
+                                                        const { avatarUrl } = await userApi.uploadAvatar(file);
+                                                        // Update local state immediately if possible, or wait for refresh
                                                         await refreshUser();
                                                         showToast('Profile picture updated', 'success');
                                                     } catch (err) {
-                                                        console.error(err);
-                                                        showToast('Failed to upload', 'error');
+                                                        console.error('Avatar upload failed:', err);
+                                                        showToast('Failed to upload image. Max size 5MB.', 'error');
                                                     } finally {
                                                         setIsLoading(false);
                                                         // Reset input

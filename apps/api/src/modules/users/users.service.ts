@@ -164,6 +164,8 @@ export class UsersService {
      * Update user profile
      */
     async updateProfile(id: string, update: ProfileUpdate): Promise<Profile> {
+        this.logger.log(`Updating profile ${id} with data: ${JSON.stringify(update)}`);
+
         const supabase = this.supabaseService.getAdminClient();
         const { data, error } = await supabase
             .from('profiles')
@@ -173,10 +175,12 @@ export class UsersService {
             .single();
 
         if (error) {
-            this.logger.error(`Failed to update profile: ${error.message}`);
+            this.logger.error(`Failed to update profile ${id}: ${error.message}`);
+            this.logger.error(`Error details: ${JSON.stringify(error)}`);
             throw new NotFoundException('Profile not found');
         }
 
+        this.logger.log(`Profile ${id} updated successfully: ${JSON.stringify(data)}`);
         return data as Profile;
     }
 
