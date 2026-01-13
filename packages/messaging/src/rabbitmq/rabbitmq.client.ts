@@ -6,7 +6,7 @@
  */
 
 import amqp from 'amqplib';
-import type { Connection, Channel, Options } from 'amqplib';
+import type { ChannelModel, Channel } from 'amqplib';
 import type { RabbitMQConfig } from '../messaging.config';
 import { DEFAULT_RABBITMQ_CONFIG, createRabbitMQUrl } from '../messaging.config';
 import type { ExchangeConfig, QueueConfig, BindingConfig } from '../messaging.types';
@@ -15,7 +15,7 @@ import type { ExchangeConfig, QueueConfig, BindingConfig } from '../messaging.ty
  * RabbitMQ client wrapper with enhanced functionality
  */
 export class RabbitMQClient {
-    private connection: Connection | null = null;
+    private connection: ChannelModel | null = null;
     private channel: Channel | null = null;
     private readonly config: RabbitMQConfig;
     private reconnectAttempts: number = 0;
@@ -39,16 +39,15 @@ export class RabbitMQClient {
 
         try {
             const url = createRabbitMQUrl(this.config);
-            const options: Options.Connect = {
-                heartbeat: this.config.heartbeat,
+            const socketOptions = {
                 timeout: this.config.connectionTimeout,
             };
 
-            this.connection = await amqp.connect(url, options);
+            this.connection = await amqp.connect(url, socketOptions);
             console.log('[RabbitMQ] Connected');
 
             // Setup connection event handlers
-            this.connection.on('error', (error) => {
+            this.connection.on('error', (error: Error) => {
                 console.error('[RabbitMQ] Connection error:', error.message);
             });
 
@@ -59,14 +58,6 @@ export class RabbitMQClient {
                 if (!this.isShuttingDown) {
                     this.scheduleReconnect();
                 }
-            });
-
-            this.connection.on('blocked', (reason) => {
-                console.warn('[RabbitMQ] Connection blocked:', reason);
-            });
-
-            this.connection.on('unblocked', () => {
-                console.log('[RabbitMQ] Connection unblocked');
             });
 
             // Create initial channel
@@ -112,23 +103,24 @@ export class RabbitMQClient {
             throw new Error('Not connected to RabbitMQ');
         }
 
-        this.channel = await this.connection.createChannel();
+        const channel = await this.connection.createChannel();
+        this.channel = channel;
         console.log('[RabbitMQ] Channel created');
 
         // Set prefetch
-        await this.channel.prefetch(this.config.prefetchCount || 10);
+        await channel.prefetch(this.config.prefetchCount || 10);
 
         // Channel error handling
-        this.channel.on('error', (error) => {
+        channel.on('error', (error: Error) => {
             console.error('[RabbitMQ] Channel error:', error.message);
         });
 
-        this.channel.on('close', () => {
+        channel.on('close', () => {
             console.log('[RabbitMQ] Channel closed');
             this.channel = null;
         });
 
-        return this.channel;
+        return channel;
     }
 
     /**
