@@ -20,7 +20,10 @@
         "@nestjs/jwt": "^10.2.0",
         "@nestjs/passport": "^10.0.0",
         "@nestjs/platform-express": "^10.4.0",
+        "@nestjs/platform-socket.io": "^10.4.22",
+        "@nestjs/schedule": "^6.1.0",
         "@nestjs/swagger": "^7.4.2",
+        "@nestjs/websockets": "^10.4.22",
         "@solana/web3.js": "^1.95.0",
         "@supabase/supabase-js": "^2.45.0",
         "bcrypt": "^5.1.1",
@@ -37,9 +40,11 @@
         "passport-jwt": "^4.0.1",
         "reflect-metadata": "^0.2.2",
         "rxjs": "^7.8.1",
+        "socket.io": "^4.8.3",
         "swagger-ui-express": "^5.0.1",
         "tweetnacl": "^1.0.3",
-        "zod": "^3.23.0"
+        "zod": "^3.23.0",
+        "@dejavu/messaging": "workspace:*"
     },
     "devDependencies": {
         "@nestjs/cli": "^10.4.0",

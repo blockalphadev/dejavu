@@ -67,6 +67,18 @@ export const DELAYED_EXCHANGE: ExchangeConfig = {
 };
 
 /**
+ * Sports exchange
+ *
+ * Used for sports events and live updates (topic for flexible routing)
+ */
+export const SPORTS_EXCHANGE: ExchangeConfig = {
+    name: 'dejavu.sports',
+    type: 'topic',
+    durable: true,
+    autoDelete: false,
+};
+
+/**
  * All exchanges to be declared
  */
 export const ALL_EXCHANGES: ExchangeConfig[] = [
@@ -74,6 +86,7 @@ export const ALL_EXCHANGES: ExchangeConfig[] = [
     COMMANDS_EXCHANGE,
     NOTIFICATIONS_EXCHANGE,
     DEAD_LETTER_EXCHANGE,
+    SPORTS_EXCHANGE,
 ];
 
 /**
@@ -110,10 +123,21 @@ export const ROUTING_KEYS = {
     BLOCKCHAIN_TX_CONFIRMED: 'blockchain.tx_confirmed',
     BLOCKCHAIN_TX_FAILED: 'blockchain.tx_failed',
 
+    // Sports events
+    SPORTS_EVENT_CREATED: 'sports.event.created',
+    SPORTS_EVENT_UPDATED: 'sports.event.updated',
+    SPORTS_EVENT_LIVE: 'sports.event.live',
+    SPORTS_EVENT_FINISHED: 'sports.event.finished',
+    SPORTS_MARKET_CREATED: 'sports.market.created',
+    SPORTS_MARKET_RESOLVED: 'sports.market.resolved',
+    SPORTS_ODDS_UPDATED: 'sports.odds.updated',
+    SPORTS_SYNC_COMPLETED: 'sports.sync.completed',
+
     // Wildcard patterns
     ALL_MARKET_EVENTS: 'market.*',
     ALL_ORDER_EVENTS: 'order.*',
     ALL_TRADE_EVENTS: 'trade.*',
     ALL_USER_EVENTS: 'user.*',
+    ALL_SPORTS_EVENTS: 'sports.*',
     ALL_EVENTS: '#',
 } as const;

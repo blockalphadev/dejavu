@@ -5,7 +5,11 @@
         "rootDir": "./src",
         "declaration": true,
         "declarationMap": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "allowImportingTsExtensions": false,
+        "moduleResolution": "NodeNext",
+        "module": "NodeNext",
+        "noEmit": false
     },
     "include": [
         "src/**/*"

@@ -14,7 +14,7 @@ import { ChevronLeft } from "lucide-react";
 import { Footer } from "./components/Footer";
 import { MarketGrid } from "./components/MarketGrid";
 import { CategoryNav } from "./components/CategoryNav";
-import SportsCategory from "./components/SportsCategory";
+import { SportsMarketPage } from "./components/SportsMarketPage";
 import { MobileBottomNav } from "./components/MobileBottomNav";
 import { PortfolioPage } from "./components/PortfolioPage";
 import { MobileMenu } from "./components/MobileMenu";
@@ -100,8 +100,8 @@ function AppContent() {
         <main className="flex-1 min-w-0">
           {activeTab === 'markets' && (
             <>
-              {activeCategory === 'Sports' ? (
-                <SportsCategory />
+              {activeCategory === 'sports' ? (
+                <SportsMarketPage onOpenAuth={handleOpenAuth} />
               ) : (
                 <>
                   {activeCategory === 'signals' && <HeroSection />}
