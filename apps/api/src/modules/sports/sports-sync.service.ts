@@ -3,6 +3,7 @@
  * 
  * Orchestrates data synchronization from external APIs.
  * Handles scheduled syncs, incremental updates, and error recovery.
+ * Supports multi-sport sync via APISportsClient.
  */
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
@@ -11,6 +12,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseService } from '../../database/supabase.service.js';
 import { TheSportsDBClient } from './clients/thesportsdb.client.js';
 import { APIFootballClient } from './clients/api-football.client.js';
+import { APISportsClient, SPORT_API_CONFIGS } from './clients/api-sports.client.js';
 import { SportsService } from './sports.service.js';
 import {
     SportType,
@@ -29,6 +31,7 @@ export class SportsSyncService implements OnModuleInit {
         private readonly sportsService: SportsService,
         private readonly theSportsDBClient: TheSportsDBClient,
         private readonly apiFootballClient: APIFootballClient,
+        private readonly apiSportsClient: APISportsClient,
     ) { }
 
     async onModuleInit() {
@@ -252,7 +255,7 @@ export class SportsSyncService implements OnModuleInit {
 
             if (dbEvents && dbEvents.length > 0) {
                 // Generate markets for new events
-                await this.sportsService.generateDefaultMarkets(dbEvents);
+                await this.sportsService.generateDefaultMarkets(50);
 
                 // Also try to sync odds for these events
                 try {
@@ -484,6 +487,202 @@ export class SportsSyncService implements OnModuleInit {
             });
             throw error;
         }
+    }
+
+    // ========================
+    // Multi-Sport Sync (API-Sports)
+    // ========================
+
+    /**
+     * Get API-Sports usage statistics
+     */
+    getAPISportsUsage(): {
+        dailyCount: number;
+        dailyLimit: number;
+        remaining: number;
+        percentUsed: number;
+        lastReset: string;
+    } {
+        return this.apiSportsClient.getUsageStats();
+    }
+
+    /**
+     * Sync data from a specific sport using APISportsClient
+     * This uses the unified multi-sport client for all non-football sports
+     */
+    async syncFromAPISports(
+        sport: string,
+        syncType: 'leagues' | 'games' | 'live' = 'games'
+    ): Promise<SyncResult> {
+        const startTime = Date.now();
+
+        // Check quota before proceeding
+        if (!this.apiSportsClient.canMakeRequest()) {
+            const usage = this.apiSportsClient.getUsageStats();
+            this.logger.warn(`Daily API limit exhausted (${usage.dailyCount}/${usage.dailyLimit}). Skipping ${sport} sync.`);
+            return {
+                success: false,
+                source: DataSource.APIFOOTBALL,
+                syncType,
+                recordsFetched: 0,
+                recordsCreated: 0,
+                recordsUpdated: 0,
+                recordsFailed: 0,
+                durationMs: 0,
+                errors: ['Daily API limit exhausted'],
+            };
+        }
+
+        // Get sport config
+        const sportConfig = SPORT_API_CONFIGS[sport.toLowerCase()];
+        if (!sportConfig) {
+            throw new Error(`Unsupported sport: ${sport}`);
+        }
+
+        const syncLog = await this.createSyncLog(syncType, sportConfig.dataSource, sportConfig.sportType);
+
+        try {
+            this.logger.log(`Starting ${syncType} sync for ${sport} via API-Sports...`);
+
+            // Set the sport context
+            this.apiSportsClient.setSport(sport);
+
+            let totalFetched = 0;
+            let totalCreated = 0;
+            let totalUpdated = 0;
+
+            switch (syncType) {
+                case 'leagues': {
+                    const leagues = await this.apiSportsClient.getLeagues();
+                    totalFetched = leagues.length;
+
+                    if (leagues.length > 0) {
+                        const result = await this.sportsService.upsertLeagues(leagues);
+                        totalCreated = result.created;
+                        totalUpdated = result.updated;
+                    }
+                    break;
+                }
+                case 'games': {
+                    const games = await this.apiSportsClient.getUpcomingGames();
+                    totalFetched = games.length;
+
+                    if (games.length > 0) {
+                        const result = await this.sportsService.upsertEvents(games);
+                        totalCreated = result.created;
+                        totalUpdated = result.updated;
+                    }
+                    break;
+                }
+                case 'live': {
+                    const liveGames = await this.apiSportsClient.getLiveGames();
+                    totalFetched = liveGames.length;
+
+                    if (liveGames.length > 0) {
+                        const result = await this.sportsService.upsertEvents(liveGames);
+                        totalUpdated = result.updated;
+                    }
+                    break;
+                }
+            }
+
+            const durationMs = Date.now() - startTime;
+            await this.updateSyncLog(syncLog.id, {
+                status: SyncStatus.COMPLETED,
+                recordsFetched: totalFetched,
+                recordsCreated: totalCreated,
+                recordsUpdated: totalUpdated,
+                durationMs,
+            });
+
+            this.logger.log(`API-Sports ${sport} ${syncType} sync completed: ${totalFetched} fetched (${durationMs}ms)`);
+
+            return {
+                success: true,
+                source: sportConfig.dataSource,
+                syncType,
+                recordsFetched: totalFetched,
+                recordsCreated: totalCreated,
+                recordsUpdated: totalUpdated,
+                recordsFailed: 0,
+                durationMs,
+            };
+        } catch (error) {
+            const durationMs = Date.now() - startTime;
+            const errorMessage = (error as Error).message;
+
+            await this.updateSyncLog(syncLog.id, {
+                status: SyncStatus.FAILED,
+                errorMessage,
+                durationMs,
+            });
+
+            this.logger.error(`API-Sports ${sport} ${syncType} sync failed: ${errorMessage}`);
+
+            return {
+                success: false,
+                source: sportConfig.dataSource,
+                syncType,
+                recordsFetched: 0,
+                recordsCreated: 0,
+                recordsUpdated: 0,
+                recordsFailed: 1,
+                durationMs,
+                errors: [errorMessage],
+            };
+        }
+    }
+
+    /**
+     * Sync multiple sports with priority-based scheduling
+     * Prioritizes Football, NBA, NFL, then others
+     * Respects daily API limits
+     */
+    async syncMultipleSports(
+        syncType: 'leagues' | 'games' | 'live' = 'games'
+    ): Promise<{ results: Record<string, SyncResult>; totalFetched: number }> {
+        const prioritizedSports = [
+            'football', 'nba', 'nfl', 'basketball',
+            'hockey', 'mma', 'formula1', 'rugby',
+            'volleyball', 'handball', 'afl'
+        ];
+
+        const results: Record<string, SyncResult> = {};
+        let totalFetched = 0;
+
+        for (const sport of prioritizedSports) {
+            // Check remaining quota
+            const usage = this.apiSportsClient.getUsageStats();
+            if (usage.remaining < 2) {
+                this.logger.warn(`Stopping multi-sport sync. Only ${usage.remaining} requests remaining.`);
+                break;
+            }
+
+            try {
+                const result = await this.syncFromAPISports(sport, syncType);
+                results[sport] = result;
+                totalFetched += result.recordsFetched;
+
+                // Add delay between sports to be nice to the API
+                await this.sleep(1500);
+            } catch (error) {
+                this.logger.error(`Failed to sync ${sport}:`, error);
+                results[sport] = {
+                    success: false,
+                    source: DataSource.APIFOOTBALL,
+                    syncType,
+                    recordsFetched: 0,
+                    recordsCreated: 0,
+                    recordsUpdated: 0,
+                    recordsFailed: 1,
+                    durationMs: 0,
+                    errors: [(error as Error).message],
+                };
+            }
+        }
+
+        this.logger.log(`Multi-sport sync completed. Total fetched: ${totalFetched}`);
+        return { results, totalFetched };
     }
 
     /**

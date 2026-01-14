@@ -27,6 +27,7 @@ import {
 } from '@nestjs/swagger';
 import { SportsService } from './sports.service.js';
 import { SportsSyncService } from './sports-sync.service.js';
+import { SportsETLOrchestrator } from './sports-etl-orchestrator.service.js';
 import {
     SportsLeaguesQueryDto,
     SportsEventsQueryDto,
@@ -53,6 +54,7 @@ export class SportsController {
     constructor(
         private readonly sportsService: SportsService,
         private readonly sportsSyncService: SportsSyncService,
+        private readonly etlOrchestrator: SportsETLOrchestrator,
     ) { }
 
     // ========================
@@ -275,6 +277,105 @@ export class SportsController {
     }
 
     // ========================
+    // Multi-Sport API Endpoints
+    // ========================
+
+    @Get('sync/usage')
+    @ApiOperation({ summary: 'Get API-Sports usage statistics' })
+    @ApiResponse({ status: 200, description: 'Usage statistics' })
+    async getAPIUsage(): Promise<{
+        dailyCount: number;
+        dailyLimit: number;
+        remaining: number;
+        percentUsed: number;
+        lastReset: string;
+    }> {
+        return this.sportsSyncService.getAPISportsUsage();
+    }
+
+    @Post('sync/sport/:sport')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Sync specific sport from API-Sports (Admin)' })
+    @ApiParam({ name: 'sport', description: 'Sport name (e.g., football, basketball, nba)' })
+    @ApiQuery({ name: 'type', enum: ['leagues', 'games', 'live'], required: false })
+    @ApiBearerAuth()
+    @ApiResponse({ status: 200, description: 'Sync completed' })
+    // @UseGuards(JwtAuthGuard, AdminGuard)
+    async syncSingleSport(
+        @Param('sport') sport: string,
+        @Query('type') syncType: 'leagues' | 'games' | 'live' = 'games',
+    ): Promise<SyncResultResponseDto> {
+        return this.sportsSyncService.syncFromAPISports(sport, syncType);
+    }
+
+    @Post('sync/multi')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Sync multiple sports with priority (Admin)' })
+    @ApiQuery({ name: 'type', enum: ['leagues', 'games', 'live'], required: false })
+    @ApiBearerAuth()
+    @ApiResponse({ status: 200, description: 'Multi-sport sync completed' })
+    // @UseGuards(JwtAuthGuard, AdminGuard)
+    async syncMultipleSports(
+        @Query('type') syncType: 'leagues' | 'games' | 'live' = 'games',
+    ): Promise<{ results: Record<string, unknown>; totalFetched: number }> {
+        return this.sportsSyncService.syncMultipleSports(syncType);
+    }
+
+    // ========================
+    // ETL Orchestrator Endpoints
+    // ========================
+
+    @Get('etl/status')
+    @ApiOperation({ summary: 'Get ETL orchestrator status' })
+    @ApiResponse({ status: 200, description: 'ETL status with sync info and API usage' })
+    async getETLStatus(): Promise<{
+        isSyncing: boolean;
+        lastSyncTime: Date | null;
+        config: unknown;
+        apiSportsUsage: unknown;
+    }> {
+        return this.etlOrchestrator.getStatus();
+    }
+
+    @Post('etl/sync')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Trigger ETL sync for all sports (Admin)' })
+    @ApiQuery({ name: 'type', enum: ['leagues', 'games', 'live'], required: false })
+    @ApiBearerAuth()
+    @ApiResponse({ status: 200, description: 'ETL sync completed' })
+    // @UseGuards(JwtAuthGuard, AdminGuard)
+    async triggerETLSync(
+        @Query('type') syncType: 'leagues' | 'games' | 'live' = 'games',
+    ): Promise<{ results: Record<string, unknown>; totalFetched: number }> {
+        return this.etlOrchestrator.syncAllSports(syncType);
+    }
+
+    @Post('etl/sync/:sport')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Trigger ETL sync for specific sport (Admin)' })
+    @ApiParam({ name: 'sport', description: 'Sport type (e.g., football, nba)' })
+    @ApiQuery({ name: 'type', enum: ['leagues', 'games', 'live'], required: false })
+    @ApiBearerAuth()
+    @ApiResponse({ status: 200, description: 'Sport ETL sync completed' })
+    // @UseGuards(JwtAuthGuard, AdminGuard)
+    async triggerETLSyncForSport(
+        @Param('sport') sport: SportType,
+        @Query('type') syncType: 'leagues' | 'games' | 'live' = 'games',
+    ): Promise<unknown> {
+        return this.etlOrchestrator.syncSport(sport, syncType);
+    }
+
+    @Post('etl/sync/live')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Sync live scores for all sports (Admin)' })
+    @ApiBearerAuth()
+    @ApiResponse({ status: 200, description: 'Live scores synced' })
+    // @UseGuards(JwtAuthGuard, AdminGuard)
+    async syncLiveScoresAll(): Promise<unknown[]> {
+        return this.etlOrchestrator.syncLiveScoresAllSports();
+    }
+
+    // ========================
     // Sport Categories
     // ========================
 
@@ -298,3 +399,7 @@ export class SportsController {
         ];
     }
 }
+
+
+
+

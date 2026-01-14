@@ -21,6 +21,8 @@ import {
     Timer,
     Trophy
 } from 'lucide-react';
+import { usePredictionMarket } from '../hooks/usePredictionMarket';
+import { useWallet } from '../hooks/useWallet';
 
 export interface PredictionMarket {
     id: string;
@@ -93,18 +95,45 @@ export function SportsPredictionCard({
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    const { buyShares, isTransacting, lastTxHash } = usePredictionMarket();
+    const { isConnected, connect } = useWallet();
+
     const handlePredict = useCallback(async (outcome: 'yes' | 'no') => {
-        if (isPending || isFinished) return;
+        if (isPending || isFinished || isTransacting) return;
+
+        // 1. Ensure Wallet Connected
+        if (!isConnected) {
+            connect();
+            return;
+        }
 
         setSelectedOutcome(outcome);
         setIsPending(true);
 
-        // Optimistic update with anti-throttling
-        setTimeout(() => {
-            setIsPending(false);
+        try {
+            // 2. Blockchain Transaction (Non-custodial)
+            // Mocking cost/shares for demo: 10 shares for 0.01 ETH
+            // In prod, this comes from an AMM calculation hook
+            const outcomeId = outcome === 'yes' ? 0 : 1;
+            const mockShares = 10;
+            const mockCost = "0.01";
+
+            // Generate a numeric ID from UUID (hash) or assume market.id is numeric for contract
+            // For this demo, we use a fixed ID or hash the string
+            const numericMarketId = 1; // Placeholder for contract mapping
+
+            await buyShares(numericMarketId, outcomeId, mockShares, mockCost);
+
+            // 3. Success Callback
             onPredict?.(market.id, outcome);
-        }, 300);
-    }, [market.id, onPredict, isPending, isFinished]);
+        } catch (err) {
+            console.error("Prediction failed:", err);
+            // Optionally show toast error here
+        } finally {
+            setIsPending(false);
+            // Don't clear selected outcome immediately so user sees their choice
+        }
+    }, [market.id, onPredict, isPending, isFinished, isTransacting, isConnected, connect, buyShares]);
 
     return (
         <div
@@ -240,10 +269,23 @@ export function SportsPredictionCard({
 
                 {/* Prediction Buttons */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
+                    {/* Transaction Link */}
+                    {lastTxHash && (
+                        <div className="col-span-2 text-center mb-2">
+                            <a
+                                href={`https://sepolia.etherscan.io/tx/${lastTxHash}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-primary hover:underline"
+                            >
+                                View Transaction: {lastTxHash.slice(0, 6)}...{lastTxHash.slice(-4)}
+                            </a>
+                        </div>
+                    )}
                     {/* YES Button */}
                     <Button
                         variant="outline"
-                        disabled={isFinished || isPending}
+                        disabled={isFinished || isPending || isTransacting}
                         onClick={() => handlePredict('yes')}
                         className={cn(
                             "relative h-14 flex flex-col items-center justify-center gap-0.5 rounded-xl font-medium transition-all duration-200",
@@ -253,14 +295,14 @@ export function SportsPredictionCard({
                                 : "bg-green-500/5 border-green-500/30 text-green-600 hover:bg-green-500/10 hover:border-green-500/50"
                         )}
                     >
-                        <span className="text-xs uppercase tracking-wider opacity-80">Yes</span>
+                        <span className="text-xs uppercase tracking-wider opacity-80">{isTransacting && selectedOutcome === 'yes' ? 'Signing...' : 'Yes'}</span>
                         <span className="text-xl font-bold">{yesPercent}¢</span>
                     </Button>
 
                     {/* NO Button */}
                     <Button
                         variant="outline"
-                        disabled={isFinished || isPending}
+                        disabled={isFinished || isPending || isTransacting}
                         onClick={() => handlePredict('no')}
                         className={cn(
                             "relative h-14 flex flex-col items-center justify-center gap-0.5 rounded-xl font-medium transition-all duration-200",
@@ -270,7 +312,7 @@ export function SportsPredictionCard({
                                 : "bg-red-500/5 border-red-500/30 text-red-600 hover:bg-red-500/10 hover:border-red-500/50"
                         )}
                     >
-                        <span className="text-xs uppercase tracking-wider opacity-80">No</span>
+                        <span className="text-xs uppercase tracking-wider opacity-80">{isTransacting && selectedOutcome === 'no' ? 'Signing...' : 'No'}</span>
                         <span className="text-xl font-bold">{noPercent}¢</span>
                     </Button>
                 </div>

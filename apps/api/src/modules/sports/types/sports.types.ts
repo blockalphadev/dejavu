@@ -38,7 +38,19 @@ export enum EventStatus {
 export enum DataSource {
     THESPORTSDB = 'thesportsdb',
     APIFOOTBALL = 'apifootball',
+    APIBASEBALL = 'apibaseball',
+    APIBASKETBALL = 'apibasketball',
+    APIAFL = 'apiafl',
+    APIFORMULA1 = 'apiformula1',
+    APIHANDBALL = 'apihandball',
+    APIHOCKEY = 'apihockey',
+    APIMMA = 'apimma',
+    APINBA = 'apinba',
+    APINFL = 'apinfl',
+    APIRUGBY = 'apirugby',
+    APIVOLLEYBALL = 'apivolleyball',
     MANUAL = 'manual',
+    ETL_ORCHESTRATOR = 'etl_orchestrator',
 }
 
 export enum SyncStatus {

@@ -5,25 +5,29 @@
 ## Table of Contents
 1. [System Overview](#system-overview)
 2. [Architecture](#architecture)
-3. [Database Schema](#database-schema)
-4. [Backend Implementation](#backend-implementation)
-5. [API Integration](#api-integration)
-6. [RabbitMQ Messaging](#rabbitmq-messaging)
-7. [Frontend Integration](#frontend-integration)
-8. [Market Resolution](#market-resolution)
-9. [Security & Rate Limiting](#security--rate-limiting)
-10. [Deployment](#deployment)
+3. [ETL Pipeline](#etl-pipeline)
+4. [Database Schema](#database-schema)
+5. [Backend Implementation](#backend-implementation)
+6. [API Integration](#api-integration)
+7. [RabbitMQ Messaging](#rabbitmq-messaging)
+8. [Frontend Integration](#frontend-integration)
+9. [Market Resolution](#market-resolution)
+10. [Security & Rate Limiting](#security--rate-limiting)
+11. [Deployment](#deployment)
 
 ---
 
 ## System Overview
 
-The Sports Prediction Market System enables users to create and trade prediction markets based on real-time sports data. It integrates with external APIs (TheSportsDB, API-Football) to fetch live sports data, processes events through RabbitMQ for real-time distribution, and provides a professional frontend experience.
+The Sports Prediction Market System enables users to create and trade prediction markets based on real-time sports data. It integrates with **multiple external APIs** (TheSportsDB + 11 API-Sports endpoints) to fetch comprehensive live sports data, processes events through RabbitMQ for real-time distribution, and provides a professional frontend experience.
 
 ### Key Features
 - **12 Supported Sports**: AFL, Baseball, Basketball, Football, Formula 1, Handball, Hockey, MMA, NBA, NFL, Rugby, Volleyball
+- **Multi-Source ETL Pipeline**: Combines data from TheSportsDB + API-Sports with intelligent deduplication
+- **Priority-Based Deduplication**: API-Sports data takes priority over TheSportsDB when duplicates found
 - **Real-time Updates**: WebSocket streaming via Socket.io
-- **Anti-Throttling**: Built-in rate limiting and request management
+- **Anti-Throttling**: Global rate limiting and circuit breaker patterns
+- **Automatic Scheduled Sync**: Hourly games sync, daily leagues sync, 2-minute live score sync
 - **Market Resolution**: Automatic market settlement based on event outcomes
 - **Mobile-first Design**: Responsive UI optimized for all devices
 
@@ -32,49 +36,174 @@ The Sports Prediction Market System enables users to create and trade prediction
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         DATA SOURCES                                │
-│  ┌─────────────────┐              ┌─────────────────┐              │
-│  │  TheSportsDB    │              │  API-Football   │              │
-│  │  (12 Sports)    │              │  (Soccer Focus) │              │
-│  └────────┬────────┘              └────────┬────────┘              │
-└───────────┼────────────────────────────────┼────────────────────────┘
-            │                                │
-            ▼                                ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                      BACKEND (NestJS API)                           │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                    Sports Module                             │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │   │
-│  │  │ TheSportsDB  │  │ API-Football │  │    Sports    │       │   │
-│  │  │   Client     │  │    Client    │  │   Gateway    │       │   │
-│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘       │   │
-│  │         │                 │                 │ WebSocket     │   │
-│  │         ▼                 ▼                 ▼               │   │
-│  │  ┌────────────────────────────────────────────────────────┐ │   │
-│  │  │              Sports Sync Service                       │ │   │
-│  │  │  • Scheduled Jobs  • Data Transformation  • Logging   │ │   │
-│  │  └────────────────────────┬───────────────────────────────┘ │   │
-│  │                           │                                 │   │
-│  │                           ▼                                 │   │
-│  │  ┌────────────────────────────────────────────────────────┐ │   │
-│  │  │                 Sports Service                         │ │   │
-│  │  │  • CRUD Operations  • Market Creation  • Resolution   │ │   │
-│  │  └────────────────────────┬───────────────────────────────┘ │   │
-│  └───────────────────────────┼─────────────────────────────────┘   │
-└──────────────────────────────┼──────────────────────────────────────┘
-                               │
-            ┌──────────────────┼──────────────────┐
-            ▼                  ▼                  ▼
-┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│    Supabase     │  │    RabbitMQ     │  │    Frontend     │
-│   (PostgreSQL)  │  │   (Messaging)   │  │   (React/Vite)  │
-│                 │  │                 │  │                 │
-│ • sports_leagues│  │ • sports.events │  │ • SportsCategory│
-│ • sports_teams  │  │ • sports.live   │  │ • useSportsData │
-│ • sports_events │  │ • sports.resolve│  │ • useSportsRT   │
-│ • sports_markets│  │                 │  │                 │
-└─────────────────┘  └─────────────────┘  └─────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              DATA SOURCES                                    │
+│  ┌───────────────────┐    ┌─────────────────────────────────────────────┐   │
+│  │   TheSportsDB     │    │            API-Sports (11 endpoints)        │   │
+│  │   (12 Sports)     │    │  Football│Basketball│NBA│NFL│Hockey│MMA│F1  │   │
+│  │   Free: 1000/day  │    │  Rugby│Volleyball│Handball│AFL              │   │
+│  └─────────┬─────────┘    └───────────────────┬─────────────────────────┘   │
+└────────────┼──────────────────────────────────┼─────────────────────────────┘
+             │                                  │
+             ▼                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          BACKEND (NestJS API)                                │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                     ETL Orchestrator Service                          │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │  │
+│  │  │ TheSportsDB │  │ API-Sports  │  │ Deduplicator│  │  Priority   │  │  │
+│  │  │   Client    │  │   Client    │  │  (by name)  │  │   Merger    │  │  │
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  │  │
+│  │         │                │                │                │         │  │
+│  │         └────────────────┴────────────────┴────────────────┘         │  │
+│  │                              │                                       │  │
+│  │                              ▼                                       │  │
+│  │  ┌───────────────────────────────────────────────────────────────┐  │  │
+│  │  │                   Sports Sync Service                          │  │  │
+│  │  │  • Cron Jobs  • Rate Limiting  • Circuit Breaker  • Logging   │  │  │
+│  │  └────────────────────────────┬──────────────────────────────────┘  │  │
+│  │                               │                                     │  │
+│  │                               ▼                                     │  │
+│  │  ┌───────────────────────────────────────────────────────────────┐  │  │
+│  │  │                    Sports Service                              │  │  │
+│  │  │  • CRUD Operations  • Market Creation  • Resolution           │  │  │
+│  │  └────────────────────────────┬──────────────────────────────────┘  │  │
+│  └───────────────────────────────┼─────────────────────────────────────┘  │
+└──────────────────────────────────┼────────────────────────────────────────┘
+                                   │
+            ┌──────────────────────┼──────────────────────┐
+            ▼                      ▼                      ▼
+┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+│      Supabase       │  │      RabbitMQ       │  │      Frontend       │
+│    (PostgreSQL)     │  │     (Messaging)     │  │    (React/Vite)     │
+│                     │  │                     │  │                     │
+│ • sports_leagues    │  │ • sports.events     │  │ • SportsMarketPage  │
+│ • sports_teams      │  │ • sports.live       │  │ • useSportsMarkets  │
+│ • sports_events     │  │ • sports.resolve    │  │ • SportsSidebar     │
+│ • sports_markets    │  │ • sports.sync       │  │ • WebSocket Client  │
+│ • sports_sync_logs  │  │                     │  │                     │
+└─────────────────────┘  └─────────────────────┘  └─────────────────────┘
+```
+
+---
+
+## ETL Pipeline
+
+The Sports ETL (Extract-Transform-Load) Orchestrator combines data from multiple sources with intelligent deduplication.
+
+### Data Sources
+
+| Source | Sports Covered | Rate Limit | Priority |
+|--------|---------------|------------|----------|
+| **TheSportsDB** | All 12 sports | 1000 req/day | 50 |
+| **API-Sports** (11 endpoints) | Football, Basketball, NBA, NFL, Hockey, MMA, F1, Rugby, Volleyball, Handball, AFL | 100 req/day | 100 |
+
+### API-Sports Endpoints
+
+| Sport | API Version | Base URL |
+|-------|-------------|----------|
+| Football | v3 | `v3.football.api-sports.io` |
+| Basketball | v1 | `v1.basketball.api-sports.io` |
+| NBA | v2 | `v2.nba.api-sports.io` |
+| NFL | v1 | `v1.american-football.api-sports.io` |
+| Hockey | v1 | `v1.hockey.api-sports.io` |
+| MMA | v1 | `v1.mma.api-sports.io` |
+| Formula-1 | v1 | `v1.formula-1.api-sports.io` |
+| Rugby | v1 | `v1.rugby.api-sports.io` |
+| Volleyball | v1 | `v1.volleyball.api-sports.io` |
+| Handball | v1 | `v1.handball.api-sports.io` |
+| AFL | v1 | `v1.afl.api-sports.io` |
+
+### ETL Flow
+
+```
+1. EXTRACT: Fetch from both sources in parallel
+       │
+       ▼
+2. TRANSFORM: Normalize data to internal format
+       │
+       ▼
+3. DEDUPLICATE: Match by (sport + date + home_team + away_team)
+       │
+       ▼
+4. MERGE: API-Sports wins (priority 100 > TheSportsDB 50)
+       │
+       ▼
+5. LOAD: Upsert to Supabase database
+       │
+       ▼
+6. PUBLISH: Send to RabbitMQ for real-time streaming
+```
+
+### Deduplication Logic
+
+When data comes from multiple sources, the ETL orchestrator:
+
+1. **Normalizes keys** - Creates unique identifiers:
+   - Leagues: `{sport}:{country}:{normalized_name}`
+   - Events: `{sport}:{date}:{home_team}:{away_team}`
+
+2. **Priority ordering** - Sorts by source priority:
+   - API-Sports endpoints: **100** (highest)
+   - TheSportsDB: **50**
+   - Manual: **25**
+
+3. **Merges data** - Higher priority wins, but fills in missing fields from lower priority
+
+```typescript
+// Example deduplication
+const DATA_SOURCE_PRIORITY: Record<DataSource, number> = {
+    [DataSource.APIFOOTBALL]: 100,
+    [DataSource.APIBASKETBALL]: 100,
+    [DataSource.APINBA]: 100,
+    // ... all API-Sports = 100
+    [DataSource.THESPORTSDB]: 50,
+    [DataSource.MANUAL]: 25,
+};
+```
+
+### Scheduled Sync Tasks
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| **Games Sync** | Every hour | Syncs upcoming games from all sources |
+| **Leagues Sync** | Daily at 3 AM | Full leagues refresh |
+| **Live Scores** | Every 2 minutes | Updates live game scores |
+
+### ETL API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sports/etl/status` | Get ETL status and API usage |
+| POST | `/api/v1/sports/etl/sync` | Trigger full ETL sync for all sports |
+| POST | `/api/v1/sports/etl/sync/:sport` | Sync specific sport from all sources |
+| POST | `/api/v1/sports/etl/sync/live` | Sync live scores for all sports |
+
+### Usage Example
+
+```bash
+# Check ETL status
+curl http://localhost:3001/api/v1/sports/etl/status
+
+# Response
+{
+  "isSyncing": false,
+  "lastSyncTime": "2026-01-15T00:17:00Z",
+  "config": {
+    "enableTheSportsDB": true,
+    "enableAPISports": true,
+    "deduplicateByName": true
+  },
+  "apiSportsUsage": {
+    "dailyCount": 5,
+    "dailyLimit": 100,
+    "remaining": 95,
+    "percentUsed": 5
+  }
+}
+
+# Trigger ETL sync for football
+curl -X POST "http://localhost:3001/api/v1/sports/etl/sync/football?type=games"
 ```
 
 ---
@@ -82,7 +211,8 @@ The Sports Prediction Market System enables users to create and trade prediction
 ## Database Schema
 
 ### File Location
-`apps/api/supabase/migrations/013_sports_data.sql`
+- `apps/api/supabase/migrations/013_sports_data.sql` - Main schema
+- `apps/api/supabase/migrations/018_update_data_sources.sql` - Multi-source enum update
 
 ### Tables
 
@@ -182,7 +312,9 @@ CREATE TYPE event_status AS ENUM (
 );
 
 CREATE TYPE data_source AS ENUM (
-    'thesportsdb', 'api_football', 'manual'
+    'thesportsdb', 'apifootball', 'apibasketball', 'apiafl',
+    'apiformula1', 'apihandball', 'apihockey', 'apimma',
+    'apinba', 'apinfl', 'apirugby', 'apivolleyball', 'manual'
 );
 
 CREATE TYPE sports_market_type AS ENUM (
@@ -212,22 +344,24 @@ SELECT auto_resolve_sports_market(market_id, TRUE);
 ```
 apps/api/src/modules/sports/
 ├── clients/
-│   ├── base-sports.client.ts     # Base class with rate limiting
-│   ├── thesportsdb.client.ts     # TheSportsDB API client
-│   ├── api-football.client.ts    # API-Football client
+│   ├── base-sports.client.ts       # Base class with rate limiting
+│   ├── thesportsdb.client.ts       # TheSportsDB API client (12 sports)
+│   ├── api-football.client.ts      # API-Football client (legacy)
+│   ├── api-sports.client.ts        # Unified API-Sports client (11 sports) ★ NEW
 │   └── index.ts
 ├── dto/
-│   ├── sports.dto.ts             # Request/Response DTOs
+│   ├── sports.dto.ts               # Request/Response DTOs
 │   └── index.ts
 ├── types/
-│   └── sports.types.ts           # TypeScript types & Zod schemas
-├── sports.module.ts              # NestJS module
-├── sports.controller.ts          # REST endpoints
-├── sports.service.ts             # Business logic
-├── sports-sync.service.ts        # Sync orchestration
-├── sports-messaging.service.ts   # RabbitMQ publishers
-├── sports-cleaner.service.ts     # Data validation & deduplication
-└── sports.gateway.ts             # WebSocket gateway for real-time streaming
+│   └── sports.types.ts             # TypeScript types & DataSource enums
+├── sports.module.ts                # NestJS module
+├── sports.controller.ts            # REST endpoints + ETL endpoints
+├── sports.service.ts               # Business logic
+├── sports-sync.service.ts          # Sync orchestration
+├── sports-etl-orchestrator.service.ts  # Multi-source ETL pipeline ★ NEW
+├── sports-messaging.service.ts     # RabbitMQ publishers
+├── sports-cleaner.service.ts       # Data validation & deduplication
+└── sports.gateway.ts               # WebSocket gateway
 ```
 
 ### Key Services
@@ -319,19 +453,46 @@ broadcastEventUpdate(event: any) {
 
 ### REST API Endpoints
 
+#### Public Endpoints
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/sports/categories` | List all sport categories |
-| GET | `/api/sports/leagues` | Get leagues (paginated) |
-| GET | `/api/sports/leagues/:id` | Get single league |
-| GET | `/api/sports/events` | Get events (paginated, filterable) |
-| GET | `/api/sports/events/live` | Get live events only |
-| GET | `/api/sports/events/upcoming` | Get upcoming events |
-| GET | `/api/sports/events/:id` | Get single event with details |
-| GET | `/api/sports/markets` | Get sports markets |
-| POST | `/api/sports/markets` | Create market from event (Admin) |
-| POST | `/api/sports/sync/leagues` | Trigger league sync (Admin) |
-| POST | `/api/sports/sync/events` | Trigger event sync (Admin) |
+| GET | `/api/v1/sports/categories` | List all 12 sport categories |
+| GET | `/api/v1/sports/leagues` | Get leagues (paginated) |
+| GET | `/api/v1/sports/leagues/:id` | Get single league |
+| GET | `/api/v1/sports/events` | Get events (paginated, filterable) |
+| GET | `/api/v1/sports/events/live` | Get live events only |
+| GET | `/api/v1/sports/events/upcoming` | Get upcoming events |
+| GET | `/api/v1/sports/events/:id` | Get single event with details |
+| GET | `/api/v1/sports/markets` | Get sports markets |
+
+#### Admin Sync Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/sports/markets` | Create market from event |
+| POST | `/api/v1/sports/sync/leagues` | Trigger league sync |
+| POST | `/api/v1/sports/sync/events` | Trigger event sync |
+| POST | `/api/v1/sports/sync/live` | Trigger live scores sync |
+| POST | `/api/v1/sports/sync/odds` | Trigger odds sync |
+| POST | `/api/v1/sports/sync/all` | Trigger full sync |
+
+#### Multi-Source Sync Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sports/sync/usage` | Get API-Sports usage statistics |
+| POST | `/api/v1/sports/sync/sport/:sport` | Sync specific sport from API-Sports |
+| POST | `/api/v1/sports/sync/multi` | Sync all sports with priority |
+
+#### ETL Orchestrator Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/sports/etl/status` | Get ETL status, config, and API usage |
+| POST | `/api/v1/sports/etl/sync` | Trigger ETL sync for all sports |
+| POST | `/api/v1/sports/etl/sync/:sport` | ETL sync for specific sport |
+| POST | `/api/v1/sports/etl/sync/live` | Sync live scores from all sources |
 
 ---
 
@@ -719,26 +880,53 @@ CREATE POLICY "sports_leagues_insert" ON sports_leagues
 ### Environment Variables
 
 ```env
+# ===========================================
 # API Keys
+# ===========================================
 THESPORTSDB_API_KEY=3
-APIFOOTBALL_API_KEY=your_key_here
+APIFOOTBALL_API_KEY=your_api_sports_key_here
 
-# Sync Configuration
+# ===========================================
+# Rate Limiting
+# ===========================================
+APISPORTS_REQUESTS_PER_DAY=100
+APISPORTS_REQUESTS_PER_MINUTE=30
+
+# ===========================================
+# ETL Configuration
+# ===========================================
+ETL_ENABLE_THESPORTSDB=true
+ETL_ENABLE_APISPORTS=true
+ETL_ENABLE_SCHEDULED_SYNC=true
+ETL_ENABLE_LIVE_SYNC=true
+ETL_SYNC_INTERVAL=60
+ETL_DEDUPLICATE_BY_NAME=true
+
+# ===========================================
+# Legacy Sync Configuration
+# ===========================================
 SPORTS_SYNC_INTERVAL_LIVE=300000      # 5 minutes
 SPORTS_SYNC_INTERVAL_UPCOMING=3600000 # 1 hour
 SPORTS_SYNC_INTERVAL_LEAGUES=86400000 # 24 hours
 SPORTS_ENABLE_SCHEDULED_SYNC=true
 
-# RabbitMQ
+# ===========================================
+# Messaging
+# ===========================================
+SPORTS_ENABLE_MESSAGING=true
 RABBITMQ_URL=amqp://localhost:5672
 ```
 
 ### Database Migration
 
 ```bash
-# Navigate to Supabase dashboard
-# Open SQL Editor
-# Run contents of: apps/api/supabase/migrations/013_sports_data.sql
+# Option 1: Using Supabase CLI
+cd apps/api
+npx supabase db push
+
+# Option 2: Run migrations manually in Supabase SQL Editor
+# 1. apps/api/supabase/migrations/013_sports_data.sql
+# 2. apps/api/supabase/migrations/018_update_data_sources.sql
 ```
 
 ### Starting the System
@@ -755,8 +943,11 @@ npm run start:dev
 cd apps/web
 npm run dev
 
-# 4. Trigger initial sync (optional)
-curl -X POST http://localhost:3001/api/sports/sync/leagues
+# 4. Trigger initial ETL sync
+curl -X POST "http://localhost:3001/api/v1/sports/etl/sync?type=leagues"
+
+# 5. Check ETL status
+curl http://localhost:3001/api/v1/sports/etl/status
 ```
 
 ---
@@ -767,10 +958,12 @@ curl -X POST http://localhost:3001/api/sports/sync/leagues
 
 | Issue | Solution |
 |-------|----------|
-| No sports data | Trigger manual sync via admin endpoint |
+| No sports data | Trigger ETL sync: `curl -X POST http://localhost:3001/api/v1/sports/etl/sync` |
+| API rate limit exceeded | Check usage with `/sports/etl/status`, wait for daily reset |
+| Duplicate data | Ensure `ETL_DEDUPLICATE_BY_NAME=true` in env |
 | WebSocket disconnects | Check CORS settings in gateway |
-| Rate limit errors | Increase delay between requests |
 | Market not resolving | Check event status is 'finished' |
+| TheSportsDB not working | Check `THESPORTSDB_API_KEY` is set (use `3` for free tier) |
 
 ### Logs to Check
 
@@ -778,10 +971,30 @@ curl -X POST http://localhost:3001/api/sports/sync/leagues
 # Backend logs
 tail -f apps/api/logs/combined.log
 
+# ETL-specific logs
+grep "SportsETLOrchestrator" apps/api/logs/combined.log
+
 # Sync-specific logs
 grep "SportsSyncService" apps/api/logs/combined.log
+
+# API-Sports client logs
+grep "APISportsClient" apps/api/logs/combined.log
+```
+
+### Health Check
+
+```bash
+# Check ETL status
+curl http://localhost:3001/api/v1/sports/etl/status
+
+# Check API usage
+curl http://localhost:3001/api/v1/sports/sync/usage
+
+# List all categories
+curl http://localhost:3001/api/v1/sports/categories
 ```
 
 ---
 
-*Last Updated: January 2026*
+*Last Updated: January 15, 2026*
+*Version: 2.0 - Multi-Source ETL Pipeline*

@@ -108,7 +108,7 @@ export class SportsMarketsQueryDto {
 
     @ApiPropertyOptional()
     @IsOptional()
-    @Transform(({ value }) => value === 'true')
+    @Transform(({ value }) => value === 'true' || value === true)
     @IsBoolean()
     isActive?: boolean;
 

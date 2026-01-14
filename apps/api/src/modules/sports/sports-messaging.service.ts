@@ -227,6 +227,45 @@ export class SportsMessagingService implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`Published sync completed: ${syncType}`);
     }
 
+    /**
+     * Publish sync complete (from ETL orchestrator)
+     */
+    async publishSyncComplete(result: {
+        syncType: string;
+        totalFetched: number;
+        sportsProcessed: number;
+        durationMs: number;
+    }): Promise<void> {
+        const message = {
+            ...result,
+            completedAt: new Date().toISOString(),
+        };
+
+        await this.publish(SPORTS_ROUTING_KEYS.SYNC_COMPLETED, message);
+        this.logger.log(`Published ETL sync complete: ${result.syncType} (${result.totalFetched} fetched)`);
+    }
+
+    /**
+     * Publish live score update
+     */
+    async publishLiveScoreUpdate(event: SportsEvent): Promise<void> {
+        const message: SportsEventMessage = {
+            eventId: event.id,
+            externalId: event.externalId,
+            sport: event.sport,
+            status: event.status,
+            homeScore: event.homeScore,
+            awayScore: event.awayScore,
+            homeTeam: event.metadata?.homeTeamName as string,
+            awayTeam: event.metadata?.awayTeamName as string,
+            startTime: event.startTime.toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        await this.publish(SPORTS_ROUTING_KEYS.EVENT_LIVE, message);
+        this.logger.debug(`Published live score: ${event.id} (${event.homeScore}-${event.awayScore})`);
+    }
+
     // ========================
     // Consumers
     // ========================

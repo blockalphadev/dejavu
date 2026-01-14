@@ -1,17 +1,17 @@
 # Sports Data API Integration Guide
 
-> Technical documentation for integrating TheSportsDB and API-Football external APIs.
+> Technical documentation for integrating external sports data APIs: TheSportsDB and API-Sports (11 endpoints).
 
 ---
 
 ## Overview
 
-The DeJaVu platform integrates with two external sports data providers to fetch real-time scores, fixtures, and team information.
+The DeJaVu platform integrates with **multiple external sports data providers** to fetch real-time scores, fixtures, and team information. Data is combined through an ETL pipeline with intelligent deduplication.
 
-| Provider | Coverage | Rate Limit (Free) | Best For |
-|----------|----------|-------------------|----------|
-| TheSportsDB | 12 Sports | 3 req/min | Breadth of sports |
-| API-Football | Football only | 300 req/day | Detailed soccer data |
+| Provider | Coverage | Rate Limit (Free) | Best For | Priority |
+|----------|----------|-------------------|----------|----------|
+| TheSportsDB | 12 Sports | 1000 req/day | Breadth of sports | 50 |
+| API-Sports | 11 Sports (11 endpoints) | 100 req/day (shared) | Detailed data | 100 |
 
 ---
 
@@ -188,9 +188,149 @@ Headers:
 
 | Plan | Requests/Day | Features |
 |------|--------------|----------|
-| Free | 100 | Limited leagues |
+| Free | 100 | Limited leagues, shared across all sports |
 | Pro | 3000 | All leagues + odds |
 | Ultra | Unlimited | Real-time + stats |
+
+---
+
+## API-Sports Multi-Sport Client
+
+### Overview
+
+The unified API-Sports client supports **11 different sports** through a single interface with shared rate limiting.
+
+### Supported Endpoints
+
+| Sport | API Version | Base URL | Endpoint Suffix |
+|-------|-------------|----------|----------------|
+| Football | v3 | `v3.football.api-sports.io` | leagues, fixtures |
+| Basketball | v1 | `v1.basketball.api-sports.io` | leagues, games |
+| NBA | v2 | `v2.nba.api-sports.io` | leagues, games |
+| NFL | v1 | `v1.american-football.api-sports.io` | leagues, games |
+| Hockey | v1 | `v1.hockey.api-sports.io` | leagues, games |
+| MMA | v1 | `v1.mma.api-sports.io` | leagues, fights |
+| Formula-1 | v1 | `v1.formula-1.api-sports.io` | competitions, races |
+| Rugby | v1 | `v1.rugby.api-sports.io` | leagues, games |
+| Volleyball | v1 | `v1.volleyball.api-sports.io` | leagues, games |
+| Handball | v1 | `v1.handball.api-sports.io` | leagues, games |
+| AFL | v1 | `v1.afl.api-sports.io` | leagues, games |
+
+### Global Rate Limiter
+
+All 11 API-Sports endpoints **share a single rate limit** of 100 requests per day (free tier).
+
+```typescript
+// Singleton rate limiter for all API-Sports endpoints
+class GlobalRateLimiter {
+    private static instance: GlobalRateLimiter;
+    private dailyCount = 0;
+    private dailyLimit: number;
+    private lastResetDate: string;
+
+    static getInstance(): GlobalRateLimiter {
+        if (!this.instance) {
+            this.instance = new GlobalRateLimiter();
+        }
+        return this.instance;
+    }
+
+    canMakeRequest(): boolean {
+        this.checkDailyReset();
+        return this.dailyCount < this.dailyLimit;
+    }
+
+    recordRequest(): void {
+        this.dailyCount++;
+    }
+
+    getUsageStats() {
+        return {
+            dailyCount: this.dailyCount,
+            dailyLimit: this.dailyLimit,
+            remaining: this.dailyLimit - this.dailyCount,
+            percentUsed: Math.round((this.dailyCount / this.dailyLimit) * 100),
+        };
+    }
+}
+```
+
+### Configuration
+
+```env
+# Shared API key for all API-Sports endpoints
+APIFOOTBALL_API_KEY=your_api_sports_key_here
+
+# Rate limiting
+APISPORTS_REQUESTS_PER_DAY=100
+APISPORTS_REQUESTS_PER_MINUTE=30
+```
+
+### Headers
+
+```
+x-apisports-key: {API_KEY}
+```
+
+### Client Implementation
+
+```typescript
+// apps/api/src/modules/sports/clients/api-sports.client.ts
+
+export class APISportsClient extends BaseSportsClient {
+    private currentSport: string = 'football';
+    private globalLimiter = GlobalRateLimiter.getInstance();
+    
+    setSport(sport: string): void {
+        this.currentSport = sport;
+    }
+    
+    async getLeagues(): Promise<SportsLeague[]> {
+        if (!this.globalLimiter.canMakeRequest()) {
+            throw new Error('Daily API-Sports limit exceeded');
+        }
+        
+        const config = SPORT_API_CONFIGS[this.currentSport];
+        const response = await this.makeRequest(`${config.baseUrl}/${config.endpoints.leagues}`);
+        this.globalLimiter.recordRequest();
+        
+        return response.response.map(this.transformLeague);
+    }
+    
+    async getUpcomingGames(): Promise<SportsEvent[]> {
+        const config = SPORT_API_CONFIGS[this.currentSport];
+        const response = await this.makeRequest(
+            `${config.baseUrl}/${config.endpoints.games}?date=${today}`
+        );
+        return response.response.map(this.transformGame);
+    }
+    
+    async getLiveGames(): Promise<SportsEvent[]> {
+        const config = SPORT_API_CONFIGS[this.currentSport];
+        const response = await this.makeRequest(
+            `${config.baseUrl}/${config.endpoints.games}?live=all`
+        );
+        return response.response.map(this.transformGame);
+    }
+    
+    getUsageStats() {
+        return this.globalLimiter.getUsageStats();
+    }
+}
+```
+
+### Usage Example
+
+```typescript
+// Fetch NBA games
+const client = new APISportsClient(configService);
+client.setSport('nba');
+const nbaGames = await client.getUpcomingGames();
+
+// Check usage
+const usage = client.getUsageStats();
+console.log(`API calls: ${usage.dailyCount}/${usage.dailyLimit}`);
+```
 
 ### Key Endpoints
 
@@ -690,4 +830,59 @@ try {
 
 ---
 
-*Last Updated: January 2026*
+## ETL Integration
+
+### Multi-Source Sync
+
+The ETL Orchestrator combines data from both TheSportsDB and API-Sports:
+
+```typescript
+// apps/api/src/modules/sports/sports-etl-orchestrator.service.ts
+
+async syncSport(sport: SportType, syncType: 'leagues' | 'games' | 'live') {
+    const allData: SportsEvent[] = [];
+    
+    // 1. Fetch from TheSportsDB
+    if (this.config.enableTheSportsDB) {
+        const tsdbData = await this.theSportsDBClient.getEventsByDate(today, sport);
+        allData.push(...tsdbData);
+    }
+    
+    // 2. Fetch from API-Sports
+    if (this.config.enableAPISports && this.apiSportsClient.canMakeRequest()) {
+        this.apiSportsClient.setSport(sport);
+        const apiData = await this.apiSportsClient.getUpcomingGames();
+        allData.push(...apiData);
+    }
+    
+    // 3. Deduplicate (API-Sports priority = 100 > TheSportsDB = 50)
+    const deduplicated = this.deduplicateEvents(allData);
+    
+    // 4. Upsert to database
+    await this.sportsService.upsertEvents(deduplicated.items);
+    
+    // 5. Publish to RabbitMQ
+    for (const event of deduplicated.items) {
+        await this.sportsMessagingService.publishEventUpdate(event);
+    }
+}
+```
+
+### Deduplication
+
+```typescript
+const DATA_SOURCE_PRIORITY: Record<DataSource, number> = {
+    [DataSource.APIFOOTBALL]: 100,
+    [DataSource.APIBASKETBALL]: 100,
+    [DataSource.APINBA]: 100,
+    [DataSource.APINFL]: 100,
+    // ... all API-Sports = 100
+    [DataSource.THESPORTSDB]: 50,
+    [DataSource.MANUAL]: 25,
+};
+```
+
+---
+
+*Last Updated: January 15, 2026*
+*Version: 2.0 - Multi-Sport API Integration*

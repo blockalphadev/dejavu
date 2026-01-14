@@ -10,7 +10,7 @@
  * - Anti-throttling with optimistic updates
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { SportsSidebar, sportsCategories } from './SportsSidebar';
 import { SportsTicker } from './SportsTicker';
 import SportsMarketCard from './SportsMarketCard';
@@ -26,6 +26,7 @@ import {
 import { cn } from './ui/utils';
 import { Button } from './ui/button';
 import { useSportsMarkets } from '../hooks/useSportsMarkets';
+import { useSportsSocket } from '../hooks/useSportsSocket';
 import { SportType } from '../../services/sports.service';
 
 type ViewMode = 'grid' | 'list';
@@ -52,15 +53,43 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
         refreshInterval: 60000
     });
 
+    // Real-time Updates
+    const [realTimeMarkets, setRealTimeMarkets] = useState<typeof markets>([]);
+
+    useEffect(() => {
+        setRealTimeMarkets(markets);
+    }, [markets]);
+
+    const handleMarketUpdate = (update: any) => {
+        setRealTimeMarkets(prev => {
+            const index = prev.findIndex(m => m.id === update.id);
+            if (index === -1) return prev; // Or append if new?
+
+            const newMarkets = [...prev];
+            newMarkets[index] = { ...newMarkets[index], ...update };
+            return newMarkets;
+        });
+    };
+
+    const { joinSport, leaveSport } = useSportsSocket({
+        onMarketUpdate: handleMarketUpdate
+    });
+
+    useEffect(() => {
+        const sportRoom = activeSport === 'live' ? 'live' : activeSport;
+        joinSport(sportRoom);
+        return () => leaveSport(sportRoom);
+    }, [activeSport, joinSport, leaveSport]);
+
     // Group markets by league for list view
     const groupedMarkets = useMemo(() => {
-        return markets.reduce((acc, market) => {
+        return realTimeMarkets.reduce((acc, market) => {
             const leagueName = market.event?.league?.name || market.event?.metadata?.leagueName || 'Other';
             if (!acc[leagueName]) acc[leagueName] = [];
             acc[leagueName].push(market);
             return acc;
         }, {} as Record<string, typeof markets>);
-    }, [markets]);
+    }, [realTimeMarkets]);
 
     return (
         <div className="container mx-auto px-4 py-6 max-w-[1800px]">
@@ -189,7 +218,7 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
                                         </div>
                                     </div>
                                 ))
-                                : markets.map((market) => (
+                                : realTimeMarkets.map((market) => (
                                     <SportsMarketCard
                                         key={market.id}
                                         market={market}

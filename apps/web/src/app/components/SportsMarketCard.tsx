@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from './auth/AuthContext';
+import { usePredictionMarket } from '../hooks/usePredictionMarket';
+import { useWallet } from '../hooks/useWallet';
 
 // Define Interface for Market Data
 interface SportsMarket {
@@ -25,6 +27,9 @@ interface SportsMarketCardProps {
 const SportsMarketCard: React.FC<SportsMarketCardProps> = ({ market, onClick, onOpenAuth }) => {
     const { isAuthenticated } = useAuth();
 
+    const { isConnected, connect } = useWallet();
+    const { buyShares, isTransacting } = usePredictionMarket();
+
     const handleMarketClick = () => {
         if (onClick) {
             onClick(market.id);
@@ -33,7 +38,7 @@ const SportsMarketCard: React.FC<SportsMarketCardProps> = ({ market, onClick, on
         }
     };
 
-    const handleOutcomeClick = (e: React.MouseEvent, outcome: string, price: number) => {
+    const handleOutcomeClick = async (e: React.MouseEvent, outcome: string, price: number) => {
         e.stopPropagation();
 
         if (!isAuthenticated) {
@@ -45,11 +50,32 @@ const SportsMarketCard: React.FC<SportsMarketCardProps> = ({ market, onClick, on
             return;
         }
 
-        // Authenticated: Proceed with prediction logic
-        // TODO: Add to bet slip or open prediction modal
-        console.log(`Predicting ${outcome} @ ${price}`);
-        // For now, we also navigate/trigger the main click as a fallback or specific action
-        handleMarketClick();
+        // Blockchain Integration
+        if (!isConnected) {
+            try {
+                await connect();
+            } catch (err) {
+                console.error("Failed to connect wallet:", err);
+                return;
+            }
+        }
+
+        try {
+            console.log(`Predicting ${outcome} @ ${price}`);
+            // Mocking cost/shares for list view interaction
+            const numericMarketId = 1; // Placeholder
+            const outcomeId = market.outcomes.indexOf(outcome);
+            const mockShares = 10;
+            const mockCost = "0.01";
+
+            if (outcomeId === -1) throw new Error("Invalid outcome");
+
+            await buyShares(numericMarketId, outcomeId, mockShares, mockCost);
+            // On success, maybe show a toast or optimistically update UI?
+            console.log("Transaction submitted successfully");
+        } catch (err) {
+            console.error("Prediction failed:", err);
+        }
     };
 
     // Calculate probability percentages from prices (if prices are decimal odds or probabilities)
@@ -103,12 +129,14 @@ const SportsMarketCard: React.FC<SportsMarketCardProps> = ({ market, onClick, on
                     return (
                         <button
                             key={index}
+                            disabled={isTransacting}
                             className={`
                                 relative flex items-center justify-between p-2 rounded-lg text-sm font-medium transition-colors
                                 ${isWinner
                                     ? 'bg-green-500/10 text-green-500 border border-green-500/20'
                                     : 'bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
                                 }
+                                ${isTransacting ? 'opacity-50 cursor-not-allowed' : ''}
                             `}
                             onClick={(e) => handleOutcomeClick(e, outcome, price)}
                         >

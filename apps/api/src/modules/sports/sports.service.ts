@@ -114,67 +114,111 @@ export class SportsService {
     }
 
     /**
-     * Upsert leagues (create or update)
+     * Upsert leagues - OPTIMIZED with batch processing
      */
     async upsertLeagues(leagues: Partial<SportsLeague>[]): Promise<{ created: number; updated: number }> {
+        if (leagues.length === 0) {
+            return { created: 0, updated: 0 };
+        }
+
         const supabase = this.supabaseService.getAdminClient();
         let created = 0;
         let updated = 0;
 
-        for (const league of leagues) {
+        this.logger.log(`Starting batch upsert of ${leagues.length} leagues...`);
+
+        // 1. Pre-fetch all existing leagues for bulk comparison
+        const externalIds = leagues.map(l => l.externalId).filter(Boolean);
+        const existingMap = new Map<string, string>();
+
+        if (externalIds.length > 0) {
             const { data: existing } = await supabase
                 .from('sports_leagues')
-                .select('id')
-                .eq('external_id', league.externalId)
-                .eq('source', league.source)
-                .single();
+                .select('id, external_id, source')
+                .in('external_id', externalIds as string[]);
 
             if (existing) {
-                await supabase
-                    .from('sports_leagues')
-                    .update({
-                        name: league.name,
-                        name_alternate: league.nameAlternate,
-                        country: league.country,
-                        country_code: league.countryCode,
-                        logo_url: league.logoUrl,
-                        banner_url: league.bannerUrl,
-                        trophy_url: league.trophyUrl,
-                        description: league.description,
-                        website: league.website,
-                        twitter: league.twitter,
-                        facebook: league.facebook,
-                        metadata: league.metadata,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', existing.id);
-                updated++;
-            } else {
-                await supabase.from('sports_leagues').insert({
-                    external_id: league.externalId,
-                    source: league.source,
-                    sport: league.sport,
-                    name: league.name,
-                    name_alternate: league.nameAlternate,
-                    country: league.country,
-                    country_code: league.countryCode,
-                    logo_url: league.logoUrl,
-                    banner_url: league.bannerUrl,
-                    trophy_url: league.trophyUrl,
-                    description: league.description,
-                    website: league.website,
-                    twitter: league.twitter,
-                    facebook: league.facebook,
-                    is_active: true,
-                    is_featured: false,
-                    display_order: 0,
-                    metadata: league.metadata || {},
+                existing.forEach(e => {
+                    existingMap.set(`${e.source}:${e.external_id}`, e.id);
                 });
-                created++;
             }
         }
 
-        this.logger.log(`Upserted leagues: ${created} created, ${updated} updated`);
+        // 2. Categorize leagues
+        const leaguesToInsert: any[] = [];
+        const leaguesToUpdate: { id: string; data: any }[] = [];
+
+        for (const league of leagues) {
+            const leagueData = {
+                name: league.name || 'Unknown League',
+                name_alternate: league.nameAlternate || null,
+                country: league.country || null,
+                country_code: league.countryCode || null,
+                logo_url: league.logoUrl || null,
+                banner_url: league.bannerUrl || null,
+                trophy_url: league.trophyUrl || null,
+                description: league.description || null,
+                website: league.website || null,
+                twitter: league.twitter || null,
+                facebook: league.facebook || null,
+                metadata: league.metadata || {},
+                updated_at: new Date().toISOString(),
+            };
+
+            const existingKey = `${league.source}:${league.externalId}`;
+            const existingId = existingMap.get(existingKey);
+
+            if (existingId) {
+                leaguesToUpdate.push({ id: existingId, data: leagueData });
+            } else {
+                leaguesToInsert.push({
+                    external_id: league.externalId,
+                    source: league.source,
+                    sport: league.sport,
+                    ...leagueData,
+                    is_active: true,
+                    is_featured: false,
+                    display_order: 0,
+                    created_at: new Date().toISOString(),
+                });
+            }
+        }
+
+        // 3. Batch insert new leagues
+        const BATCH_SIZE = 50;
+        if (leaguesToInsert.length > 0) {
+            for (let i = 0; i < leaguesToInsert.length; i += BATCH_SIZE) {
+                const batch = leaguesToInsert.slice(i, i + BATCH_SIZE);
+                const { error } = await supabase
+                    .from('sports_leagues')
+                    .insert(batch);
+
+                if (error) {
+                    this.logger.error(`Batch insert leagues failed: ${error.message}`);
+                    // Fallback to individual inserts
+                    for (const item of batch) {
+                        const { error: singleError } = await supabase
+                            .from('sports_leagues')
+                            .insert(item);
+                        if (!singleError) created++;
+                    }
+                } else {
+                    created += batch.length;
+                }
+            }
+        }
+
+        // 4. Update existing leagues
+        for (const { id, data } of leaguesToUpdate) {
+            const { error } = await supabase
+                .from('sports_leagues')
+                .update(data)
+                .eq('id', id);
+
+            if (!error) updated++;
+        }
+
+        this.logger.log(`Upsert leagues complete: ${created} created, ${updated} updated`);
         return { created, updated };
     }
 
@@ -250,83 +294,130 @@ export class SportsService {
     }
 
     /**
-     * Upsert teams
+     * Upsert teams - OPTIMIZED with batch processing
      */
     async upsertTeams(teams: Partial<SportsTeam>[]): Promise<{ created: number; updated: number }> {
+        if (teams.length === 0) {
+            return { created: 0, updated: 0 };
+        }
+
         const supabase = this.supabaseService.getAdminClient();
         let created = 0;
         let updated = 0;
 
-        for (const team of teams) {
+        this.logger.log(`Starting batch upsert of ${teams.length} teams...`);
+
+        // 1. Pre-fetch existing teams
+        const externalIds = teams.map(t => t.externalId).filter(Boolean);
+        const existingMap = new Map<string, string>();
+
+        if (externalIds.length > 0) {
             const { data: existing } = await supabase
                 .from('sports_teams')
-                .select('id')
-                .eq('external_id', team.externalId)
-                .eq('source', team.source)
-                .single();
+                .select('id, external_id, source')
+                .in('external_id', externalIds as string[]);
 
             if (existing) {
-                await supabase
-                    .from('sports_teams')
-                    .update({
-                        name: team.name,
-                        name_short: team.nameShort,
-                        name_alternate: team.nameAlternate,
-                        country: team.country,
-                        city: team.city,
-                        stadium: team.stadium,
-                        stadium_capacity: team.stadiumCapacity,
-                        logo_url: team.logoUrl,
-                        jersey_url: team.jerseyUrl,
-                        banner_url: team.bannerUrl,
-                        primary_color: team.primaryColor,
-                        secondary_color: team.secondaryColor,
-                        founded_year: team.foundedYear,
-                        website: team.website,
-                        metadata: team.metadata,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', existing.id);
-                updated++;
-            } else {
-                // Find league ID from external ID if provided
-                let leagueId: string | null = null;
-                if (team.leagueId) {
-                    const { data: league } = await supabase
-                        .from('sports_leagues')
-                        .select('id')
-                        .eq('external_id', team.leagueId)
-                        .single();
-                    leagueId = league?.id || null;
-                }
-
-                await supabase.from('sports_teams').insert({
-                    external_id: team.externalId,
-                    source: team.source,
-                    league_id: leagueId,
-                    sport: team.sport,
-                    name: team.name,
-                    name_short: team.nameShort,
-                    name_alternate: team.nameAlternate,
-                    country: team.country,
-                    city: team.city,
-                    stadium: team.stadium,
-                    stadium_capacity: team.stadiumCapacity,
-                    logo_url: team.logoUrl,
-                    jersey_url: team.jerseyUrl,
-                    banner_url: team.bannerUrl,
-                    primary_color: team.primaryColor,
-                    secondary_color: team.secondaryColor,
-                    founded_year: team.foundedYear,
-                    website: team.website,
-                    is_active: true,
-                    metadata: team.metadata || {},
+                existing.forEach(e => {
+                    existingMap.set(`${e.source}:${e.external_id}`, e.id);
                 });
-                created++;
             }
         }
 
-        this.logger.log(`Upserted teams: ${created} created, ${updated} updated`);
+        // 2. Pre-fetch league mappings
+        const leagueExternalIds = [...new Set(teams.map(t => t.leagueId).filter(Boolean))];
+        const leagueMap = new Map<string, string>();
+
+        if (leagueExternalIds.length > 0) {
+            const { data: leagues } = await supabase
+                .from('sports_leagues')
+                .select('id, external_id')
+                .in('external_id', leagueExternalIds as string[]);
+
+            if (leagues) {
+                leagues.forEach(l => leagueMap.set(l.external_id, l.id));
+            }
+        }
+
+        // 3. Categorize teams
+        const teamsToInsert: any[] = [];
+        const teamsToUpdate: { id: string; data: any }[] = [];
+
+        for (const team of teams) {
+            const leagueId = team.leagueId ? leagueMap.get(team.leagueId) : null;
+
+            const teamData = {
+                name: team.name || 'Unknown Team',
+                name_short: team.nameShort || null,
+                name_alternate: team.nameAlternate || null,
+                country: team.country || null,
+                city: team.city || null,
+                stadium: team.stadium || null,
+                stadium_capacity: team.stadiumCapacity || null,
+                logo_url: team.logoUrl || null,
+                jersey_url: team.jerseyUrl || null,
+                banner_url: team.bannerUrl || null,
+                primary_color: team.primaryColor || null,
+                secondary_color: team.secondaryColor || null,
+                founded_year: team.foundedYear || null,
+                website: team.website || null,
+                metadata: team.metadata || {},
+                updated_at: new Date().toISOString(),
+            };
+
+            const existingKey = `${team.source}:${team.externalId}`;
+            const existingId = existingMap.get(existingKey);
+
+            if (existingId) {
+                teamsToUpdate.push({ id: existingId, data: teamData });
+            } else {
+                teamsToInsert.push({
+                    external_id: team.externalId,
+                    source: team.source,
+                    league_id: leagueId || null,
+                    sport: team.sport,
+                    ...teamData,
+                    is_active: true,
+                    created_at: new Date().toISOString(),
+                });
+            }
+        }
+
+        // 4. Batch insert new teams
+        const BATCH_SIZE = 50;
+        if (teamsToInsert.length > 0) {
+            for (let i = 0; i < teamsToInsert.length; i += BATCH_SIZE) {
+                const batch = teamsToInsert.slice(i, i + BATCH_SIZE);
+                const { error } = await supabase
+                    .from('sports_teams')
+                    .insert(batch);
+
+                if (error) {
+                    this.logger.error(`Batch insert teams failed: ${error.message}`);
+                    // Fallback to individual inserts
+                    for (const item of batch) {
+                        const { error: singleError } = await supabase
+                            .from('sports_teams')
+                            .insert(item);
+                        if (!singleError) created++;
+                    }
+                } else {
+                    created += batch.length;
+                }
+            }
+        }
+
+        // 5. Update existing teams
+        for (const { id, data } of teamsToUpdate) {
+            const { error } = await supabase
+                .from('sports_teams')
+                .update(data)
+                .eq('id', id);
+
+            if (!error) updated++;
+        }
+
+        this.logger.log(`Upsert teams complete: ${created} created, ${updated} updated`);
         return { created, updated };
     }
 
@@ -488,136 +579,246 @@ export class SportsService {
     }
 
     /**
-     * Upsert events
+     * Upsert events - OPTIMIZED with batch processing and cached FK lookups
+     * Anti-throttling: Uses batch queries to reduce DB calls
+     * Comprehensive: Stores all event data with proper FK resolution
      */
     async upsertEvents(events: Partial<SportsEvent>[]): Promise<{ created: number; updated: number }> {
+        if (events.length === 0) {
+            return { created: 0, updated: 0 };
+        }
+
         const supabase = this.supabaseService.getAdminClient();
         let created = 0;
         let updated = 0;
+        let errors = 0;
+
+        this.logger.log(`Starting batch upsert of ${events.length} events...`);
+
+        // 1. Pre-fetch all league mappings (external_id OR name -> internal_id)
+        // 1. Pre-fetch all league mappings with SPORT/SOURCE awareness
+        const leagueExternalIds = [...new Set(events.map(e => e.leagueId).filter(Boolean))];
+        const leagueNames = [...new Set(events.map(e => (e.metadata?.leagueName as string)).filter(Boolean))];
+
+        const leagueMap = new Map<string, string>();
+        const leagueNameMap = new Map<string, string>();
+
+        if (leagueExternalIds.length > 0 || leagueNames.length > 0) {
+            this.logger.debug(`Processing league resolution for ${events.length} events`);
+
+            // Fetch by IDs - scoped to the events' sources if possible, but simplest is to fetch id, external_id, sport
+            if (leagueExternalIds.length > 0) {
+                const { data: leaguesById } = await supabase
+                    .from('sports_leagues')
+                    .select('id, external_id, sport')
+                    .in('external_id', leagueExternalIds);
+
+                if (leaguesById) {
+                    leaguesById.forEach(l => {
+                        // Key includes sport to avoid collisions (e.g. Formula1 vs Baseball both having league 17)
+                        leagueMap.set(`${l.external_id}:${l.sport}`, l.id);
+                        // Also keep a generic map if needed, but sport-specific is safer
+                        leagueMap.set(l.external_id, l.id);
+                    });
+                }
+            }
+
+            // Fetch by Names
+            if (leagueNames.length > 0) {
+                const { data: leaguesByName } = await supabase
+                    .from('sports_leagues')
+                    .select('id, name')
+                    .in('name', leagueNames);
+
+                if (leaguesByName) {
+                    leaguesByName.forEach(l => leagueNameMap.set(l.name.toLowerCase().trim(), l.id));
+                }
+            }
+
+            // Re-map ensuring sport matches
+            // (done inside the loop below)
+
+            this.logger.debug(`Mapped leagues for resolution`);
+        }
+
+        // 2. Pre-fetch all team mappings (external_id -> internal_id)
+        const teamExternalIds = [
+            ...new Set([
+                ...events.map(e => e.homeTeamId).filter(Boolean),
+                ...events.map(e => e.awayTeamId).filter(Boolean),
+            ])
+        ];
+        const teamMap = new Map<string, string>();
+
+        if (teamExternalIds.length > 0) {
+            const { data: teams } = await supabase
+                .from('sports_teams')
+                .select('id, external_id')
+                .in('external_id', teamExternalIds);
+
+            if (teams) {
+                teams.forEach(t => teamMap.set(t.external_id, t.id));
+            }
+            this.logger.debug(`Cached ${teamMap.size}/${teamExternalIds.length} team mappings`);
+        }
+
+        // 3. Pre-fetch existing events for bulk check
+        const eventExternalIds = events.map(e => e.externalId).filter(Boolean);
+        const existingEventMap = new Map<string, string>();
+
+        if (eventExternalIds.length > 0) {
+            const { data: existingEvents } = await supabase
+                .from('sports_events')
+                .select('id, external_id, source')
+                .in('external_id', eventExternalIds as string[]);
+
+            if (existingEvents) {
+                existingEvents.forEach(e => {
+                    existingEventMap.set(`${e.source}:${e.external_id}`, e.id);
+                });
+            }
+            this.logger.debug(`Found ${existingEventMap.size} existing events for comparison`);
+        }
+
+        // 4. Process events in batches
+        const BATCH_SIZE = 50;
+        const eventsToInsert: any[] = [];
+        const eventsToUpdate: { id: string; data: any }[] = [];
 
         for (const event of events) {
-            const { data: existing } = await supabase
-                .from('sports_events')
-                .select('id')
-                .eq('external_id', event.externalId)
-                .eq('source', event.source)
-                .single();
-
-            // Resolve league and team IDs
-            let leagueId: string | null = null;
-            let homeTeamId: string | null = null;
-            let awayTeamId: string | null = null;
-
-            if (event.leagueId) {
-                const { data: league } = await supabase
-                    .from('sports_leagues')
-                    .select('id')
-                    .eq('external_id', event.leagueId)
-                    .single();
-                leagueId = league?.id || null;
-            }
-
-            if (event.homeTeamId) {
-                const { data: team } = await supabase
-                    .from('sports_teams')
-                    .select('id')
-                    .eq('external_id', event.homeTeamId)
-                    .single();
-                homeTeamId = team?.id || null;
-            }
-
-            if (event.awayTeamId) {
-                const { data: team } = await supabase
-                    .from('sports_teams')
-                    .select('id')
-                    .eq('external_id', event.awayTeamId)
-                    .single();
-                awayTeamId = team?.id || null;
-            }
-
-            const eventData = {
-                league_id: leagueId,
-                home_team_id: homeTeamId,
-                away_team_id: awayTeamId,
-                sport: event.sport,
-                season: event.season,
-                round: event.round,
-                match_day: event.matchDay,
-                name: event.name,
-                venue: event.venue,
-                city: event.city,
-                country: event.country,
-                start_time: event.startTime?.toISOString(),
-                timezone: event.timezone || 'UTC',
-                status: event.status,
-                status_detail: event.statusDetail,
-                elapsed_time: event.elapsedTime,
-                home_score: event.homeScore,
-                away_score: event.awayScore,
-                home_score_halftime: event.homeScoreHalftime,
-                away_score_halftime: event.awayScoreHalftime,
-                referee: event.referee,
-                attendance: event.attendance,
-                thumbnail_url: event.thumbnailUrl,
-                video_url: event.videoUrl,
-                banner_url: event.bannerUrl,
-                stats: event.stats || {},
-                metadata: event.metadata || {},
-                updated_at: new Date().toISOString(),
-            };
-
-            if (existing) {
-                const { data: updatedEvent } = await supabase
-                    .from('sports_events')
-                    .update(eventData)
-                    .eq('id', existing.id)
-                    .select()
-                    .single();
-
-                if (updatedEvent) {
-                    // Publish update
-                    await this.sportsMessagingService.publishEventUpdate({
-                        ...updatedEvent,
-                        sport: event.sport,
-                        startTime: new Date(updatedEvent.start_time),
-                        homeScore: updatedEvent.home_score,
-                        awayScore: updatedEvent.away_score,
-                        status: updatedEvent.status,
-                        externalId: updatedEvent.external_id,
-                        metadata: {
-                            homeTeamName: updatedEvent.home_team?.name, // NOTE: this might be missing if we don't join, but for basic updates it's ok
-                            awayTeamName: updatedEvent.away_team?.name,
-                        }
-                    } as any);
+            try {
+                // Resolve foreign keys from cache
+                // Resolve foreign keys from cache - with fallback to name map with SPORT priority
+                let leagueId: string | null = null;
+                if (event.leagueId) {
+                    leagueId = leagueMap.get(`${event.leagueId}:${event.sport}`) || leagueMap.get(event.leagueId) || null;
                 }
-                updated++;
-            } else {
-                const { data: newEvent } = await supabase.from('sports_events').insert({
-                    external_id: event.externalId,
-                    source: event.source,
-                    ...eventData,
-                    has_market: false,
-                    is_featured: false,
-                })
-                    .select()
-                    .single();
 
-                if (newEvent) {
-                    await this.sportsMessagingService.publishEventUpdate({
-                        ...newEvent,
-                        sport: event.sport,
-                        startTime: new Date(newEvent.start_time),
-                        homeScore: newEvent.home_score,
-                        awayScore: newEvent.away_score,
-                        status: newEvent.status,
-                        externalId: newEvent.external_id,
-                    } as any);
+                if (!leagueId && event.metadata?.leagueName) {
+                    leagueId = leagueNameMap.get((event.metadata.leagueName as string).toLowerCase().trim()) || null;
                 }
-                created++;
+                const homeTeamId = event.homeTeamId ? teamMap.get(event.homeTeamId) : null;
+                const awayTeamId = event.awayTeamId ? teamMap.get(event.awayTeamId) : null;
+
+                // Build event data object
+                const eventData: any = {
+                    league_id: leagueId || null,
+                    home_team_id: homeTeamId || null,
+                    away_team_id: awayTeamId || null,
+                    sport: event.sport,
+                    season: event.season || null,
+                    round: event.round || null,
+                    match_day: event.matchDay || null,
+                    name: event.name || 'Unknown Match',
+                    venue: event.venue || null,
+                    city: event.city || null,
+                    country: event.country || null,
+                    start_time: event.startTime instanceof Date
+                        ? event.startTime.toISOString()
+                        : (event.startTime || new Date().toISOString()),
+                    timezone: event.timezone || 'UTC',
+                    status: event.status || 'scheduled',
+                    status_detail: event.statusDetail || null,
+                    elapsed_time: event.elapsedTime || null,
+                    home_score: event.homeScore ?? null,
+                    away_score: event.awayScore ?? null,
+                    home_score_halftime: event.homeScoreHalftime || null,
+                    away_score_halftime: event.awayScoreHalftime || null,
+                    referee: event.referee || null,
+                    attendance: event.attendance || null,
+                    thumbnail_url: event.thumbnailUrl || null,
+                    video_url: event.videoUrl || null,
+                    banner_url: event.bannerUrl || null,
+                    stats: event.stats || {},
+                    metadata: {
+                        ...event.metadata,
+                        homeTeamName: (event.metadata as any)?.homeTeamName || null,
+                        awayTeamName: (event.metadata as any)?.awayTeamName || null,
+                        leagueName: (event.metadata as any)?.leagueName || null,
+                    },
+                    updated_at: new Date().toISOString(),
+                };
+
+                // Check if exists
+                const existingKey = `${event.source}:${event.externalId}`;
+                const existingId = existingEventMap.get(existingKey);
+
+                if (existingId) {
+                    eventsToUpdate.push({ id: existingId, data: eventData });
+                } else {
+                    eventsToInsert.push({
+                        external_id: event.externalId,
+                        source: event.source,
+                        ...eventData,
+                        has_market: false,
+                        is_featured: false,
+                        created_at: new Date().toISOString(),
+                    });
+                }
+            } catch (err) {
+                errors++;
+                this.logger.error(`Failed to process event ${event.externalId}: ${(err as Error).message}`);
             }
         }
 
-        this.logger.log(`Upserted events: ${created} created, ${updated} updated`);
+        // 5. Batch insert new events
+        if (eventsToInsert.length > 0) {
+            for (let i = 0; i < eventsToInsert.length; i += BATCH_SIZE) {
+                const batch = eventsToInsert.slice(i, i + BATCH_SIZE);
+                const { error, count } = await supabase
+                    .from('sports_events')
+                    .insert(batch);
+
+                if (error) {
+                    this.logger.error(`Batch insert failed: ${error.message}`);
+                    // Try inserting one by one as fallback
+                    for (const item of batch) {
+                        const { error: singleError } = await supabase
+                            .from('sports_events')
+                            .insert(item);
+                        if (!singleError) {
+                            created++;
+                        } else {
+                            this.logger.warn(`Single insert failed for ${item.external_id}: ${singleError.message}`);
+                            errors++;
+                        }
+                    }
+                } else {
+                    created += batch.length;
+                }
+            }
+        }
+
+        // 6. Batch update existing events
+        for (const { id, data } of eventsToUpdate) {
+            const { error } = await supabase
+                .from('sports_events')
+                .update(data)
+                .eq('id', id);
+
+            if (error) {
+                this.logger.warn(`Update failed for event ${id}: ${error.message}`);
+                errors++;
+            } else {
+                updated++;
+            }
+        }
+
+        // 7. Publish bulk update to RabbitMQ (batch publish for efficiency)
+        if (created + updated > 0) {
+            try {
+                await this.sportsMessagingService.publishSyncComplete({
+                    syncType: 'events',
+                    totalFetched: events.length,
+                    sportsProcessed: 1,
+                    durationMs: 0,
+                });
+            } catch (err) {
+                this.logger.warn('Failed to publish sync complete:', err);
+            }
+        }
+
+        this.logger.log(`Upsert complete: ${created} created, ${updated} updated, ${errors} errors`);
         return { created, updated };
     }
 
@@ -694,22 +895,45 @@ export class SportsService {
      * Generate default markets (Simulator)
      * Creates realistic 1x2 markets for events
      */
-    async generateDefaultMarkets(events: any[]): Promise<number> {
-        const supabase = this.supabaseService.getClient();
+    /**
+     * Generate default markets (Simulator)
+     * Creates realistic 1x2 markets for events that don't have them
+     */
+    async generateDefaultMarkets(limit: number = 50): Promise<number> {
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Fetch events that need markets
+        const { data: events, error } = await supabase
+            .from('sports_events')
+            .select('*')
+            .eq('has_market', false)
+            .eq('status', 'scheduled')
+            .gt('start_time', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Allow recent past (last 24h)
+            .limit(limit);
+
+        if (error || !events || events.length === 0) {
+            this.logger.log(`No pending events found for market generation.`);
+            return 0;
+        }
+
         let generated = 0;
-        this.logger.log(`Generating default markets for ${events.length} events...`);
+        this.logger.log(`Generating default markets for ${events.length} pending events...`);
 
         for (const event of events) {
-            // Skip if market already exists
+            // Check if market really doesn't exist (double check)
             const { count } = await supabase
                 .from('sports_markets')
                 .select('id', { count: 'exact', head: true })
                 .eq('event_id', event.id);
 
-            if (count && count > 0) continue;
+            if (count && count > 0) {
+                // Update flag if it was out of sync
+                await supabase.from('sports_events').update({ has_market: true }).eq('id', event.id);
+                continue;
+            }
 
-            const homeTeamId = event.homeTeamId;
-            const awayTeamId = event.awayTeamId;
+            const homeTeamId = event.home_team_id;
+            const awayTeamId = event.away_team_id;
 
             const homeTeam = homeTeamId ? await this.getTeamById(homeTeamId).catch(() => null) : null;
             const awayTeam = awayTeamId ? await this.getTeamById(awayTeamId).catch(() => null) : null;
@@ -741,7 +965,7 @@ export class SportsService {
 
             const { error } = await supabase.from('sports_markets').insert({
                 event_id: event.id,
-                market_type: '1x2',
+                market_type: 'match_winner',
                 title: 'Match Winner',
                 question: 'Who will win the match?',
                 description: 'Full Time Result (Simulated)',
@@ -787,12 +1011,16 @@ export class SportsService {
             .from('sports_markets')
             .select(`
                 *,
-                event:sports_events(
+                event:sports_events${query.sport ? '!inner' : ''}(
                     *,
                     home_team:sports_teams!sports_events_home_team_id_fkey(*),
                     away_team:sports_teams!sports_events_away_team_id_fkey(*)
                 )
             `, { count: 'exact' });
+
+        if (query.sport) {
+            queryBuilder = queryBuilder.eq('sports_events.sport', query.sport);
+        }
 
         if (query.eventId) {
             queryBuilder = queryBuilder.eq('event_id', query.eventId);

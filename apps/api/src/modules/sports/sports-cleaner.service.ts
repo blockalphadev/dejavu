@@ -356,11 +356,21 @@ export class SportsCleanerService {
      * Check if entity A is more reliable than entity B
      */
     private isMoreReliable<T extends { source: DataSource }>(a: T, b: T): boolean {
-        // Priority: API-Football > TheSportsDB > Manual
+        // Priority: API-Sports > TheSportsDB > Manual
         const priority: Record<DataSource, number> = {
-            [DataSource.APIFOOTBALL]: 3,
-            [DataSource.THESPORTSDB]: 2,
-            [DataSource.MANUAL]: 1,
+            [DataSource.APIFOOTBALL]: 100,
+            [DataSource.APIBASKETBALL]: 100,
+            [DataSource.APIAFL]: 100,
+            [DataSource.APIFORMULA1]: 100,
+            [DataSource.APIHANDBALL]: 100,
+            [DataSource.APIHOCKEY]: 100,
+            [DataSource.APIMMA]: 100,
+            [DataSource.APINBA]: 100,
+            [DataSource.APINFL]: 100,
+            [DataSource.APIRUGBY]: 100,
+            [DataSource.APIVOLLEYBALL]: 100,
+            [DataSource.THESPORTSDB]: 50,
+            [DataSource.MANUAL]: 25,
         };
 
         return priority[a.source] > priority[b.source];
