@@ -787,7 +787,100 @@ Floating bottom bar for mobile with expandable full bet slip:
 - Swipe/tap to expand into full bet slip
 - Backdrop overlay when expanded
 
+### UI/UX Improvements (v2.1)
+
+> Updated: January 16, 2026
+
+The Sports UI has been significantly upgraded to provide a **premium, Polymarket-inspired experience** across all devices.
+
+#### Design Philosophy
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Glassmorphism** | Semi-transparent cards with `backdrop-blur-md` for a modern, layered look. |
+| **Visual Hierarchy** | Clear separation of sports categories, market cards, and bet slip. |
+| **Micro-interactions** | Hover effects, scale transforms on icons, and animated entry for cards (Framer Motion). |
+| **Accessibility** | High contrast text, clear tap targets, and keyboard-navigable elements. |
+
+#### Layout: 3-Column (Desktop)
+
+For large screens (`2xl` breakpoint and above), the page now features a 3-column layout:
+
+1.  **Left Sidebar (`SportsSidebar`)**: Sticky navigation for 12 sport categories.
+2.  **Main Feed**: Displays market cards in a responsive grid.
+3.  **Right Sidebar (Bet Slip/Trending)**: Displays the user's bet slip and trending markets.
+
+```
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                              Sports Market Page                               │
+├───────────────┬───────────────────────────────────────────────┬───────────────┤
+│   SportsSidebar  │                                               │   BetSlip /    │
+│   (sticky)       │               Market Feed                     │   Trending     │
+│   - Live 🔴      │       ┌────────┐  ┌────────┐  ┌────────┐      │   (sticky)     │
+│   - AFL          │       │ Card 1 │  │ Card 2 │  │ Card 3 │      │                │
+│   - Basketball   │       └────────┘  └────────┘  └────────┘      │                │
+│   - Football     │                                               │                │
+│   - MMA          │                                               │                │
+│   ...            │                                               │                │
+└───────────────┴───────────────────────────────────────────────┴───────────────┘
+```
+
+On medium screens, the right sidebar is hidden, and on mobile, the left sidebar is replaced with a horizontal scroll bar for category selection.
+
+#### SportsMarketCard Enhancements
+
+The `SportsMarketCard` component has been refactored with:
+
+| Feature | Description |
+|---------|-------------|
+| **Probability Bar** | A visual progress bar inside each outcome button showing the current odds. |
+| **Colored Outcomes** | First outcome uses `emerald` (positive), second uses `rose` (negative) colors. |
+| **Modern Padding** | Increased padding (`p-5`) and rounded corners (`rounded-2xl`) for a premium feel. |
+| **Hover Animation** | Uses `framer-motion` for `whileHover` lift effect. |
+| **Metadata Display** | Shows Volume and Start Time with icons (`Activity`, `Clock`). |
+
+#### SportsSidebar Enhancements
+
+| Feature | Description |
+|---------|-------------|
+| **Sticky Positioning** | The sidebar is `sticky top-20` so it remains visible during scroll. |
+| **Refined Active State** | Active category has `bg-blue-50 dark:bg-blue-500/10` with text color change. |
+| **Icon Scaling** | Emojis scale on hover (`group-hover:scale-110`). |
+| **Live Pulse** | "Live" category has an animated pulsing red dot. |
+
+#### Anti-Throttling UI
+
+The `useSportsMarkets` hook now tracks API rate limits. When a 429 (Too Many Requests) response is received:
+
+1.  `isRateLimited` state is set to `true`.
+2.  `rateLimitReset` stores the timestamp when fetching can resume.
+3.  The `SportsMarketPage` displays an **orange alert banner** with a countdown timer.
+4.  The "Refresh" button becomes disabled and shows the remaining wait time.
+
+This provides a **user-friendly experience** during high traffic, avoiding jarring error messages.
+
+```tsx
+// useSportsMarkets.ts
+interface UseSportsMarketsReturn {
+    // ... other properties
+    isRateLimited: boolean;
+    rateLimitReset: Date | null;
+}
+```
+
+```tsx
+// SportsMarketPage.tsx - Rate Limit UI
+{isRateLimited && (
+    <motion.div className="...">
+        <Clock className="w-5 h-5 text-orange-500 animate-pulse" />
+        <div>High Traffic Volume</div>
+        <div className="font-mono">00:{cooldownSeconds}</div>
+    </motion.div>
+)}
+```
+
 ---
+
 
 ## Market Resolution
 

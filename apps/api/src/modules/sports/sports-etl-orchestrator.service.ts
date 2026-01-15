@@ -165,24 +165,43 @@ export class SportsETLOrchestrator implements OnModuleInit {
                     this.logger.warn('[AUTO-TRIGGER] Forcing API-Sports enabled for initial sync');
                 }
 
+                // Priority sports that need Time Machine logic
                 const targetSports = [
                     SportType.AFL,
+                    SportType.MMA,
                     SportType.HANDBALL,
                     SportType.HOCKEY,
-                    SportType.MMA,
                     SportType.RUGBY,
                     SportType.VOLLEYBALL
                 ];
 
                 this.logger.log(`[AUTO-TRIGGER] Starting PRIORITY sync for: ${targetSports.join(', ')}`);
 
+                // STEP 1: Sync leagues FIRST for all target sports
+                // This ensures leagues exist in database before fetching games
+                this.logger.log('[AUTO-TRIGGER] Step 1: Syncing leagues for target sports...');
                 for (const sport of targetSports) {
-                    await this.syncSport(sport, 'games');
-                    // await this.syncSport(sport, 'live'); // Skip live for now to save quota and focus on markets
+                    try {
+                        await this.syncSport(sport, 'leagues');
+                        this.logger.log(`[AUTO-TRIGGER] Leagues synced for ${sport}`);
+                    } catch (error) {
+                        this.logger.warn(`[AUTO-TRIGGER] League sync failed for ${sport}, will use fallback: ${(error as Error).message}`);
+                    }
                 }
 
-                // Then sync live scores
-                await this.syncAllSports('live');
+                // STEP 2: Sync games with Time Machine logic
+                this.logger.log('[AUTO-TRIGGER] Step 2: Syncing games (with Time Machine for restricted sports)...');
+                for (const sport of targetSports) {
+                    try {
+                        await this.syncSport(sport, 'games');
+                        this.logger.log(`[AUTO-TRIGGER] Games synced for ${sport}`);
+                    } catch (error) {
+                        this.logger.warn(`[AUTO-TRIGGER] Games sync failed for ${sport}: ${(error as Error).message}`);
+                    }
+                }
+
+                // STEP 3: Skip live sync initially to preserve API quota
+                // await this.syncAllSports('live');
 
                 this.logger.log('[AUTO-TRIGGER] Initial sync completed successfully');
             } catch (error) {
@@ -439,16 +458,38 @@ export class SportsETLOrchestrator implements OnModuleInit {
             .limit(this.config.batchSize); // Limit leagues to process
 
         if (!leagues || leagues.length === 0) {
-            this.logger.warn(`No leagues found for ${sport}. Sync leagues first.`);
-            // Fallback: Try date-based fetch
+            this.logger.warn(`No leagues found for ${sport}. Using fallback methods...`);
+
+            // Fallback 1: Try date-based fetch from TheSportsDB
             if (this.config.enableTheSportsDB) {
                 try {
                     const today = new Date().toISOString().split('T')[0];
                     const events = await this.theSportsDBClient.getEventsByDate(today, sport);
                     result.sources.theSportsDB.fetched = events.length;
                     allEvents.push(...events);
+                    this.logger.log(`[Fallback] TheSportsDB date-based: ${events.length} events for ${sport}`);
                 } catch (error) {
                     result.sources.theSportsDB.errors.push((error as Error).message);
+                    this.logger.warn(`[Fallback] TheSportsDB failed for ${sport}: ${(error as Error).message}`);
+                }
+            }
+
+            // Fallback 2: ALWAYS try API-Sports Time Machine for restricted sports
+            // This is critical for AFL/MMA since they don't have leagues in database
+            if (this.config.enableAPISports && this.apiSportsClient.canMakeRequest()) {
+                try {
+                    const sportKey = this.mapSportTypeToAPIKey(sport);
+                    if (sportKey) {
+                        this.logger.log(`[Fallback] Trying API-Sports Time Machine for ${sport}...`);
+                        this.apiSportsClient.setSport(sportKey);
+                        const events = await this.apiSportsClient.getUpcomingGames();
+                        result.sources.apiSports.fetched = events.length;
+                        allEvents.push(...events);
+                        this.logger.log(`[Fallback] API-Sports Time Machine: ${events.length} events for ${sport}`);
+                    }
+                } catch (error) {
+                    result.sources.apiSports.errors.push((error as Error).message);
+                    this.logger.error(`[Fallback] API-Sports failed for ${sport}:`, error);
                 }
             }
         } else {

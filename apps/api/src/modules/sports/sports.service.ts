@@ -48,7 +48,8 @@ export class SportsService {
      * Get all leagues with filters
      */
     async getLeagues(query: SportsLeaguesQueryDto): Promise<PaginatedResult<SportsLeagueResponseDto>> {
-        const supabase = this.supabaseService.getClient();
+        // Use admin client for public sports data (avoid RLS restrictions)
+        const supabase = this.supabaseService.getAdminClient();
         const page = query.page || 1;
         const limit = query.limit || 50;
         const offset = (page - 1) * limit;
@@ -98,7 +99,7 @@ export class SportsService {
      * Get league by ID
      */
     async getLeagueById(id: string): Promise<SportsLeagueResponseDto> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         const { data, error } = await supabase
             .from('sports_leagues')
@@ -184,22 +185,26 @@ export class SportsService {
             }
         }
 
-        // 3. Batch insert new leagues
+        // 3. Batch insert/upsert new leagues (use upsert to handle race conditions)
         const BATCH_SIZE = 50;
         if (leaguesToInsert.length > 0) {
             for (let i = 0; i < leaguesToInsert.length; i += BATCH_SIZE) {
                 const batch = leaguesToInsert.slice(i, i + BATCH_SIZE);
+                // Use upsert with onConflict to handle duplicate key errors
                 const { error } = await supabase
                     .from('sports_leagues')
-                    .insert(batch);
+                    .upsert(batch, {
+                        onConflict: 'external_id,source',
+                        ignoreDuplicates: false // Update existing records
+                    });
 
                 if (error) {
-                    this.logger.error(`Batch insert leagues failed: ${error.message}`);
-                    // Fallback to individual inserts
+                    this.logger.error(`Batch upsert leagues failed: ${error.message}`);
+                    // Fallback to individual upserts
                     for (const item of batch) {
                         const { error: singleError } = await supabase
                             .from('sports_leagues')
-                            .insert(item);
+                            .upsert(item, { onConflict: 'external_id,source' });
                         if (!singleError) created++;
                     }
                 } else {
@@ -230,7 +235,7 @@ export class SportsService {
      * Get teams by league
      */
     async getTeamsByLeague(leagueId: string): Promise<SportsTeamResponseDto[]> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         const { data, error } = await supabase
             .from('sports_teams')
@@ -251,7 +256,7 @@ export class SportsService {
      * Get team by ID
      */
     async getTeamById(id: string): Promise<SportsTeamResponseDto> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         const { data, error } = await supabase
             .from('sports_teams')
@@ -270,7 +275,7 @@ export class SportsService {
      * Search teams
      */
     async searchTeams(query: string, sport?: SportType): Promise<SportsTeamResponseDto[]> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         let queryBuilder = supabase
             .from('sports_teams')
@@ -383,22 +388,26 @@ export class SportsService {
             }
         }
 
-        // 4. Batch insert new teams
+        // 4. Batch insert/upsert new teams (use upsert to handle race conditions)
         const BATCH_SIZE = 50;
         if (teamsToInsert.length > 0) {
             for (let i = 0; i < teamsToInsert.length; i += BATCH_SIZE) {
                 const batch = teamsToInsert.slice(i, i + BATCH_SIZE);
+                // Use upsert with onConflict to handle duplicate key errors
                 const { error } = await supabase
                     .from('sports_teams')
-                    .insert(batch);
+                    .upsert(batch, {
+                        onConflict: 'external_id,source',
+                        ignoreDuplicates: false
+                    });
 
                 if (error) {
-                    this.logger.error(`Batch insert teams failed: ${error.message}`);
-                    // Fallback to individual inserts
+                    this.logger.error(`Batch upsert teams failed: ${error.message}`);
+                    // Fallback to individual upserts
                     for (const item of batch) {
                         const { error: singleError } = await supabase
                             .from('sports_teams')
-                            .insert(item);
+                            .upsert(item, { onConflict: 'external_id,source' });
                         if (!singleError) created++;
                     }
                 } else {
@@ -429,7 +438,8 @@ export class SportsService {
      * Get events with filters
      */
     async getEvents(query: SportsEventsQueryDto): Promise<PaginatedResult<SportsEventResponseDto>> {
-        const supabase = this.supabaseService.getClient();
+        // Use admin client for public sports data (avoid RLS restrictions)
+        const supabase = this.supabaseService.getAdminClient();
         const page = query.page || 1;
         const limit = query.limit || 20;
         const offset = (page - 1) * limit;
@@ -495,7 +505,7 @@ export class SportsService {
      * Get live events
      */
     async getLiveEvents(sport?: SportType): Promise<SportsEventResponseDto[]> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         let queryBuilder = supabase
             .from('sports_events')
@@ -525,7 +535,7 @@ export class SportsService {
      * Get upcoming events
      */
     async getUpcomingEvents(sport?: SportType, limit: number = 20): Promise<SportsEventResponseDto[]> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         let queryBuilder = supabase
             .from('sports_events')
@@ -558,7 +568,7 @@ export class SportsService {
      * Get event by ID
      */
     async getEventById(id: string): Promise<SportsEventResponseDto> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         const { data, error } = await supabase
             .from('sports_events')
@@ -761,25 +771,29 @@ export class SportsService {
             }
         }
 
-        // 5. Batch insert new events
+        // 5. Batch insert/upsert new events (use upsert to handle race conditions)
         if (eventsToInsert.length > 0) {
             for (let i = 0; i < eventsToInsert.length; i += BATCH_SIZE) {
                 const batch = eventsToInsert.slice(i, i + BATCH_SIZE);
+                // Use upsert with onConflict to handle duplicate key errors
                 const { error, count } = await supabase
                     .from('sports_events')
-                    .insert(batch);
+                    .upsert(batch, {
+                        onConflict: 'external_id,source',
+                        ignoreDuplicates: false
+                    });
 
                 if (error) {
-                    this.logger.error(`Batch insert failed: ${error.message}`);
-                    // Try inserting one by one as fallback
+                    this.logger.error(`Batch upsert failed: ${error.message}`);
+                    // Try upserting one by one as fallback
                     for (const item of batch) {
                         const { error: singleError } = await supabase
                             .from('sports_events')
-                            .insert(item);
+                            .upsert(item, { onConflict: 'external_id,source' });
                         if (!singleError) {
                             created++;
                         } else {
-                            this.logger.warn(`Single insert failed for ${item.external_id}: ${singleError.message}`);
+                            this.logger.warn(`Single upsert failed for ${item.external_id}: ${singleError.message}`);
                             errors++;
                         }
                     }
@@ -1002,7 +1016,8 @@ export class SportsService {
      * Get sports markets with filters
      */
     async getMarkets(query: SportsMarketsQueryDto): Promise<PaginatedResult<SportsMarketResponseDto>> {
-        const supabase = this.supabaseService.getClient();
+        // Use admin client for public sports data (avoid RLS restrictions)
+        const supabase = this.supabaseService.getAdminClient();
         const page = query.page || 1;
         const limit = query.limit || 20;
         const offset = (page - 1) * limit;
@@ -1064,7 +1079,7 @@ export class SportsService {
      * Get market by ID
      */
     async getMarketById(id: string): Promise<SportsMarketResponseDto> {
-        const supabase = this.supabaseService.getClient();
+        const supabase = this.supabaseService.getAdminClient();
 
         const { data, error } = await supabase
             .from('sports_markets')
@@ -1210,6 +1225,7 @@ export class SportsService {
             homeTeam: data.home_team ? this.toTeamDto(data.home_team) : undefined,
             awayTeam: data.away_team ? this.toTeamDto(data.away_team) : undefined,
             league: data.league ? this.toLeagueDto(data.league) : undefined,
+            metadata: data.metadata,
         };
     }
 

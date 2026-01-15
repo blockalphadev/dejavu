@@ -385,6 +385,9 @@ export class SportsEventResponseDto {
 
     @ApiPropertyOptional({ type: () => SportsLeagueResponseDto })
     league?: SportsLeagueResponseDto;
+
+    @ApiPropertyOptional()
+    metadata?: any;
 }
 
 export class SportsMarketResponseDto {
@@ -454,6 +457,9 @@ export class SportsMarketResponseDto {
     // Joined data
     @ApiPropertyOptional({ type: () => SportsEventResponseDto })
     event?: SportsEventResponseDto;
+
+    @ApiPropertyOptional()
+    metadata?: any;
 }
 
 export class SyncResultResponseDto {

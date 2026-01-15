@@ -11,24 +11,11 @@ import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { cn } from './ui/utils';
 import { ChevronUp, ChevronDown, Zap } from 'lucide-react';
-import BetSlip, { BetSelection } from './BetSlip';
+import { BetSlip } from './BetSlip';
+import { useBetSlip } from './BetSlipContext';
 
-interface MobileBetSlipProps {
-    selections: BetSelection[];
-    onRemove: (id: string) => void;
-    onClearAll: () => void;
-    onPlaceBet: (selections: BetSelection[], amounts: Record<string, number>) => void;
-    balance?: number;
-}
-
-export function MobileBetSlip({
-    selections,
-    onRemove,
-    onClearAll,
-    onPlaceBet,
-    balance = 0
-}: MobileBetSlipProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
+export function MobileBetSlip() {
+    const { selections, isOpen, openBetSlip, closeBetSlip } = useBetSlip();
     const [isVisible, setIsVisible] = useState(false);
 
     // Show/hide based on selections
@@ -36,7 +23,6 @@ export function MobileBetSlip({
         if (selections.length > 0) {
             setIsVisible(true);
         } else {
-            setIsExpanded(false);
             // Delay hiding for animation
             const timer = setTimeout(() => setIsVisible(false), 300);
             return () => clearTimeout(timer);
@@ -48,35 +34,35 @@ export function MobileBetSlip({
     return (
         <>
             {/* Backdrop */}
-            {isExpanded && (
+            {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-in fade-in-0 duration-200"
-                    onClick={() => setIsExpanded(false)}
+                    className="fixed inset-0 bg-black/50 z-[45] lg:hidden animate-in fade-in-0 duration-200 backdrop-blur-sm"
+                    onClick={closeBetSlip}
                 />
             )}
 
             {/* Bottom Sheet */}
             <div
                 className={cn(
-                    "fixed left-0 right-0 z-50 lg:hidden transition-all duration-300 ease-out",
-                    isExpanded
-                        ? "bottom-0 top-[20vh]"
+                    "fixed left-0 right-0 z-[50] lg:hidden transition-all duration-300 ease-out",
+                    isOpen
+                        ? "bottom-0 top-[15vh]"
                         : selections.length > 0
-                            ? "bottom-16" // Above mobile nav
-                            : "-bottom-20"
+                            ? "bottom-20" // Sit above MobileBottomNav (which is usually h-[5rem] approx 80px)
+                            : "-bottom-24"
                 )}
             >
                 {/* Collapsed Bar */}
-                {!isExpanded && selections.length > 0 && (
+                {!isOpen && selections.length > 0 && (
                     <div
-                        className="mx-4 mb-2 bg-gradient-to-r from-primary to-primary/80 rounded-2xl shadow-2xl shadow-primary/20 cursor-pointer"
-                        onClick={() => setIsExpanded(true)}
+                        className="mx-4 mb-2 bg-gradient-to-r from-primary to-primary/90 rounded-2xl shadow-xl shadow-primary/20 cursor-pointer border border-primary/20 backdrop-blur-md"
+                        onClick={openBetSlip}
                     >
                         <div className="flex items-center justify-between p-4">
                             <div className="flex items-center gap-3">
                                 <div className="relative">
-                                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                                        <Zap className="w-5 h-5 text-white" />
+                                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                                        <Zap className="w-5 h-5 text-white fill-current" />
                                     </div>
                                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-primary rounded-full text-xs font-bold flex items-center justify-center shadow">
                                         {selections.length}
@@ -93,11 +79,14 @@ export function MobileBetSlip({
                 )}
 
                 {/* Expanded Sheet */}
-                {isExpanded && (
-                    <div className="h-full bg-card rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom-10 duration-300">
+                {isOpen && (
+                    <div className="h-full bg-card rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom-10 duration-300 border-t border-border/40">
                         {/* Handle Bar */}
-                        <div className="flex justify-center pt-3 pb-2">
-                            <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30" />
+                        <div
+                            className="flex justify-center pt-3 pb-2 cursor-pointer"
+                            onClick={closeBetSlip}
+                        >
+                            <div className="w-12 h-1.5 rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50 transition-colors" />
                         </div>
 
                         {/* Header */}
@@ -106,27 +95,16 @@ export function MobileBetSlip({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setIsExpanded(false)}
-                                className="h-8 w-8"
+                                onClick={closeBetSlip}
+                                className="h-8 w-8 rounded-full hover:bg-secondary"
                             >
                                 <ChevronDown className="w-5 h-5" />
                             </Button>
                         </div>
 
                         {/* Bet Slip Content */}
-                        <div className="flex-1 overflow-hidden">
-                            <BetSlip
-                                selections={selections}
-                                onRemove={onRemove}
-                                onClearAll={onClearAll}
-                                onPlaceBet={(sels, amounts) => {
-                                    onPlaceBet(sels, amounts);
-                                    setIsExpanded(false);
-                                }}
-                                balance={balance}
-                                isExpanded={true}
-                                className="border-0 rounded-none shadow-none h-full"
-                            />
+                        <div className="flex-1 overflow-hidden h-full">
+                            <BetSlip className="border-0 rounded-none shadow-none h-full bg-transparent" />
                         </div>
                     </div>
                 )}

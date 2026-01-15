@@ -15,19 +15,23 @@ import { SportsSidebar, sportsCategories } from './SportsSidebar';
 import { SportsTicker } from './SportsTicker';
 import SportsMarketCard from './SportsMarketCard';
 import { MobileBetSlip } from './MobileBetSlip';
+import { BetSlip } from './BetSlip';
 import {
     Loader2,
     RefreshCcw,
     TrendingUp,
     Zap,
     Grid3X3,
-    List
+    List,
+    AlertTriangle,
+    Clock
 } from 'lucide-react';
 import { cn } from './ui/utils';
 import { Button } from './ui/button';
 import { useSportsMarkets } from '../hooks/useSportsMarkets';
 import { useSportsSocket } from '../hooks/useSportsSocket';
 import { SportType } from '../../services/sports.service';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type ViewMode = 'grid' | 'list';
 
@@ -44,10 +48,11 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
         loading,
         error,
         refresh,
-        lastUpdated
+        lastUpdated,
+        isRateLimited,
+        rateLimitReset
     } = useSportsMarkets({
         sport: activeSport === 'live' ? undefined : activeSport,
-        // For live, we might want to filter by isActive=true as well, which is default
         isActive: true,
         autoRefresh: true,
         refreshInterval: 60000
@@ -63,7 +68,7 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
     const handleMarketUpdate = (update: any) => {
         setRealTimeMarkets(prev => {
             const index = prev.findIndex(m => m.id === update.id);
-            if (index === -1) return prev; // Or append if new?
+            if (index === -1) return prev;
 
             const newMarkets = [...prev];
             newMarkets[index] = { ...newMarkets[index], ...update };
@@ -91,12 +96,25 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
         }, {} as Record<string, typeof markets>);
     }, [realTimeMarkets]);
 
+    // Countdown for rate limit
+    const [cooldownSeconds, setCooldownSeconds] = useState(0);
+    useEffect(() => {
+        if (isRateLimited && rateLimitReset) {
+            const interval = setInterval(() => {
+                const diff = Math.max(0, Math.ceil((new Date(rateLimitReset).getTime() - Date.now()) / 1000));
+                setCooldownSeconds(diff);
+                if (diff <= 0) clearInterval(interval);
+            }, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [isRateLimited, rateLimitReset]);
+
     return (
-        <div className="container mx-auto px-4 py-6 max-w-[1800px]">
+        <div className="container mx-auto px-4 py-6 max-w-[1920px]">
             {/* Live Ticker */}
             <SportsTicker />
 
-            <div className="flex gap-6">
+            <div className="flex gap-8 relative items-start">
                 {/* Left Sidebar (Desktop) */}
                 <SportsSidebar
                     activeSport={activeSport}
@@ -104,9 +122,35 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
                 />
 
                 {/* Main Content */}
-                <main className="flex-1 min-w-0">
+                <main className="flex-1 min-w-0 pb-20">
+
+                    {/* Rate Limit Notification */}
+                    <AnimatePresence>
+                        {isRateLimited && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="mb-6 bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Clock className="w-5 h-5 text-orange-500 animate-pulse" />
+                                    <div>
+                                        <h3 className="font-semibold text-orange-600 dark:text-orange-400">High Traffic Volume</h3>
+                                        <p className="text-sm text-orange-600/80 dark:text-orange-400/80">
+                                            We're experiencing high demand. Live updates explicitly throttled.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="font-mono text-lg font-bold text-orange-500">
+                                    00:{cooldownSeconds.toString().padStart(2, '0')}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* Mobile Sport Selector */}
-                    <div className="md:hidden overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide flex gap-2 sticky top-[60px] z-20 bg-background/95 backdrop-blur py-2 mb-4">
+                    <div className="lg:hidden overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide flex gap-2 sticky top-[60px] z-20 bg-background/95 backdrop-blur py-2 mb-4">
                         {sportsCategories.map((sport) => {
                             const isActive = activeSport === sport.id;
                             return (
@@ -116,7 +160,7 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
                                     className={cn(
                                         "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap border",
                                         isActive
-                                            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                                            ? "bg-blue-600/10 text-blue-600 border-blue-600/20"
                                             : "bg-card text-muted-foreground border-border/40 hover:bg-accent hover:text-foreground"
                                     )}
                                 >
@@ -128,23 +172,33 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
                     </div>
 
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                                 {activeSport === 'live' ? (
                                     <>
-                                        <Zap className="w-6 h-6 text-yellow-500 fill-current" />
+                                        <div className="p-2 bg-red-500/10 rounded-lg">
+                                            <Zap className="w-6 h-6 text-red-500 fill-current" />
+                                        </div>
                                         Live Markets
                                     </>
                                 ) : (
                                     <>
-                                        <TrendingUp className="w-6 h-6 text-blue-500" />
-                                        {activeSport.toUpperCase()} Markets
+                                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                                            <TrendingUp className="w-6 h-6 text-blue-500" />
+                                        </div>
+                                        {activeSport.toUpperCase()}
                                     </>
                                 )}
                             </h1>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                {loading ? 'Updating odds...' : `Updated ${lastUpdated?.toLocaleTimeString()}`}
+                            <p className="text-muted-foreground mt-2 ml-1 flex items-center gap-2">
+                                {loading ? (
+                                    <span className="flex items-center gap-2">
+                                        <RefreshCcw className="w-3 h-3 animate-spin" /> Updating...
+                                    </span>
+                                ) : (
+                                    `Updated ${lastUpdated?.toLocaleTimeString()}`
+                                )}
                             </p>
                         </div>
 
@@ -173,40 +227,48 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
                                 size="sm"
                                 onClick={() => refresh()}
                                 className="h-10 gap-2 border-border/40"
-                                disabled={loading}
+                                disabled={loading || isRateLimited}
                             >
                                 <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
-                                Refresh
+                                {isRateLimited ? `Wait ${cooldownSeconds}s` : 'Refresh'}
                             </Button>
                         </div>
                     </div>
 
                     {/* Content */}
                     {loading && markets.length === 0 ? (
-                        <div className="flex items-center justify-center py-20">
-                            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                        <div className="flex flex-col items-center justify-center py-32 opacity-50">
+                            <Loader2 className="w-10 h-10 animate-spin text-blue-500 mb-4" />
+                            <p className="text-sm font-medium">Scouring the blockchain...</p>
                         </div>
-                    ) : error ? (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 text-center text-red-500">
-                            Failed to load markets. Please try again later.
+                    ) : error && !isRateLimited ? (
+                        <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-12 text-center">
+                            <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Unable to Load Markets</h3>
+                            <p className="text-muted-foreground max-w-md mx-auto mb-6">{error}</p>
+                            <Button onClick={() => refresh()} variant="outline">Try Again</Button>
                         </div>
                     ) : markets.length === 0 ? (
-                        <div className="text-center py-20 text-muted-foreground">
-                            No active markets found for this category.
+                        <div className="text-center py-32 rounded-3xl bg-gray-50 dark:bg-white/5 border border-dashed border-gray-200 dark:border-white/10">
+                            <div className="text-4xl mb-4">🏜️</div>
+                            <h3 className="text-lg font-medium text-foreground">No Active Markets</h3>
+                            <p className="text-muted-foreground">Check back later for new events in this category.</p>
                         </div>
                     ) : (
                         <div className={cn(
-                            "grid gap-4",
+                            "grid gap-4 sm:gap-6",
                             viewMode === 'grid'
-                                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                                ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3" // Adjusted for sidebar+content layout
                                 : "grid-cols-1"
                         )}>
                             {viewMode === 'list'
                                 ? Object.entries(groupedMarkets).map(([league, leagueMarkets]) => (
                                     <div key={league} className="space-y-4">
-                                        <h2 className="font-semibold text-lg sticky top-[125px] z-10 bg-background/95 backdrop-blur py-2 px-2 -mx-2">
-                                            {league}
-                                        </h2>
+                                        <div className="sticky top-[125px] z-10 bg-background/95 backdrop-blur-xl py-3 px-1 -mx-1 border-b border-border/40">
+                                            <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
+                                                {league}
+                                            </h2>
+                                        </div>
                                         <div className="grid gap-4 grid-cols-1">
                                             {leagueMarkets.map((market) => (
                                                 <SportsMarketCard
@@ -229,14 +291,14 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
                         </div>
                     )}
                 </main>
+
+                {/* Right Sidebar (Betslip/Details) */}
+                <aside className="w-80 hidden lg:block flex-shrink-0 sticky top-20 h-[calc(100vh-80px)]">
+                    <BetSlip />
+                </aside>
             </div>
 
-            <MobileBetSlip
-                selections={[]}
-                onRemove={() => { }}
-                onClearAll={() => { }}
-                onPlaceBet={() => { }}
-            />
+            <MobileBetSlip />
         </div>
     );
 }

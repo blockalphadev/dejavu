@@ -105,6 +105,23 @@ export class SportsSyncService implements OnModuleInit {
         }
     }
 
+    /**
+     * Sync multi-sport data (API-Sports)
+     * Scheduled to run every 6 hours to respect the 100 req/day limit.
+     * Use this to sync AFL, MMA, and other sports not covered by TheSportsDB.
+     */
+    @Cron(CronExpression.EVERY_6_HOURS)
+    async handleMultiSportSync() {
+        if (!this.shouldRunSync()) return;
+
+        try {
+            this.logger.log('Starting scheduled multi-sport sync (AFL, MMA, etc.)...');
+            await this.syncMultipleSports('games');
+        } catch (err) {
+            this.logger.error('Multi-sport sync failed:', err);
+        }
+    }
+
     private shouldRunSync(): boolean {
         return this.configService.get('SPORTS_ENABLE_SCHEDULED_SYNC', 'false') === 'true';
     }
@@ -642,9 +659,9 @@ export class SportsSyncService implements OnModuleInit {
         syncType: 'leagues' | 'games' | 'live' = 'games'
     ): Promise<{ results: Record<string, SyncResult>; totalFetched: number }> {
         const prioritizedSports = [
-            'football', 'nba', 'nfl', 'basketball',
-            'hockey', 'mma', 'formula1', 'rugby',
-            'volleyball', 'handball', 'afl'
+            'football', 'nba', 'mma', 'afl', 'nfl', 'basketball',
+            'hockey', 'formula1', 'rugby',
+            'volleyball', 'handball'
         ];
 
         const results: Record<string, SyncResult> = {};

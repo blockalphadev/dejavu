@@ -5,6 +5,7 @@ import { AdminProvider } from "./contexts/AdminContext";
 import { AuthModal } from "./components/auth/AuthModal";
 import { DepositProvider, useDeposit } from "./components/DepositContext";
 import { DepositModal } from "./components/DepositModal";
+import { BetSlipProvider } from "./components/BetSlipContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
@@ -187,9 +188,11 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <DepositProvider>
-            <AdminProvider>
-              <AppContent />
-            </AdminProvider>
+            <BetSlipProvider>
+              <AdminProvider>
+                <AppContent />
+              </AdminProvider>
+            </BetSlipProvider>
           </DepositProvider>
         </AuthProvider>
       </ThemeProvider>

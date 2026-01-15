@@ -600,62 +600,111 @@ export class APISportsClient extends BaseSportsClient {
         const isRestricted = restrictedSports.includes(this.currentConfig.sportType);
 
         if (isRestricted) {
-            this.logger.log(`[Demo Mode] Fetching 2024 data for ${this.currentSport} and time-shifting...`);
-            // Fetch strict 2024 season data
-            // Basketball v1 requires "YYYY-YYYY" format, others act differently or accept integer
-            let seasonValue: string | number = 2024;
-            if (this.currentConfig.sportType === SportType.BASKETBALL) {
-                seasonValue = "2024-2025";
-            }
+            this.logger.log(`[Time Machine] Fetching historical data for ${this.currentSport} and time-shifting...`);
 
-            const params: Record<string, string | number> = { season: seasonValue };
+            // Different sports might have data in different seasons depending on the time of year
+            // We try the current simulation target (2024) first, then fallback to 2023 or 2025
+            const candidateSeasons = [2024, 2023, 2025];
+
+            // Comprehensive demo league IDs for each sport
             const demoLeagues: Record<string, (string | number)[]> = {
-                [SportType.BASKETBALL]: [12, 1, 2], // Spain ACB, others
-                [SportType.AFL]: [1],
-                [SportType.HANDBALL]: [39, 3, 1],
-                [SportType.HOCKEY]: [57, 1], // NHL
-                [SportType.RUGBY]: [16, 1, 13],
-                [SportType.VOLLEYBALL]: [140, 97, 88, 237, 13], // Poland, Italy, Russia, Asian, etc
-                [SportType.MMA]: [1, 2, 4491, 5702, 5749], // UFC, Bellator, Rizin, Oktagon, Hexagone
-                [SportType.BASEBALL]: [1],
+                [SportType.BASKETBALL]: [12, 1, 2, 5], // Spain ACB, EuroLeague, etc.
+                [SportType.AFL]: [1], // Focus on main Premiership to save requests
+                [SportType.HANDBALL]: [39, 3, 1, 2], // Bundesliga, EHF Champions League
+                [SportType.HOCKEY]: [57, 1, 33], // NHL, KHL
+                [SportType.RUGBY]: [16, 1, 13, 44], // Six Nations, World Cup, Super Rugby
+                [SportType.VOLLEYBALL]: [140, 97, 88, 237, 13, 179], // Poland, Italy, Russia, Asian, Brazil
+                [SportType.MMA]: [], // MMA doesn't use league param for 'fights' endpoint
+                [SportType.BASEBALL]: [1, 12], // MLB, NPB
+                [SportType.FORMULA1]: [1], // F1 World Championship
             };
 
             const targetLeagues = leagueId ? [leagueId] : (demoLeagues[this.currentConfig.sportType] || []);
-            // NBA fallback
+
+            // NBA fallback to standard league
             if (this.currentConfig.sportType === SportType.NBA && !leagueId) {
                 targetLeagues.push('standard');
             }
 
-            let games: any[] = [];
-            for (const targetLeague of targetLeagues) {
-                params.league = targetLeague;
-                try {
-                    const result = await this.getGames(params);
-                    if (result && result.length > 0) {
-                        games = result;
-                        this.logger.log(`[Time Machine] Found ${games.length} games for ${this.currentConfig.sportType} (League ${targetLeague})`);
-                        break;
-                    }
-                } catch (e) {
-                    continue;
+            let games: SportsEvent[] = [];
+
+            // Try seasons until we find data
+            for (const seasonValue of candidateSeasons) {
+                if (games.length >= 20) break;
+
+                // Adjust season format if needed
+                let formattedSeason: string | number = seasonValue;
+                if (this.currentConfig.sportType === SportType.BASKETBALL) {
+                    formattedSeason = `${seasonValue}-${seasonValue + 1}`;
                 }
+
+                // Special handling for MMA: Do not iterate leagues, just fetch by season
+                if (this.currentConfig.sportType === SportType.MMA) {
+                    try {
+                        const params: Record<string, string | number> = { season: formattedSeason };
+                        this.logger.log(`[Time Machine] Fetching MMA for season ${formattedSeason}...`);
+                        const result = await this.getGames(params);
+                        if (result && result.length > 0) {
+                            games = result;
+                            this.logger.log(`[Time Machine] Found ${result.length} fights for MMA Season ${formattedSeason}`);
+                            break; // Found data, stop looking
+                        }
+                    } catch (e) {
+                        this.logger.error(`[Time Machine] Failed to fetch MMA data for ${formattedSeason}: ${(e as Error).message}`);
+                    }
+                } else {
+                    // Standard league iteration for other sports
+                    for (const targetLeague of targetLeagues) {
+                        const params: Record<string, string | number> = {
+                            season: formattedSeason,
+                            league: targetLeague
+                        };
+
+                        try {
+                            const result = await this.getGames(params);
+                            if (result && result.length > 0) {
+                                games = [...games, ...result];
+                                this.logger.log(`[Time Machine] Found ${result.length} games for ${this.currentConfig.sportType} (League ${targetLeague}, Season ${formattedSeason})`);
+
+                                if (games.length >= 20) break;
+                            }
+                        } catch (e) {
+                            this.logger.debug(`[Time Machine] No data for league ${targetLeague} season ${formattedSeason}: ${(e as Error).message}`);
+                            continue;
+                        }
+                    }
+                }
+
+                // If we found games in this season, good enough. Don't fetch other seasons to avoid mixing too much.
+                if (games.length > 0) break;
             }
 
-            // Take the last 20 games (likely finals/playoffs, high quality)
-            const recentGames = games.slice(-20); // Last 20
+            if (games.length === 0) {
+                this.logger.warn(`[Time Machine] No historical data found for ${this.currentConfig.sportType} in seasons ${candidateSeasons.join(', ')}`);
+                // Final fallback: Try to return ANYTHING from live if possible? No, stick to historical.
+                return [];
+            }
+
+            // Take up to 30 games (more variety for display)
+            // Use random slice to vary data if we have many results (like MMA)
+            const maxGames = 30;
+            let recentGames = games;
+
+            if (games.length > maxGames) {
+                const startIndex = Math.floor(Math.random() * (games.length - maxGames));
+                recentGames = games.slice(startIndex, startIndex + maxGames);
+            }
 
             // Time-shift to "Upcoming" (Today + X hours)
             const now = new Date();
             return recentGames.map((game, index) => {
-                const shiftHours = (index + 1) * 3; // Spread out every 3 hours
+                const shiftHours = (index + 1) * 2; // Spread out every 2 hours
                 const newDate = new Date(now.getTime() + shiftHours * 60 * 60 * 1000);
 
                 return {
                     ...game,
-                    isActive: true,
-                    status: EventStatus.SCHEDULED, // Not Started
+                    status: EventStatus.SCHEDULED,
                     startTime: newDate,
-                    // Remove erroneous participatingTeams access
                 };
             });
         }
@@ -896,6 +945,21 @@ export class APISportsClient extends BaseSportsClient {
         // NBA has specific structure (visitors vs away)
         if (this.currentSport === 'nba') {
             return this.transformNBAGame(data);
+        }
+
+        // AFL (Australian Football League) specific structure
+        if (this.currentSport === 'afl') {
+            return this.transformAFLGame(data);
+        }
+
+        // MMA uses fighters instead of teams
+        if (this.currentSport === 'mma') {
+            return this.transformMMAFight(data);
+        }
+
+        // Volleyball has sets/points structure
+        if (this.currentSport === 'volleyball') {
+            return this.transformVolleyballGame(data);
         }
 
         // Generic game structure for basketball, hockey, etc.
@@ -1140,6 +1204,264 @@ export class APISportsClient extends BaseSportsClient {
                 leagueName: data.league?.name,
                 leagueLogo: data.league?.logo,
                 periods: data.scores?.home ? Object.keys(data.scores?.home).filter(k => k.startsWith('quarter') || k.startsWith('period')) : [],
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+    }
+
+    /**
+     * Transform AFL (Australian Football League) game
+     * AFL uses quarters (Q1-Q4), different scoring (goals + behinds)
+     */
+    private transformAFLGame(data: any): SportsEvent {
+        // AFL has teams.home and teams.away structure
+        const homeTeam = data.teams?.home;
+        const awayTeam = data.teams?.away;
+
+        return {
+            id: '',
+            externalId: String(data.game?.id || data.id),
+            source: this.currentConfig.dataSource,
+            leagueId: String(data.league?.id),
+            homeTeamId: String(homeTeam?.id),
+            awayTeamId: String(awayTeam?.id),
+            sport: this.currentConfig.sportType,
+            season: String(data.season || data.league?.season),
+            round: data.week || data.round,
+            matchDay: undefined,
+            name: `${homeTeam?.name || 'Home'} vs ${awayTeam?.name || 'Away'}`,
+            venue: data.venue?.name || data.venue,
+            city: data.venue?.city,
+            country: data.country?.name || 'Australia',
+            startTime: new Date(data.date || data.timestamp * 1000),
+            endTime: undefined,
+            timezone: data.timezone || 'Australia/Melbourne',
+            status: this.mapStatus(data.status?.short || data.status),
+            statusDetail: data.status?.long,
+            elapsedTime: data.status?.timer || data.time?.elapsed,
+            homeScore: data.scores?.home?.score ?? data.scores?.home?.total ?? data.scores?.home ?? undefined,
+            awayScore: data.scores?.away?.score ?? data.scores?.away?.total ?? data.scores?.away ?? undefined,
+            homeScoreHalftime: data.scores?.home?.halftime ?? undefined,
+            awayScoreHalftime: data.scores?.away?.halftime ?? undefined,
+            homeScoreExtra: undefined,
+            awayScoreExtra: undefined,
+            homeScorePenalty: undefined,
+            awayScorePenalty: undefined,
+            referee: undefined,
+            attendance: data.attendance,
+            thumbnailUrl: undefined,
+            videoUrl: undefined,
+            bannerUrl: undefined,
+            stats: {
+                quarters: data.periods || data.quarters,
+            },
+            hasMarket: false,
+            marketCreatedAt: undefined,
+            isFeatured: false,
+            metadata: {
+                homeTeamName: homeTeam?.name,
+                homeTeamLogo: homeTeam?.logo,
+                awayTeamName: awayTeam?.name,
+                awayTeamLogo: awayTeam?.logo,
+                leagueName: data.league?.name,
+                leagueLogo: data.league?.logo,
+                // AFL specific: goals and behinds
+                homeGoals: data.scores?.home?.goals,
+                homeBehinds: data.scores?.home?.behinds,
+                awayGoals: data.scores?.away?.goals,
+                awayBehinds: data.scores?.away?.behinds,
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+    }
+
+    /**
+     * Transform MMA fight
+     * MMA uses fighters instead of teams, weight classes, and rounds
+     */
+    private transformMMAFight(data: any): SportsEvent {
+        // MMA structure: data.fighters can be an array OR an object { first: ..., second: ... }
+        let fighter1: any;
+        let fighter2: any;
+
+        if (Array.isArray(data.fighters)) {
+            fighter1 = data.fighters[0];
+            fighter2 = data.fighters[1];
+        } else if (data.fighters) {
+            fighter1 = data.fighters.first;
+            fighter2 = data.fighters.second;
+        }
+
+        // Fallback to teams if fighters missing
+        if (!fighter1) fighter1 = data.teams?.home;
+        if (!fighter2) fighter2 = data.teams?.away;
+
+        // Build fight name from fighter names
+        const getFighterName = (f: any) => {
+            if (!f) return 'Unknown Fighter';
+            if (f.name) return f.name;
+            return `${f.firstname || ''} ${f.lastname || ''}`.trim();
+        };
+
+        const fighter1Name = getFighterName(fighter1);
+        const fighter2Name = getFighterName(fighter2);
+
+        // Normalize league/category
+        let leagueName = data.league?.name || data.slug;
+        if (!leagueName && data.category) {
+            leagueName = data.category; // e.g. "Bantamweight" if league missing
+        }
+
+        // Ensure we have a valid status
+        const status = (data.status?.long === "Finished" || data.status?.short === "FT")
+            ? EventStatus.FINISHED
+            : (this.mapStatus(data.status?.short || data.status));
+
+        return {
+            id: '',
+            externalId: String(data.id),
+            source: this.currentConfig.dataSource,
+            leagueId: String(data.league?.id || ''),
+            // Map fighters to home/away for database compatibility
+            homeTeamId: String(fighter1?.id || ''),
+            awayTeamId: String(fighter2?.id || ''),
+            sport: this.currentConfig.sportType,
+            season: String(data.season || new Date().getFullYear()),
+            round: data.fight_number ? `Fight ${data.fight_number}` : undefined,
+            matchDay: undefined,
+            name: `${fighter1Name} vs ${fighter2Name}`,
+            venue: data.venue?.name || data.location?.venue || data.venue, // Handle venue string
+            city: data.location?.city || data.venue?.city,
+            country: data.location?.country || data.country,
+            startTime: new Date(data.date || data.timestamp * 1000),
+            endTime: undefined,
+            timezone: data.timezone || 'UTC',
+            status: status,
+            statusDetail: data.status?.long || data.result?.method,
+            elapsedTime: data.status?.elapsed || data.result?.time_seconds,
+            homeScore: undefined,
+            awayScore: undefined,
+            homeScoreHalftime: undefined,
+            awayScoreHalftime: undefined,
+            homeScoreExtra: undefined,
+            awayScoreExtra: undefined,
+            homeScorePenalty: undefined,
+            awayScorePenalty: undefined,
+            referee: data.referee?.name,
+            attendance: undefined,
+            thumbnailUrl: fighter1?.image || fighter2?.image,
+            videoUrl: undefined,
+            bannerUrl: undefined,
+            stats: {
+                rounds: data.rounds,
+                weightClass: data.weight?.name || data.weight_class || data.category,
+                result: data.result,
+            },
+            hasMarket: false,
+            marketCreatedAt: undefined,
+            isFeatured: data.main_event || data.title_fight || data.is_main || false,
+            metadata: {
+                // Fighter 1 (mapped to home)
+                homeTeamName: fighter1Name,
+                homeTeamLogo: fighter1?.image || fighter1?.logo,
+                fighter1: {
+                    id: fighter1?.id,
+                    name: fighter1Name,
+                    nickname: fighter1?.nickname,
+                    country: fighter1?.country,
+                    record: fighter1?.record,
+                    image: fighter1?.image,
+                    winner: fighter1?.winner
+                },
+                // Fighter 2 (mapped to away)
+                awayTeamName: fighter2Name,
+                awayTeamLogo: fighter2?.image || fighter2?.logo,
+                fighter2: {
+                    id: fighter2?.id,
+                    name: fighter2Name,
+                    nickname: fighter2?.nickname,
+                    country: fighter2?.country,
+                    record: fighter2?.record,
+                    image: fighter2?.image,
+                    winner: fighter2?.winner
+                },
+                leagueName: leagueName,
+                category: data.category,
+                isMainEvent: data.main_event || false,
+                isTitleFight: data.title_fight || false,
+                winner: data.result?.winner,
+                method: data.result?.method,
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+    }
+
+    /**
+     * Transform Volleyball game
+     * Volleyball uses sets (best of 3 or 5), points per set
+     */
+    private transformVolleyballGame(data: any): SportsEvent {
+        const homeTeam = data.teams?.home;
+        const awayTeam = data.teams?.away;
+
+        return {
+            id: '',
+            externalId: String(data.id),
+            source: this.currentConfig.dataSource,
+            leagueId: String(data.league?.id),
+            homeTeamId: String(homeTeam?.id),
+            awayTeamId: String(awayTeam?.id),
+            sport: this.currentConfig.sportType,
+            season: String(data.season || data.league?.season),
+            round: data.week || data.round,
+            matchDay: undefined,
+            name: `${homeTeam?.name || 'Home'} vs ${awayTeam?.name || 'Away'}`,
+            venue: data.venue?.name || data.venue,
+            city: data.venue?.city,
+            country: data.country?.name || data.country,
+            startTime: new Date(data.date || data.timestamp * 1000),
+            endTime: undefined,
+            timezone: data.timezone || 'UTC',
+            status: this.mapStatus(data.status?.short || data.status),
+            statusDetail: data.status?.long,
+            elapsedTime: data.status?.set_in_progress,
+            // For volleyball, total sets won
+            homeScore: data.scores?.home?.total ?? data.scores?.home ?? undefined,
+            awayScore: data.scores?.away?.total ?? data.scores?.away ?? undefined,
+            homeScoreHalftime: undefined,
+            awayScoreHalftime: undefined,
+            homeScoreExtra: undefined,
+            awayScoreExtra: undefined,
+            homeScorePenalty: undefined,
+            awayScorePenalty: undefined,
+            referee: undefined,
+            attendance: undefined,
+            thumbnailUrl: undefined,
+            videoUrl: undefined,
+            bannerUrl: undefined,
+            stats: {
+                sets: data.periods || data.sets,
+                currentSet: data.status?.set_in_progress,
+            },
+            hasMarket: false,
+            marketCreatedAt: undefined,
+            isFeatured: false,
+            metadata: {
+                homeTeamName: homeTeam?.name,
+                homeTeamLogo: homeTeam?.logo,
+                awayTeamName: awayTeam?.name,
+                awayTeamLogo: awayTeam?.logo,
+                leagueName: data.league?.name,
+                leagueLogo: data.league?.logo,
+                // Set-by-set scores
+                set1: { home: data.scores?.home?.set1, away: data.scores?.away?.set1 },
+                set2: { home: data.scores?.home?.set2, away: data.scores?.away?.set2 },
+                set3: { home: data.scores?.home?.set3, away: data.scores?.away?.set3 },
+                set4: { home: data.scores?.home?.set4, away: data.scores?.away?.set4 },
+                set5: { home: data.scores?.home?.set5, away: data.scores?.away?.set5 },
             },
             createdAt: new Date(),
             updatedAt: new Date(),
