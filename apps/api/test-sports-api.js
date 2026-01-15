@@ -1,7 +1,7 @@
 
 const https = require('https');
 
-const API_KEY = process.env.APIFOOTBALL_API_KEY || '535bba4c6e9b1630b1da51d5e4531651';
+const API_KEY = process.env.APIFOOTBALL_API_KEY;
 
 const CONFIGS = {
     // Probing for ANY valid basketball data
