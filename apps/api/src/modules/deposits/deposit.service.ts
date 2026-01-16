@@ -117,10 +117,78 @@ export class DepositService {
     }
 
     /**
-     * Get user's balance
+     * Get SUI balance from Mainnet
      */
+    private async getSuiBalance(address: string): Promise<string> {
+        try {
+            const response = await fetch('https://fullnode.mainnet.sui.io:443', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'suix_getBalance',
+                    params: [address]
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`SUI RPC error: ${response.status}`);
+            }
+
+            const data = await response.json() as { result?: { totalBalance?: string }, error?: any };
+
+            if (data.error) {
+                throw new Error(`SUI RPC error: ${JSON.stringify(data.error)}`);
+            }
+
+            // SUI has 9 decimals
+            const rawBalance = data.result?.totalBalance || '0';
+            return (parseInt(rawBalance) / 1_000_000_000).toFixed(4);
+        } catch (error) {
+            this.logger.error(`Error fetching SUI balance for ${address}`, error);
+            return '0';
+        }
+    }
+
+    /**
+     * Get Token Prices from Binance
+     */
+    private async getTokenPrices(): Promise<Record<string, number>> {
+        try {
+            const symbols = ['ETHUSDT', 'SOLUSDT', 'SUIUSDT', 'BTCUSDT', 'DAIUSDT'];
+            // Free public API, no key needed
+            const response = await fetch('https://api.binance.com/api/v3/ticker/price');
+
+            if (!response.ok) return {};
+
+            const data = await response.json() as Array<{ symbol: string, price: string }>;
+            const prices: Record<string, number> = {};
+
+            data.forEach(item => {
+                if (symbols.includes(item.symbol)) {
+                    prices[item.symbol] = parseFloat(item.price);
+                }
+            });
+
+            // Stablecoins are pegged
+            prices['USDCUSDT'] = 1.0;
+            prices['USDTUSDT'] = 1.0;
+
+            return prices;
+        } catch (error) {
+            this.logger.warn('Failed to fetch token prices from Binance', error);
+            return {};
+        }
+    }
+
     async getBalance(userId: string): Promise<BalanceResponseDto> {
         const client = this.supabaseService.getAdminClient();
+
+        // Fetch prices in parallel with balance
+        const pricesPromise = this.getTokenPrices();
 
         const { data, error } = await client
             .from('user_balances')
@@ -136,12 +204,93 @@ export class DepositService {
 
         const balance = parseFloat(data?.balance || '0');
         const lockedBalance = parseFloat(data?.locked_balance || '0');
+        const availableBalance = balance - lockedBalance;
+
+        // Fetch balances for all supported chains
+        const assets: Array<{ symbol: string; balance: string; chain: string; valueUsd: string; address?: string }> = [];
+        const chains = Object.values(DepositChain);
+
+        // Wait for prices
+        const prices = await pricesPromise;
+
+        for (const chain of chains) {
+            let assetBalance = '0.0000';
+            let address: string | undefined;
+
+            try {
+                // Get wallet if exists
+                const wallet = await this.getPrivyWallet(userId, chain);
+                if (wallet) {
+                    address = wallet.address;
+                    // For SUI, fetch real balance
+                    if (chain === DepositChain.SUI) {
+                        assetBalance = await this.getSuiBalance(wallet.address);
+                    }
+                    // For others, currently 0 (or implement RPC calls later)
+                }
+
+                // Calculate Value
+                const symbol = chain === DepositChain.ETHEREUM ? 'ETH' :
+                    chain === DepositChain.SOLANA ? 'SOL' :
+                        chain === DepositChain.SUI ? 'SUI' : 'ETH'; // Base uses ETH price roughly
+
+                const ticker = `${symbol}USDT`;
+                const price = prices[ticker] || 0;
+                const valueUsd = (parseFloat(assetBalance) * price).toFixed(2);
+
+                assets.push({
+                    symbol: chain.toUpperCase(), // e.g. ETHEREUM -> ETHEREUM (frontend can map to ETH)
+                    balance: assetBalance,
+                    chain: chain,
+                    valueUsd: valueUsd,
+                    address: address
+                });
+
+                // --- Inject ERC20s for Ethereum ---
+                if (chain === DepositChain.ETHEREUM && address) {
+                    const erc20s = [
+                        { symbol: 'USDC', ticker: 'USDCUSDT' },
+                        { symbol: 'USDT', ticker: 'USDTUSDT' },
+                        { symbol: 'WBTC', ticker: 'BTCUSDT' }, // WBTC tracks BTC
+                        { symbol: 'DAI', ticker: 'DAIUSDT' }
+                    ];
+
+                    for (const token of erc20s) {
+                        // TODO: Implement real `balanceOf` call here
+                        const tokenBalance = '0.0000';
+                        const tokenPrice = prices[token.ticker] || 0;
+                        const tokenValue = (parseFloat(tokenBalance) * tokenPrice).toFixed(2);
+
+                        assets.push({
+                            symbol: token.symbol,
+                            balance: tokenBalance,
+                            chain: chain, // Still on Ethereum chain
+                            valueUsd: tokenValue,
+                            address: address // Same ETH address
+                        });
+                    }
+                }
+                // ----------------------------------
+
+            } catch (error) {
+                this.logger.warn(`Failed to process asset ${chain} for user ${userId}`, error);
+
+                // Still add the main chain asset with 0 balance
+                assets.push({
+                    symbol: chain.toUpperCase(),
+                    balance: '0.0000',
+                    chain: chain,
+                    valueUsd: '0.00'
+                });
+            }
+        }
 
         return {
             balance: balance.toFixed(2),
             lockedBalance: lockedBalance.toFixed(2),
-            availableBalance: (balance - lockedBalance).toFixed(2),
+            availableBalance: availableBalance.toFixed(2),
             currency: 'USDC',
+            assets,
         };
     }
 

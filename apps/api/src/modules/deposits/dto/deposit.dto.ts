@@ -201,6 +201,18 @@ export class BalanceResponseDto {
 
     @ApiProperty({ example: 'USDC' })
     currency: string;
+
+    @ApiPropertyOptional({
+        description: 'List of assets held on different chains',
+        example: [{ symbol: 'SUI', balance: '0.12', chain: 'sui', valueUsd: '0.24' }]
+    })
+    assets?: Array<{
+        symbol: string;
+        balance: string;
+        chain: string;
+        valueUsd?: string;
+        address?: string;
+    }>;
 }
 
 /**

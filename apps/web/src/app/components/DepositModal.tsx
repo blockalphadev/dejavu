@@ -114,6 +114,21 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
         }
     }, [selectedToken, selectedChain.id]);
 
+    // Sync with context selected chain
+    const { selectedChain: contextChain } = useDeposit();
+
+    useEffect(() => {
+        if (isOpen && contextChain) {
+            const chain = CHAINS.find(c => c.id === contextChain);
+            if (chain) {
+                setSelectedChain(chain);
+                // Also update token if needed
+                const token = TOKENS.find(t => t.chains.includes(chain.id));
+                if (token) setSelectedToken(token);
+            }
+        }
+    }, [isOpen, contextChain]);
+
     // Fetch real wallet address from backend when chain changes
     useEffect(() => {
         if (!isOpen || !user?.id) return;

@@ -341,8 +341,7 @@ graph LR
 
 | Component | File | Size | Description |
 |-----------|------|------|-------------|
-| DepositModal | `DepositModal.tsx` | 18KB | Multi-chain deposit flow |
-| WithdrawModal | `WithdrawModal.tsx` | 11KB | Withdrawal with signing |
+| AssetActionModal | `AssetActionModal.tsx` | 22KB | Unified deposit and withdrawal interface |
 | SettingsModal | `SettingsModal.tsx` | 18KB | User preferences |
 | PortfolioPage | `PortfolioPage.tsx` | 10KB | Portfolio dashboard |
 | ProfileButton | `ProfileButton.tsx` | 8KB | User profile dropdown |

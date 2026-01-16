@@ -18,6 +18,13 @@ export interface BalanceResponse {
     lockedBalance: string;
     availableBalance: string;
     currency: string;
+    assets?: Array<{
+        symbol: string;
+        balance: string;
+        chain: string;
+        valueUsd?: string;
+        address?: string;
+    }>;
 }
 
 /**
@@ -123,6 +130,9 @@ export const depositApi = {
     /**
      * Get deposit history
      */
+    /**
+     * Get deposit history
+     */
     async getHistory(params?: {
         page?: number;
         limit?: number;
@@ -137,6 +147,36 @@ export const depositApi = {
 
         const query = queryParams.toString();
         return apiRequest<DepositHistoryResponse>(`/deposits/history${query ? `?${query}` : ''}`);
+    },
+
+    /**
+     * Initiate withdrawal with optional Privy token for dual authentication
+     */
+    async initiateWithdrawal(amount: number, chain: string, toAddress: string, privyToken?: string): Promise<{ id: string }> {
+        const headers: Record<string, string> = {};
+        if (privyToken) {
+            headers['x-privy-token'] = privyToken;
+        }
+        return apiRequest<{ id: string }>('/deposits/withdraw', {
+            method: 'POST',
+            body: { amount, chain, toAddress },
+            headers,
+        });
+    },
+
+    /**
+     * Confirm withdrawal with optional Privy token for dual authentication
+     */
+    async confirmWithdrawal(withdrawalId: string, txHash: string, privyToken?: string): Promise<any> {
+        const headers: Record<string, string> = {};
+        if (privyToken) {
+            headers['x-privy-token'] = privyToken;
+        }
+        return apiRequest('/deposits/withdraw/confirm', {
+            method: 'POST',
+            body: { withdrawalId, txHash },
+            headers,
+        });
     },
 };
 

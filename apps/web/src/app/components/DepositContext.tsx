@@ -14,8 +14,10 @@ interface DepositContextType {
     recentTransactions: DepositTransaction[];
     /** Deposit modal open state */
     isDepositModalOpen: boolean;
-    /** Open deposit modal */
-    openDepositModal: () => void;
+    /** Open deposit modal with optional chain pre-selection */
+    openDepositModal: (chain?: DepositChain) => void;
+    /** Currently selected chain for deposit */
+    selectedChain?: DepositChain;
     /** Close deposit modal */
     closeDepositModal: () => void;
     /** Refresh balance */
@@ -49,6 +51,7 @@ export function DepositProvider({ children }: DepositProviderProps) {
     const [isLoadingBalance, setIsLoadingBalance] = useState(false);
     const [recentTransactions, setRecentTransactions] = useState<DepositTransaction[]>([]);
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+    const [selectedChain, setSelectedChain] = useState<DepositChain | undefined>(undefined);
     const [error, setError] = useState<string | null>(null);
 
     /**
@@ -87,7 +90,8 @@ export function DepositProvider({ children }: DepositProviderProps) {
     /**
      * Open deposit modal
      */
-    const openDepositModal = useCallback(() => {
+    const openDepositModal = useCallback((chain?: DepositChain) => {
+        if (chain) setSelectedChain(chain);
         setIsDepositModalOpen(true);
         setError(null);
     }, []);
@@ -151,6 +155,7 @@ export function DepositProvider({ children }: DepositProviderProps) {
         recentTransactions,
         isDepositModalOpen,
         openDepositModal,
+        selectedChain,
         closeDepositModal,
         refreshBalance,
         initiateDeposit,
