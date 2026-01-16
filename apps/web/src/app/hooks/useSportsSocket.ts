@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { WS_URL } from '../../config';
 
-// Use environment variable or default to localhost
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+// WebSocket URL from centralized config
 
 export type SportsSocketEvent = 'sports.update' | 'market.update';
 

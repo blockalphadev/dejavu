@@ -821,23 +821,33 @@ packages/domain/src/
 
 #### Frontend Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `VITE_API_URL` | ✅ | Backend API URL |
-| `VITE_SUPABASE_URL` | ✅ | Supabase URL |
-| `VITE_SUPABASE_ANON_KEY` | ✅ | Public API key |
-| `VITE_PRIVY_APP_ID` | ✅ | Privy app ID |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `VITE_API_URL` | ❌ | Auto-detect | Backend API URL (with `/api/v1`) |
+| `VITE_WS_URL` | ❌ | Derived | WebSocket server URL |
+| `VITE_SUPABASE_URL` | ✅ | - | Supabase URL |
+| `VITE_SUPABASE_ANON_KEY` | ✅ | - | Public API key |
+| `VITE_PRIVY_APP_ID` | ✅ | - | Privy app ID |
 
-### 12.2 Deployment Platforms
+> **Note:** The frontend uses a centralized configuration module (`src/config/index.ts`) that auto-detects production environment. When deployed to a non-localhost domain, it automatically uses the production API. See [Frontend-Configuration.md](./Frontend-Configuration.md) for details.
+
+### 12.2 Production URLs
+
+| Service | URL |
+|---------|-----|
+| **API Backend** | `https://backend-dejavu.onrender.com/api/v1` |
+| **WebSocket** | `https://backend-dejavu.onrender.com` |
+
+### 12.3 Deployment Platforms
 
 | Component | Recommended | Alternative |
 |-----------|-------------|-------------|
 | Frontend | Vercel | Netlify, Cloudflare |
-| Backend | Railway | Render, Fly.io |
+| Backend | Render | Railway, Fly.io |
 | Database | Supabase | Self-hosted PostgreSQL |
 | Monitoring | Sentry | Datadog |
 
-### 12.3 Production Checklist
+### 12.4 Production Checklist
 
 - [ ] `NODE_ENV=production`
 - [ ] JWT secrets are 256-bit minimum
@@ -849,6 +859,8 @@ packages/domain/src/
 - [ ] All RLS policies active
 - [ ] Admin user created
 - [ ] Monitoring configured
+- [ ] Frontend config uses production API
+
 
 ---
 
@@ -868,6 +880,7 @@ packages/domain/src/
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1.0 | Jan 16, 2026 | Added production API configuration, centralized frontend config |
 | 2.0.0 | Jan 8, 2026 | Added 6 backend modules, admin dashboard |
 | 1.1.0 | Jan 7, 2026 | Initial documentation |
 | 1.0.0 | Jan 6, 2026 | Project foundation |
