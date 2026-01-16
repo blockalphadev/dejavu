@@ -1,11 +1,21 @@
 
-import { useState } from 'react';
-import { useWallets } from '@privy-io/react-auth';
+import { useState, useRef, useCallback } from 'react';
+import { useWallets, usePrivy } from '@privy-io/react-auth';
 import { X, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { depositApi } from '../../services/api';
 import { parseUnits, encodeFunctionData, isAddress, createWalletClient, custom } from 'viem';
 import { base, mainnet } from 'viem/chains';
+
+// Security: Rate limiting configuration
+const RATE_LIMIT = {
+    maxAttempts: 3,
+    windowMs: 60000, // 1 minute
+};
+
+// Security: Minimum withdrawal amount
+const MIN_WITHDRAWAL_AMOUNT = 1;
+const MAX_WITHDRAWAL_AMOUNT = 100000;
 
 // Minimal ERC20 ABI for transfer
 const ERC20_ABI = [
@@ -35,6 +45,7 @@ interface WithdrawModalProps {
 }
 
 const CHAINS = [
+    { id: 'base', name: 'Base', icon: '/images/coin/base.jpeg', chainId: 8453 },
     { id: 'ethereum', name: 'Ethereum', icon: '/images/coin/ethereum.png', chainId: 1 },
     { id: 'solana', name: 'Solana', icon: '/images/coin/solana.png', chainId: 900 },
     { id: 'sui', name: 'Sui', icon: '/images/coin/sui.png', chainId: 901 },
@@ -81,31 +92,81 @@ const isValidAddress = (addr: string, chainId: string): boolean => {
 
 export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: WithdrawModalProps) {
     const { wallets } = useWallets();
+    const { getAccessToken, authenticated } = usePrivy();
     const [amount, setAmount] = useState('');
     const [address, setAddress] = useState('');
-    const [selectedChain, setSelectedChain] = useState(CHAINS[0]); // Default to Ethereum
+    const [selectedChain, setSelectedChain] = useState(CHAINS[0]); // Default to Base
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState<'input' | 'processing' | 'success'>('input');
     const [error, setError] = useState<string | null>(null);
+
+    // Security: Rate limiting state
+    const attemptCountRef = useRef(0);
+    const lastAttemptTimeRef = useRef(0);
+
+    // Security: Check rate limit before withdrawal
+    const checkRateLimit = useCallback((): boolean => {
+        const now = Date.now();
+
+        // Reset counter if window has passed
+        if (now - lastAttemptTimeRef.current > RATE_LIMIT.windowMs) {
+            attemptCountRef.current = 0;
+        }
+
+        if (attemptCountRef.current >= RATE_LIMIT.maxAttempts) {
+            const remainingTime = Math.ceil((RATE_LIMIT.windowMs - (now - lastAttemptTimeRef.current)) / 1000);
+            setError(`Too many attempts. Please wait ${remainingTime} seconds.`);
+            return false;
+        }
+
+        attemptCountRef.current++;
+        lastAttemptTimeRef.current = now;
+        return true;
+    }, []);
 
     if (!isOpen) return null;
 
     const handleWithdraw = async () => {
         setError(null);
-        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+
+        // Security: Check authentication
+        if (!authenticated) {
+            setError('Please login to continue');
+            return;
+        }
+
+        // Security: Rate limiting
+        if (!checkRateLimit()) {
+            return;
+        }
+
+        const amountValue = parseFloat(amount);
+
+        // Security: Enhanced amount validation
+        if (!amount || isNaN(amountValue) || amountValue <= 0) {
             setError('Invalid amount');
             return;
         }
-        if (parseFloat(amount) > availableBalance) {
+        if (amountValue < MIN_WITHDRAWAL_AMOUNT) {
+            setError(`Minimum withdrawal is $${MIN_WITHDRAWAL_AMOUNT}`);
+            return;
+        }
+        if (amountValue > MAX_WITHDRAWAL_AMOUNT) {
+            setError(`Maximum withdrawal is $${MAX_WITHDRAWAL_AMOUNT}`);
+            return;
+        }
+        if (amountValue > availableBalance) {
             setError('Insufficient balance');
             return;
         }
+
+        // Security: Address validation
         if (!isValidAddress(address, selectedChain.id)) {
             const errorMsg = selectedChain.id === 'solana'
                 ? 'Invalid Solana Address (must be base58 format)'
                 : selectedChain.id === 'sui'
                     ? 'Invalid Sui Address (must be 0x followed by 64 hex characters)'
-                    : 'Invalid Wallet Address';
+                    : 'Invalid Wallet Address (must be valid EVM address)';
             setError(errorMsg);
             return;
         }
@@ -120,11 +181,20 @@ export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: 
         setStep('processing');
 
         try {
-            // 1. Backend: Initiate (Lock funds)
+            // Security: Get Privy access token for dual authentication
+            const privyToken = await getAccessToken();
+            if (!privyToken) {
+                throw new Error('Failed to get authentication token');
+            }
+
+            console.log('[Security] Initiating secure withdrawal with dual auth...');
+
+            // 1. Backend: Initiate (Lock funds) - with Privy token for dual auth
             const initiateRes = await depositApi.initiateWithdrawal(
-                parseFloat(amount),
+                amountValue,
                 selectedChain.id,
-                address
+                address,
+                privyToken // Pass Privy token for backend verification
             );
             const { id: withdrawalId } = initiateRes;
 
@@ -167,8 +237,8 @@ export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: 
                 chain: chainObj
             });
 
-            // 3. Backend: Confirm
-            await depositApi.confirmWithdrawal(withdrawalId, txHash);
+            // 3. Backend: Confirm - with Privy token for dual auth
+            await depositApi.confirmWithdrawal(withdrawalId, txHash, privyToken);
 
             setStep('success');
             setTimeout(() => {

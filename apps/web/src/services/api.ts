@@ -393,22 +393,33 @@ export const userApi = {
 
 export const depositApi = {
     /**
-     * Initiate withdrawal
+     * Initiate withdrawal with optional Privy token for dual authentication
+     * OWASP A07:2021 - Enhanced authentication
      */
-    async initiateWithdrawal(amount: number, chain: string, toAddress: string) {
+    async initiateWithdrawal(amount: number, chain: string, toAddress: string, privyToken?: string) {
+        const headers: Record<string, string> = {};
+        if (privyToken) {
+            headers['x-privy-token'] = privyToken;
+        }
         return apiRequest<{ id: string }>('/deposits/withdraw', {
             method: 'POST',
             body: { amount, chain, toAddress },
+            headers,
         });
     },
 
     /**
-     * Confirm withdrawal
+     * Confirm withdrawal with optional Privy token for dual authentication
      */
-    async confirmWithdrawal(withdrawalId: string, txHash: string) {
+    async confirmWithdrawal(withdrawalId: string, txHash: string, privyToken?: string) {
+        const headers: Record<string, string> = {};
+        if (privyToken) {
+            headers['x-privy-token'] = privyToken;
+        }
         return apiRequest('/deposits/withdraw/confirm', {
             method: 'POST',
             body: { withdrawalId, txHash },
+            headers,
         });
     },
 };

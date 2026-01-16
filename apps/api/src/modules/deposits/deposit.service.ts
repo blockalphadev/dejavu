@@ -6,7 +6,7 @@ import {
     ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHmac } from 'crypto';
 import { SupabaseService } from '../../database/supabase.service.js';
 import { PrivyService } from './services/privy.service.js';
 import {
@@ -54,6 +54,7 @@ export class DepositService {
     private readonly minAmount: number;
     private readonly maxAmount: number;
     private readonly nonceExpirySeconds: number;
+    private readonly nonceSecret: string;
 
     // Deposit addresses per chain (in production, these would be dynamic)
     private readonly depositAddresses: Record<DepositChain, string> = {
@@ -71,9 +72,48 @@ export class DepositService {
         this.minAmount = this.configService.get<number>('DEPOSIT_MIN_AMOUNT', 1);
         this.maxAmount = this.configService.get<number>('DEPOSIT_MAX_AMOUNT', 100000);
         this.nonceExpirySeconds = this.configService.get<number>('DEPOSIT_NONCE_EXPIRY_SECONDS', 300);
+        this.nonceSecret = this.configService.get<string>(
+            'DEPOSIT_NONCE_SECRET',
+            'default-nonce-secret-change-in-production'
+        );
 
         // Cleanup expired nonces periodically
         setInterval(() => this.cleanupExpiredNonces(), 60000);
+    }
+
+    /**
+     * Generate HMAC signature for a nonce
+     * Provides tamper detection for deposit nonces
+     */
+    private signNonce(nonce: string): string {
+        return createHmac('sha256', this.nonceSecret)
+            .update(nonce)
+            .digest('hex');
+    }
+
+    /**
+     * Verify HMAC signature for a nonce
+     */
+    private verifyNonceSignature(signedNonce: string): { nonce: string; valid: boolean } {
+        const parts = signedNonce.split('.');
+        if (parts.length !== 2) {
+            // Legacy nonce without signature - still accept but log warning
+            if (signedNonce.startsWith('dep_')) {
+                this.logger.warn(`Legacy unsigned nonce received: ${signedNonce.slice(0, 20)}...`);
+                return { nonce: signedNonce, valid: true };
+            }
+            return { nonce: signedNonce, valid: false };
+        }
+
+        const [nonce, signature] = parts;
+        const expectedSignature = this.signNonce(nonce);
+        const valid = signature === expectedSignature;
+
+        if (!valid) {
+            this.logger.warn(`Invalid nonce signature detected: ${nonce.slice(0, 20)}...`);
+        }
+
+        return { nonce, valid };
     }
 
     /**
@@ -107,7 +147,10 @@ export class DepositService {
 
     /**
      * Initiate a new deposit
-     * Returns nonce and deposit address
+     * Returns HMAC-signed nonce and deposit address
+     * 
+     * OWASP A02:2021 - Cryptographic Failures
+     * Uses 256-bit entropy for nonces and HMAC for integrity
      */
     async initiateDeposit(
         userId: string,
@@ -120,14 +163,17 @@ export class DepositService {
             );
         }
 
-        // Generate unique nonce
-        const nonce = `dep_${randomBytes(16).toString('hex')}`;
+        // Generate unique nonce with 256-bit entropy (32 bytes)
+        const nonceBase = `dep_${randomBytes(32).toString('hex')}`;
+        const nonceSignature = this.signNonce(nonceBase);
+        const signedNonce = `${nonceBase}.${nonceSignature}`;
+
         const now = Date.now();
         const expiresAt = now + this.nonceExpirySeconds * 1000;
         const depositAddress = this.depositAddresses[dto.chain];
 
-        // Store pending deposit
-        this.pendingDeposits.set(nonce, {
+        // Store pending deposit (use base nonce for lookups)
+        this.pendingDeposits.set(nonceBase, {
             userId,
             amount: dto.amount,
             chain: dto.chain,
@@ -135,7 +181,7 @@ export class DepositService {
             expiresAt,
         });
 
-        // Create pending transaction in database
+        // Create pending transaction in database (store base nonce)
         const client = this.supabaseService.getAdminClient();
         const { error } = await client
             .from('deposit_transactions')
@@ -146,20 +192,20 @@ export class DepositService {
                 chain: dto.chain,
                 to_address: depositAddress,
                 status: DepositStatus.PENDING,
-                nonce,
+                nonce: nonceBase, // Store base nonce, not signed
                 expires_at: new Date(expiresAt).toISOString(),
             });
 
         if (error) {
             this.logger.error('Failed to create deposit transaction', error);
-            this.pendingDeposits.delete(nonce);
+            this.pendingDeposits.delete(nonceBase);
             throw new BadRequestException('Failed to initiate deposit');
         }
 
-        this.logger.log(`Deposit initiated: ${nonce} for user ${userId}, amount: ${dto.amount} ${dto.chain}`);
+        this.logger.log(`Deposit initiated: ${nonceBase.slice(0, 20)}... for user ${userId}, amount: ${dto.amount} ${dto.chain}`);
 
         return {
-            nonce,
+            nonce: signedNonce, // Return signed nonce to client
             depositAddress,
             expiresInSeconds: this.nonceExpirySeconds,
             amount: dto.amount.toFixed(2),
@@ -169,17 +215,28 @@ export class DepositService {
 
     /**
      * Verify and confirm a deposit transaction
+     * 
+     * OWASP A02:2021 - Cryptographic Failures
+     * Validates HMAC signature on nonce to prevent tampering
      */
     async verifyDeposit(
         userId: string,
         dto: VerifyDepositDto,
     ): Promise<DepositTransactionDto> {
+        // Verify and extract nonce from signed format
+        const { nonce, valid: signatureValid } = this.verifyNonceSignature(dto.nonce);
+
+        if (!signatureValid) {
+            this.logger.warn(`Invalid nonce signature from user ${userId}`);
+            throw new BadRequestException('Invalid or tampered deposit nonce');
+        }
+
         // Validate nonce exists and belongs to user
-        const pending = this.pendingDeposits.get(dto.nonce);
+        const pending = this.pendingDeposits.get(nonce);
 
         if (!pending) {
             // Check if it's in database but not in memory (after restart)
-            const dbPending = await this.getPendingFromDb(dto.nonce);
+            const dbPending = await this.getPendingFromDb(nonce);
             if (!dbPending) {
                 throw new NotFoundException('Invalid or expired deposit nonce');
             }
@@ -194,8 +251,8 @@ export class DepositService {
                 throw new BadRequestException('Invalid deposit');
             }
             if (Date.now() > pending.expiresAt) {
-                this.pendingDeposits.delete(dto.nonce);
-                await this.updateDepositStatus(dto.nonce, DepositStatus.EXPIRED);
+                this.pendingDeposits.delete(nonce);
+                await this.updateDepositStatus(nonce, DepositStatus.EXPIRED);
                 throw new BadRequestException('Deposit session has expired');
             }
         }
@@ -229,7 +286,7 @@ export class DepositService {
                 tx_hash: dto.txHash,
                 confirmed_at: new Date().toISOString(),
             })
-            .eq('nonce', dto.nonce)
+            .eq('nonce', nonce)
             .select()
             .single();
 
@@ -242,9 +299,9 @@ export class DepositService {
         await this.creditBalance(userId, pending?.amount || transaction.amount);
 
         // Cleanup
-        this.pendingDeposits.delete(dto.nonce);
+        this.pendingDeposits.delete(nonce);
 
-        this.logger.log(`Deposit confirmed: ${dto.nonce}, txHash: ${dto.txHash}`);
+        this.logger.log(`Deposit confirmed: ${nonce.slice(0, 20)}..., txHash: ${dto.txHash}`);
 
         return this.mapToTransactionDto(transaction);
     }
@@ -427,7 +484,9 @@ export class DepositService {
      * Handles mapping between Supabase UUID and Privy DID
      */
     async getOrCreateDepositWallet(userId: string, chain: string): Promise<any> {
-        const chainType = chain === 'solana' ? 'solana' : 'ethereum';
+        let chainType: 'ethereum' | 'solana' | 'sui' = 'ethereum';
+        if (chain === 'solana') chainType = 'solana';
+        if (chain === 'sui') chainType = 'sui';
 
         // 1. Check local DB first
         const existing = await this.getPrivyWallet(userId, chain as DepositChain);
@@ -440,6 +499,12 @@ export class DepositService {
 
         // 3. Get or create wallet in Privy
         const privyWallet = await this.privyService.getOrCreateWallet(privyDid, chainType);
+
+        // Validate generated address format
+        if (chainType === 'sui' && privyWallet.address.length !== 66) {
+            this.logger.error(`Privy returned invalid SUI address: ${privyWallet.address}`);
+            throw new BadRequestException('Failed to generate valid SUI wallet');
+        }
 
         // 4. Save to DB
         await this.savePrivyWallet(userId, {
@@ -512,6 +577,13 @@ export class DepositService {
             .single();
 
         if (error || !data) {
+            return null;
+        }
+
+        // Validate SUI address format (must be 66 chars: 0x + 64 hex)
+        // This handles legacy invalid data where EVM addresses were created for SUI
+        if (chain === DepositChain.SUI && data.wallet_address.length !== 66) {
+            this.logger.warn(`Found invalid SUI address ${data.wallet_address} for user ${userId}, ignoring`);
             return null;
         }
 

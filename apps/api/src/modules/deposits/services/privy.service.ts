@@ -234,7 +234,7 @@ export class PrivyService {
      */
     async createEmbeddedWallet(
         privyUserId: string,
-        chainType: 'ethereum' | 'solana' = 'ethereum',
+        chainType: 'ethereum' | 'solana' | 'sui' = 'ethereum',
     ): Promise<PrivyWalletResponse | null> {
         if (!this.appSecret) {
             throw new BadRequestException('Privy API not configured');
@@ -322,7 +322,7 @@ export class PrivyService {
      */
     async getOrCreateWallet(
         privyUserId: string,
-        chainType: 'ethereum' | 'solana' = 'ethereum',
+        chainType: 'ethereum' | 'solana' | 'sui' = 'ethereum',
     ): Promise<PrivyWalletResponse> {
         // First check if user already has a wallet
         const wallets = await this.getEmbeddedWallets(privyUserId);

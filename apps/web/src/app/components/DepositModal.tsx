@@ -133,9 +133,8 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 setDepositAddress(wallet.address);
             } catch (err) {
                 console.error('Failed to get deposit address:', err);
-                setError('Failed to get deposit address');
-                // Fallback to demo address if API fails
-                setDepositAddress(getFallbackAddress(selectedChain.id));
+                setError('Unable to generate deposit address. Please try again later.');
+                setDepositAddress('');
             } finally {
                 setIsLoading(false);
             }
