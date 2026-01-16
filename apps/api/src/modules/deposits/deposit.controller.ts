@@ -10,7 +10,9 @@ import {
     Logger,
     Param,
     Req,
+    BadRequestException,
 } from '@nestjs/common';
+
 import {
     ApiTags,
     ApiOperation,
@@ -144,16 +146,27 @@ export class DepositController {
     ): Promise<WalletResponseDto> {
         const chain = (body.chain || 'base') as string;
 
-        this.logger.log(`Generating wallet for user ${userId} on ${chain}`);
+        // OWASP A03:2021 - Injection Prevention
+        // Validate chain parameter to prevent invalid input
+        const validChains = ['ethereum', 'base', 'solana', 'sui'];
+        if (!validChains.includes(chain.toLowerCase())) {
+            this.logger.warn(`Invalid chain requested: ${chain} by user ${userId}`);
+            throw new BadRequestException(
+                `Invalid chain: ${chain}. Valid chains are: ${validChains.join(', ')}`
+            );
+        }
+
+        const normalizedChain = chain.toLowerCase();
+        this.logger.log(`Generating wallet for user ${userId} on ${normalizedChain}`);
 
         // Use the authenticated user ID (UUID) directly
         // The service will handle mapping to Privy DID (importing if needed)
-        const wallet = await this.depositService.getOrCreateDepositWallet(userId, chain);
+        const wallet = await this.depositService.getOrCreateDepositWallet(userId, normalizedChain);
 
         // Audit log
         await this.auditService.logWalletGenerated(
             userId,
-            chain,
+            normalizedChain,
             wallet.address,
             this.getAuditMetadata(req),
         );
@@ -165,6 +178,7 @@ export class DepositController {
             createdAt: wallet.createdAt,
         };
     }
+
 
     /**
      * Get user's deposit wallet for a chain

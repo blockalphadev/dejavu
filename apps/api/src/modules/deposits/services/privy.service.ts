@@ -297,6 +297,34 @@ export class PrivyService {
     }
 
     /**
+     * Validate address format for a specific chain type
+     * 
+     * OWASP A03:2021 - Injection
+     * Validates address format to prevent invalid data from being used
+     * 
+     * @param address - The wallet address to validate
+     * @param chainType - The chain type for format validation
+     * @returns true if the address format is valid for the chain
+     */
+    isValidAddressFormat(address: string, chainType: 'ethereum' | 'solana' | 'sui'): boolean {
+        if (!address) return false;
+
+        switch (chainType) {
+            case 'ethereum':
+                // EVM addresses: 0x + 40 hex chars = 42 total
+                return /^0x[a-fA-F0-9]{40}$/.test(address);
+            case 'solana':
+                // Solana addresses: Base58, typically 32-44 chars
+                return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+            case 'sui':
+                // SUI addresses: 0x + 64 hex chars = 66 total
+                return /^0x[a-fA-F0-9]{64}$/.test(address);
+            default:
+                return true;
+        }
+    }
+
+    /**
      * Get user's embedded wallets
      */
     async getEmbeddedWallets(privyUserId: string): Promise<PrivyWalletResponse[]> {
@@ -319,6 +347,9 @@ export class PrivyService {
 
     /**
      * Get or create embedded wallet for user
+     * 
+     * SECURITY: Validates address format before returning cached wallets
+     * to prevent returning EVM addresses for SUI chain requests
      */
     async getOrCreateWallet(
         privyUserId: string,
@@ -329,18 +360,39 @@ export class PrivyService {
         const existingWallet = wallets.find(w => w.chain_type === chainType);
 
         if (existingWallet) {
-            this.logger.debug(`Using existing wallet ${existingWallet.address} for ${privyUserId}`);
-            return existingWallet;
+            // CRITICAL: Validate address format before returning
+            // This prevents returning invalid addresses (e.g., EVM address for SUI)
+            if (this.isValidAddressFormat(existingWallet.address, chainType)) {
+                this.logger.debug(`Using existing wallet ${existingWallet.address} for ${privyUserId}`);
+                return existingWallet;
+            } else {
+                this.logger.warn(
+                    `Invalid ${chainType} address format detected: ${existingWallet.address}. ` +
+                    `Expected format for ${chainType}, forcing wallet recreation.`
+                );
+                // Fall through to create a new wallet
+            }
         }
 
         // Create new wallet
+        this.logger.log(`Creating new ${chainType} wallet for user ${privyUserId}`);
         const newWallet = await this.createEmbeddedWallet(privyUserId, chainType);
         if (!newWallet) {
             throw new BadRequestException('Failed to create wallet');
         }
 
+        // Validate the newly created wallet address
+        if (!this.isValidAddressFormat(newWallet.address, chainType)) {
+            this.logger.error(
+                `Privy returned invalid ${chainType} address: ${newWallet.address}. ` +
+                `Address does not match expected format.`
+            );
+            throw new BadRequestException(`Failed to generate valid ${chainType} wallet`);
+        }
+
         return newWallet;
     }
+
 
     /**
      * Extract wallet address from Privy token

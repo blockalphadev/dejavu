@@ -482,6 +482,8 @@ export class DepositService {
     /**
      * Get or create deposit wallet for user
      * Handles mapping between Supabase UUID and Privy DID
+     * 
+     * SECURITY: Validates address format and regenerates if cached wallet is invalid
      */
     async getOrCreateDepositWallet(userId: string, chain: string): Promise<any> {
         let chainType: 'ethereum' | 'solana' | 'sui' = 'ethereum';
@@ -491,28 +493,45 @@ export class DepositService {
         // 1. Check local DB first
         const existing = await this.getPrivyWallet(userId, chain as DepositChain);
         if (existing) {
-            return existing;
+            // Validate the cached address format
+            if (this.privyService.isValidAddressFormat(existing.address, chainType)) {
+                this.logger.debug(`Using cached ${chain} wallet: ${existing.address}`);
+                return existing;
+            } else {
+                // Invalid format - clear the cached wallet and regenerate
+                this.logger.warn(
+                    `Cached ${chain} wallet has invalid format: ${existing.address}. ` +
+                    `Clearing cached wallet and regenerating.`
+                );
+                await this.clearInvalidWallet(userId, chain as DepositChain);
+            }
         }
 
         // 2. Ensure user exists in Privy (Import if needed)
         const privyDid = await this.ensurePrivyUser(userId);
 
-        // 3. Get or create wallet in Privy
+        // 3. Get or create wallet in Privy (with built-in validation)
+        this.logger.log(`Generating new ${chain} wallet for user ${userId}`);
         const privyWallet = await this.privyService.getOrCreateWallet(privyDid, chainType);
 
-        // Validate generated address format
-        if (chainType === 'sui' && privyWallet.address.length !== 66) {
-            this.logger.error(`Privy returned invalid SUI address: ${privyWallet.address}`);
-            throw new BadRequestException('Failed to generate valid SUI wallet');
+        // 4. Final validation before saving
+        if (!this.privyService.isValidAddressFormat(privyWallet.address, chainType)) {
+            this.logger.error(
+                `Privy returned invalid ${chainType} address: ${privyWallet.address}. ` +
+                `Expected ${chainType === 'sui' ? '66' : chainType === 'ethereum' ? '42' : '32-44'} chars.`
+            );
+            throw new BadRequestException(`Failed to generate valid ${chain} wallet`);
         }
 
-        // 4. Save to DB
+        // 5. Save to DB
         await this.savePrivyWallet(userId, {
             privyUserId: privyDid,
             walletAddress: privyWallet.address,
             chain: chain,
             walletType: 'embedded',
         });
+
+        this.logger.log(`Successfully created ${chain} wallet: ${privyWallet.address.slice(0, 10)}...`);
 
         return {
             address: privyWallet.address,
@@ -521,6 +540,26 @@ export class DepositService {
             createdAt: privyWallet.created_at,
         };
     }
+
+    /**
+     * Clear an invalid cached wallet to force regeneration
+     */
+    private async clearInvalidWallet(userId: string, chain: DepositChain): Promise<void> {
+        const client = this.supabaseService.getAdminClient();
+
+        const { error } = await client
+            .from('privy_wallets')
+            .update({ is_active: false })
+            .eq('user_id', userId)
+            .eq('chain', chain);
+
+        if (error) {
+            this.logger.error(`Failed to clear invalid ${chain} wallet for user ${userId}`, error);
+        } else {
+            this.logger.log(`Cleared invalid ${chain} wallet cache for user ${userId}`);
+        }
+    }
+
 
     /**
      * Ensure user exists in Privy and get their DID
