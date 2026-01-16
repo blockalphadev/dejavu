@@ -7,7 +7,7 @@ import {
     AlertTriangle,
     ArrowRight
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function AdminFinance() {
     const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);

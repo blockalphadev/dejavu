@@ -31,7 +31,7 @@ import { Button } from './ui/button';
 import { useSportsMarkets } from '../hooks/useSportsMarkets';
 import { useSportsSocket } from '../hooks/useSportsSocket';
 import { SportType } from '../../services/sports.service';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 type ViewMode = 'grid' | 'list';
 

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 // import { useAuth } from './auth/AuthContext';
 // import { usePredictionMarket } from '../hooks/usePredictionMarket';
 // import { useWallet } from '../hooks/useWallet';

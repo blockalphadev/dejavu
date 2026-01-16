@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useBetSlip } from './BetSlipContext';
 import { useDeposit } from './DepositContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface BetSlipProps {
     className?: string; // Only styling props remain
