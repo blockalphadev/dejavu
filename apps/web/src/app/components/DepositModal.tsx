@@ -331,15 +331,3 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
         </div>
     );
 }
-
-// Fallback addresses for demo/development
-function getFallbackAddress(chain: DepositChain): string {
-    const addresses: Record<DepositChain, string> = {
-        ethereum: '0xCc3d3f27620d8a1c4AF98Ce96B47939fb6594bd0',
-        base: '0xCc3d3f27620d8a1c4AF98Ce96B47939fb6594bd0',
-        solana: 'DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1',
-        sui: '0x02a212de6a9dfa3a69e22387acfbafbb1a9e591c5d4a123456789abcdef12345',
-    };
-    return addresses[chain];
-}
-

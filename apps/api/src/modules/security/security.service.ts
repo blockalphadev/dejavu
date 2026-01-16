@@ -33,14 +33,16 @@ export class SecurityService {
         endpoint: string,
         limit: number = 100,
         windowSeconds: number = 60,
+        identifierType: 'user' | 'ip' | 'api_key' | 'anonymous' = 'ip',
     ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
         try {
             const { data, error } = await this.supabaseService
                 .getAdminClient()
                 .rpc('check_rate_limit', {
+                    p_identifier_type: identifierType,
                     p_identifier: identifier,
                     p_endpoint: endpoint,
-                    p_limit: limit,
+                    p_max_requests: limit,
                     p_window_seconds: windowSeconds,
                 });
 
@@ -50,10 +52,17 @@ export class SecurityService {
                 return { allowed: true, remaining: limit, resetAt: new Date() };
             }
 
+            // RPC function returns a TABLE, so data is an array - get first row
+            const result = Array.isArray(data) ? data[0] : data;
+            if (!result) {
+                this.logger.warn('Rate limit check returned no data');
+                return { allowed: true, remaining: limit, resetAt: new Date() };
+            }
+
             return {
-                allowed: data.allowed,
-                remaining: data.remaining,
-                resetAt: new Date(data.reset_at),
+                allowed: result.allowed,
+                remaining: result.remaining ?? limit,
+                resetAt: new Date(result.reset_at),
             };
         } catch (error) {
             this.logger.error(`Rate limit error: ${error.message}`);
