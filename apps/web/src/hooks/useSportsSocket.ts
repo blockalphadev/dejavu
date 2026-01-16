@@ -1,9 +1,10 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../app/components/auth/AuthContext';
+import { WS_URL } from '../config';
 
 // Configure URL based on environment
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const SOCKET_URL = WS_URL;
 
 export interface SportsEventUpdate {
     eventId: string;

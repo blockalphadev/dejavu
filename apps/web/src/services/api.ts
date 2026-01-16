@@ -3,7 +3,7 @@
  * Handles all communication with the backend API
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+import { API_URL } from '../config';
 
 interface ApiOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';

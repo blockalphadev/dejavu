@@ -5,14 +5,16 @@
  * merges updates into the existing events state.
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { SportsEvent, SportType } from '../../services/sports.service';
+import { WS_URL } from '../../config';
 
-const WS_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Extended type to include 'live' as a special room
+type SportRoom = SportType | 'live';
 
 interface UseSportsRealtimeOptions {
-    activeSport?: SportType;
+    activeSport?: SportRoom;
     onEventUpdate?: (event: SportsEvent) => void;
     enabled?: boolean;
 }
