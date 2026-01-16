@@ -16,6 +16,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module.j
 import { SportsModule } from './modules/sports/sports.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthController } from './health.controller.js';
+import { RootController } from './root.controller.js';
 import { envSchema } from './config/env.validation.js';
 import {
     LoggerMiddleware,
@@ -55,13 +56,12 @@ import { AuditLogInterceptor } from './common/interceptors/index.js';
         SettingsModule,
         ReferralsModule,
         TransactionsModule,
-        TransactionsModule,
         SportsModule,
 
         // Scheduling
         ScheduleModule.forRoot(),
     ],
-    controllers: [HealthController],
+    controllers: [RootController, HealthController],
     providers: [
         AuditLogInterceptor,
     ],
