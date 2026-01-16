@@ -256,109 +256,150 @@ export function WithdrawModal({ isOpen, onClose, availableBalance, onSuccess }: 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-md bg-[#1E1F25] rounded-2xl border border-gray-800 p-6 relative">
-                <button
-                    onClick={onClose}
-                    className="absolute right-4 top-4 text-gray-400 hover:text-white"
-                >
-                    <X className="w-5 h-5" />
-                </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="w-full max-w-md bg-[#1E1F25] rounded-3xl border border-gray-800 shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden">
+                <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#1E1F25]">
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Withdraw Assets</h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
 
-                <h2 className="text-xl font-bold mb-6">Withdraw Assets</h2>
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                    {step === 'input' && (
+                        <div className="space-y-6">
+                            {error && (
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
 
-                {step === 'input' && (
-                    <div className="space-y-4">
-                        {error && (
-                            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400 flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4" />
-                                {error}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-3 ml-1">Select Network</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {CHAINS.map(chain => (
+                                        <button
+                                            key={chain.id}
+                                            onClick={() => {
+                                                setSelectedChain(chain);
+                                                setAddress(''); // Clear address when chain changes
+                                                setError(null);
+                                            }}
+                                            className={`relative group flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 ${selectedChain.id === chain.id
+                                                    ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.15)]'
+                                                    : 'bg-gray-900/50 border-gray-800 hover:border-gray-700 hover:bg-gray-800/80'
+                                                }`}
+                                        >
+                                            <div className="w-10 h-10 rounded-full bg-white/5 p-1.5 flex items-center justify-center">
+                                                <img
+                                                    src={chain.icon}
+                                                    className="w-full h-full object-contain rounded-full"
+                                                    alt={chain.name}
+                                                />
+                                            </div>
+                                            <span className={`font-medium ${selectedChain.id === chain.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                                                {chain.name}
+                                            </span>
+                                            {selectedChain.id === chain.id && (
+                                                <div className="absolute inset-0 rounded-2xl ring-1 ring-blue-500/50" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        )}
 
-                        <div>
-                            <label className="block text-sm text-gray-400 mb-2">Network</label>
-                            <div className="flex gap-2">
-                                {CHAINS.map(chain => (
-                                    <button
-                                        key={chain.id}
-                                        onClick={() => {
-                                            setSelectedChain(chain);
-                                            setAddress(''); // Clear address when chain changes
-                                            setError(null);
-                                        }}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${selectedChain.id === chain.id
-                                            ? 'bg-blue-600/20 border-blue-500 text-white'
-                                            : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-800'
-                                            }`}
-                                    >
-                                        <img src={chain.icon} className="w-5 h-5 rounded-full" />
-                                        {chain.name}
-                                    </button>
-                                ))}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-3 ml-1">Amount</label>
+                                <div className="relative group">
+                                    <input
+                                        type="number"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl px-4 py-4 text-white text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-gray-600"
+                                        placeholder="0.00"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                        <button
+                                            onClick={() => setAmount(availableBalance.toString())}
+                                            className="px-3 py-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors uppercase tracking-wider"
+                                        >
+                                            Max
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center mt-2 px-1">
+                                    <span className="text-xs text-gray-500">Available Balance</span>
+                                    <span className="text-sm font-medium text-gray-300">${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm text-gray-400 mb-2">Amount</label>
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-                                    placeholder="0.00"
-                                />
-                                <button
-                                    onClick={() => setAmount(availableBalance.toString())}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-blue-400 hover:text-blue-300 uppercase"
-                                >
-                                    Max
-                                </button>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-3 ml-1">Recipient Address</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl px-4 py-4 text-white font-mono text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-gray-600"
+                                        placeholder={getAddressPlaceholder(selectedChain.id)}
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2 px-1">
+                                    Only send on <span className="text-blue-400 font-medium">{selectedChain.name} Network</span>
+                                </p>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">Available: ${availableBalance.toFixed(2)}</p>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm text-gray-400 mb-2">To Address</label>
-                            <input
-                                type="text"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 font-mono text-sm"
-                                placeholder={getAddressPlaceholder(selectedChain.id)}
-                            />
+                            <Button
+                                className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                                onClick={handleWithdraw}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span>Processing...</span>
+                                    </div>
+                                ) : (
+                                    'Confirm Withdrawal'
+                                )}
+                            </Button>
                         </div>
+                    )}
 
-                        <Button
-                            className="w-full h-12 mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl"
-                            onClick={handleWithdraw}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Withdrawal'}
-                        </Button>
-                    </div>
-                )}
-
-                {step === 'processing' && (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
-                            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    {step === 'processing' && (
+                        <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in-95 duration-300">
+                            <div className="relative mb-8">
+                                <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full" />
+                                <div className="w-20 h-20 bg-[#1E1F25] border border-blue-500/30 rounded-full flex items-center justify-center relative z-10">
+                                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                                </div>
+                            </div>
+                            <h3 className="text-2xl font-bold mb-3 text-white">Processing Transaction</h3>
+                            <p className="text-gray-400 text-sm max-w-[240px] leading-relaxed">
+                                Please check your wallet and sign the transaction to complete the withdrawal.
+                            </p>
                         </div>
-                        <h3 className="text-lg font-bold mb-2">Processing Transaction</h3>
-                        <p className="text-gray-400 text-sm max-w-[200px]">Please sign the transaction in your wallet to complete the withdrawal.</p>
-                    </div>
-                )}
+                    )}
 
-                {step === 'success' && (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
-                            <ArrowRight className="w-8 h-8 text-green-500" />
+                    {step === 'success' && (
+                        <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in-95 duration-300">
+                            <div className="relative mb-8">
+                                <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
+                                <div className="w-20 h-20 bg-[#1E1F25] border border-green-500/30 rounded-full flex items-center justify-center relative z-10">
+                                    <ArrowRight className="w-10 h-10 text-green-500" />
+                                </div>
+                            </div>
+                            <h3 className="text-2xl font-bold mb-3 text-white">Withdrawal Successful</h3>
+                            <p className="text-gray-400 text-sm">
+                                Your funds are on the way! It may take a few minutes to appear in your wallet.
+                            </p>
                         </div>
-                        <h3 className="text-lg font-bold mb-2">Withdrawal Successful</h3>
-                        <p className="text-gray-400 text-sm">Your funds are on the way!</p>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
