@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useDeposit } from './DepositContext';
-import { depositApi, type DepositChain } from '../../services/deposit';
+import { depositApi } from '../../services/deposit';
 import { useAuth } from './auth/AuthContext';
 
 /**
@@ -47,43 +47,7 @@ const Icons = {
     ),
 };
 
-/**
- * Token definitions
- */
-interface Token {
-    symbol: string;
-    name: string;
-    icon: string;
-    chains: DepositChain[];
-    minDeposit: number;
-}
-
-const TOKENS: Token[] = [
-    { symbol: 'USDC', name: 'USD Coin', icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', chains: ['ethereum', 'base', 'solana', 'sui'], minDeposit: 10 },
-    { symbol: 'USDT', name: 'Tether', icon: 'https://cryptologos.cc/logos/tether-usdt-logo.png', chains: ['ethereum', 'base', 'solana'], minDeposit: 10 },
-    { symbol: 'ETH', name: 'Ethereum', icon: '/images/coin/ethereum.png', chains: ['ethereum', 'base'], minDeposit: 0.001 },
-    { symbol: 'SOL', name: 'Solana', icon: '/images/coin/solana.png', chains: ['solana'], minDeposit: 0.01 },
-    { symbol: 'SUI', name: 'Sui', icon: '/images/coin/sui.png', chains: ['sui'], minDeposit: 0.1 },
-    { symbol: 'WBTC', name: 'Wrapped Bitcoin', icon: 'https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png', chains: ['ethereum', 'base'], minDeposit: 0.0001 },
-    { symbol: 'DAI', name: 'Dai', icon: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png', chains: ['ethereum', 'base'], minDeposit: 10 },
-];
-
-/**
- * Chain definitions
- */
-interface Chain {
-    id: DepositChain;
-    name: string;
-    icon: string;
-    color: string;
-}
-
-const CHAINS: Chain[] = [
-    { id: 'ethereum', name: 'Ethereum', icon: '/images/coin/ethereum.png', color: '#627EEA' },
-    { id: 'base', name: 'Base', icon: '/images/coin/base.jpeg', color: '#0052FF' },
-    { id: 'solana', name: 'Solana', icon: '/images/coin/solana.png', color: '#14F195' },
-    { id: 'sui', name: 'Sui', icon: '/images/coin/sui.png', color: '#6FBCF0' },
-];
+import { TOKENS, CHAINS, type Token, type Chain } from '../../constants/tokens';
 
 interface DepositModalProps {
     isOpen: boolean;

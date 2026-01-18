@@ -11,7 +11,15 @@ The Unified Asset Management system facilitates secure and intuitive crypto depo
 
 ---
 
-## 2. Asset Action Modal
+## 2. Asset Action Modal & Withdraw System
+
+The project now utilizes two distinct, specialized components for asset management:
+1.  **AssetActionModal**: Primarily for **Deposits**, offering a unified entry point.
+2.  **WithdrawModal**: A dedicated, feature-rich system for **Withdrawals**.
+
+> **Note**: For detailed documentation on the Withdrawal System, including Multi-Chain logic and QR Scanning, please refer to [Withdrawal-System.md](./Withdrawal-System.md).
+
+### 2.1 Key Features (Asset Action Modal)
 
 ### 2.1 Key Features
 
@@ -21,6 +29,7 @@ The Unified Asset Management system facilitates secure and intuitive crypto depo
 | **Mobile-First Design** | Adapts to a bottom-sheet layout on mobile devices with safe-area padding (`pb-24`) to prevent UI obstruction. |
 | **Network Intelligence** | Automatically detects and displays the correct network (Ethereum, Base, Solana, Sui) and associated branding/logos. |
 | **Quick Actions** | One-tap percentage selectors (25%, 50%, MAX) for fast withdrawal amounts. |
+| **Premium Scanner** | Built-in QR scanner with anti-hack validation and custom UI. |
 | **Real-Time Feedback** | Instant validation of addresses, amounts, and balances. |
 
 ### 2.2 Security Measures
@@ -55,7 +64,9 @@ The system implements multiple layers of security to protect user funds:
 2.  **Amount Selection**:
     *   Type manually.
     *   Use Quick Selectors: `25%`, `50%`, `MAX`.
-3.  **Address Entry**: Paste the destination wallet address.
+3.  **Address Entry**: 
+    *   Paste the destination wallet address.
+    *   **Or Scan QR Code**: Use the integrated Premium Scanner to capture the address via camera.
 4.  **Confirmation**: Click "Confirm Withdrawal".
 5.  **Processing**:
     *   Frontend validates inputs.

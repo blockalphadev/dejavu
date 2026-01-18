@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Copy, ArrowRight, Upload, Download, AlertCircle, Loader2, ShieldCheck, Wallet } from 'lucide-react';
+import { X, Copy, ArrowRight, Upload, Download, AlertCircle, Loader2, ShieldCheck, Wallet, Scan } from 'lucide-react';
 import { Button } from './ui/button';
 import { useAuth } from './auth/AuthContext';
 import { useWallets, usePrivy } from '@privy-io/react-auth';
-import { parseUnits, encodeFunctionData, createWalletClient, custom } from 'viem';
+import { parseUnits, encodeFunctionData, createWalletClient, custom, isAddress } from 'viem';
+import { Html5Qrcode } from 'html5-qrcode';
 import { base, mainnet } from 'viem/chains';
 import { depositApi } from '../../services/deposit';
 
@@ -45,6 +46,29 @@ const USDC_ADDRESS_MAP: Record<number, string> = {
     1: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',    // Ethereum Mainnet
 };
 
+// Helper function to validate Solana address (base58)
+const isValidSolanaAddress = (addr: string): boolean => {
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    return base58Regex.test(addr);
+};
+
+// Helper function to validate Sui address
+const isValidSuiAddress = (addr: string): boolean => {
+    const suiRegex = /^0x[a-fA-F0-9]{64}$/;
+    return suiRegex.test(addr);
+};
+
+// Validate address based on selected chain
+const isValidAddress = (addr: string, chainId: string): boolean => {
+    if (!addr) return false;
+    const chainLower = chainId.toLowerCase();
+
+    if (chainLower === 'solana') return isValidSolanaAddress(addr);
+    if (chainLower === 'sui') return isValidSuiAddress(addr);
+
+    return isAddress(addr); // Ethereum validation
+};
+
 export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModalProps) {
     const { isAuthenticated } = useAuth();
     const { wallets } = useWallets();
@@ -54,6 +78,8 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
     const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [withdrawAddress, setWithdrawAddress] = useState('');
+    const [showScanner, setShowScanner] = useState(false);
+    const [scannerError, setScannerError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -61,6 +87,51 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
 
     // Refs for anti-throttling
     const lastClickTimeRef = useRef(0);
+    const scannerRef = useRef<Html5Qrcode | null>(null);
+
+    // Scanner Logic
+    useEffect(() => {
+        if (showScanner && asset) {
+            setScannerError(null);
+            const timer = setTimeout(() => {
+                const scanner = new Html5Qrcode("reader-asset");
+                scannerRef.current = scanner;
+
+                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+                scanner.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText) => {
+                        const cleanText = decodedText.trim();
+                        const cleanAddress = cleanText.split(':').pop() || cleanText;
+
+                        if (isValidAddress(cleanAddress, asset.chain)) {
+                            setWithdrawAddress(cleanAddress);
+                            setShowScanner(false);
+                            scanner.stop().then(() => scanner.clear()).catch(console.error);
+                        }
+                    },
+                    (_) => { /* ignore frame errors */ }
+                ).catch((err) => {
+                    console.error("Camera start failed", err);
+                    setScannerError("Camera access denied or not available. Please grant permission.");
+                });
+
+                return () => {
+                    if (scanner.isScanning) {
+                        scanner.stop().then(() => scanner.clear()).catch(console.error);
+                    }
+                };
+            }, 100);
+
+            return () => clearTimeout(timer);
+        } else {
+            if (scannerRef.current?.isScanning) {
+                scannerRef.current.stop().then(() => scannerRef.current?.clear()).catch(console.error);
+            }
+        }
+    }, [showScanner, asset?.chain]);
 
     // Reset state when asset changes
     useEffect(() => {
@@ -71,6 +142,7 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
             setSuccessMsg(null);
             setIsLoading(false);
             setActiveTab('deposit'); // Default to deposit
+            setShowScanner(false);
         }
     }, [asset?.symbol, asset?.chain]);
 
@@ -353,8 +425,15 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                                                 value={withdrawAddress}
                                                 onChange={(e) => setWithdrawAddress(e.target.value)}
                                                 placeholder={`Paste ${asset.chain} address`}
-                                                className="w-full bg-[#0A0B0E] border border-white/10 rounded-xl py-4 pl-10 pr-4 text-sm font-mono text-white placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+                                                className="w-full bg-[#0A0B0E] border border-white/10 rounded-xl py-4 pl-10 pr-12 text-sm font-mono text-white placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
                                             />
+                                            <button
+                                                onClick={() => setShowScanner(true)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
+                                                title="Scan QR Code"
+                                            >
+                                                <Scan className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
 
@@ -382,6 +461,56 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                     )}
                 </div>
             </div>
+            {/* QR Code Scanner Modal */}
+            {showScanner && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="w-full max-w-md bg-[#13141b] rounded-3xl border border-gray-800 shadow-2xl overflow-hidden relative">
+                        <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+                            <h3 className="text-white font-bold">Scan {asset.chain} Address</h3>
+                            <button
+                                onClick={() => setShowScanner(false)}
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-4 relative min-h-[300px] flex flex-col items-center justify-center bg-black">
+                            {scannerError ? (
+                                <div className="text-center p-4">
+                                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                                    <p className="text-red-400 font-medium">{scannerError}</p>
+                                    <Button
+                                        variant="outline"
+                                        className="mt-4 border-gray-700 text-gray-300 hover:bg-gray-800"
+                                        onClick={() => setShowScanner(false)}
+                                    >
+                                        Close
+                                    </Button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div id="reader-asset" className="w-full h-full overflow-hidden rounded-xl"></div>
+                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                        {/* Scanning Frame Branding */}
+                                        <div className="w-[250px] h-[250px] border-2 border-primary/50 rounded-2xl relative">
+                                            <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-primary -mt-1 -ml-1 rounded-tl-lg shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                            <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-primary -mt-1 -mr-1 rounded-tr-lg shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary -mb-1 -ml-1 rounded-bl-lg shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary -mb-1 -mr-1 rounded-br-lg shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+
+                                            {/* Scanning Line Animation */}
+                                            <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_20px_rgba(59,130,246,1)] animate-[scan_2s_ease-in-out_infinite] opacity-80"></div>
+                                        </div>
+                                    </div>
+                                    <p className="text-center text-xs text-gray-500 mt-4 absolute bottom-4">
+                                        Scanning for <b>{asset.chain}</b> Address
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
