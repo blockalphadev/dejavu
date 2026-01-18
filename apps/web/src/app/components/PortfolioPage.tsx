@@ -1,4 +1,5 @@
 
+
 import { useState } from "react";
 import { Settings, Download, Upload, Search, Filter, EyeOff, Eye, ArrowRight, TrendingUp, Copy } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
@@ -27,7 +28,7 @@ export function PortfolioPage() {
     }
 
     return (
-        <div className="pb-24 pt-4 px-4 w-full lg:max-w-7xl mx-auto min-h-screen text-foreground">
+        <div className="pb-24 pt-4 px-4 w-full lg:max-w-7xl mx-auto min-h-screen text-foreground bg-background transition-colors duration-300">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex flex-col">
@@ -36,7 +37,7 @@ export function PortfolioPage() {
                             {user.avatarUrl ? (
                                 <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm text-white font-bold">
+                                <div className="w-full h-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-sm text-primary-foreground font-bold">
                                     {user.fullName?.[0] || 'U'}
                                 </div>
                             )}
@@ -70,7 +71,7 @@ export function PortfolioPage() {
 
                 {/* Left Column: Dashboard Card */}
                 <div className="lg:col-span-2">
-                    <div className="relative overflow-hidden bg-[#1E2028] border border-white/5 rounded-2xl p-6 shadow-xl h-full">
+                    <div className="relative overflow-hidden bg-card border border-border/50 rounded-2xl p-6 shadow-xl h-full transition-all hover:shadow-2xl">
                         {/* Background decoration */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
@@ -85,7 +86,7 @@ export function PortfolioPage() {
                                 </div>
 
                                 <div className="flex items-baseline gap-1 mb-1">
-                                    <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight tabular-nums">
+                                    <h2 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight tabular-nums">
                                         {hideValues ? '****' : (
                                             (() => {
                                                 const usdc = parseFloat(balance?.availableBalance || '0');
@@ -107,8 +108,8 @@ export function PortfolioPage() {
                                         <button
                                             key={tf}
                                             className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${tf === '1M'
-                                                ? 'bg-[#2A2D3A] text-white shadow-sm ring-1 ring-white/5'
-                                                : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                                                ? 'bg-accent text-accent-foreground shadow-sm ring-1 ring-border'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                                                 }`}
                                         >
                                             {tf}
@@ -127,7 +128,7 @@ export function PortfolioPage() {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className="h-10 px-6 text-sm font-semibold border-white/10 hover:bg-white/5 text-white hover:text-primary hover:border-primary/20 rounded-lg transition-all"
+                                        className="h-10 px-6 text-sm font-semibold border-border hover:bg-accent hover:text-accent-foreground rounded-lg transition-all"
                                         onClick={() => setShowWithdrawModal(true)}
                                     >
                                         <Upload className="w-4 h-4 mr-2" />
@@ -142,7 +143,7 @@ export function PortfolioPage() {
                 {/* Right Column: Crypto Assets */}
                 <div className="lg:col-span-1">
                     {balance?.assets && balance?.assets.length > 0 && (
-                        <div className="bg-[#1E2028]/50 border border-white/5 rounded-2xl p-4 h-[420px] flex flex-col backdrop-blur-sm">
+                        <div className="bg-card/50 border border-border/50 rounded-2xl p-4 h-[420px] flex flex-col backdrop-blur-md transition-all">
                             <div className="flex items-center justify-between mb-4 flex-shrink-0">
                                 <h3 className="text-sm font-semibold text-muted-foreground px-1 uppercase tracking-wider text-[10px]">Crypto Assets</h3>
                                 <div className="relative group/search">
@@ -152,7 +153,7 @@ export function PortfolioPage() {
                                         placeholder="Search asset..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="bg-black/20 border border-white/5 rounded-lg pl-7 pr-2 py-1.5 text-[10px] text-white w-28 focus:w-40 transition-all focus:outline-none focus:border-primary/30 focus:bg-black/40 placeholder:text-muted-foreground/50"
+                                        className="bg-accent/50 border border-border/50 rounded-lg pl-7 pr-2 py-1.5 text-[10px] text-foreground w-28 focus:w-40 transition-all focus:outline-none focus:border-primary/30 focus:bg-accent placeholder:text-muted-foreground/50"
                                     />
                                 </div>
                             </div>
@@ -185,20 +186,20 @@ export function PortfolioPage() {
                                         return (
                                             <div
                                                 key={asset.chain + asset.symbol}
-                                                className="group/row flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all cursor-pointer"
+                                                className="group/row flex items-center justify-between p-2.5 rounded-xl hover:bg-accent/50 border border-transparent hover:border-border/30 transition-all cursor-pointer"
                                                 onClick={() => setSelectedAsset(asset)}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-9 h-9 rounded-full flex items-center justify-center p-1.5 ${config.color || 'bg-accent'} transition-transform group-hover/row:scale-105`}>
-                                                        {config.icon ? <img src={config.icon} alt={asset.symbol} className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} /> : <span className="font-bold text-[10px]">{asset.symbol[0]}</span>}
+                                                        {config.icon ? <img src={config.icon} alt={asset.symbol} className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} /> : <span className="font-bold text-[10px] text-foreground">{asset.symbol[0]}</span>}
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-sm text-white">{asset.symbol === 'ETHEREUM' ? 'ETH' : asset.symbol}</div>
+                                                        <div className="font-bold text-sm text-foreground">{asset.symbol === 'ETHEREUM' ? 'ETH' : asset.symbol}</div>
                                                         <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                                                             {asset.chain}
                                                             {asset.address && (
                                                                 <div
-                                                                    className="opacity-0 group-hover/row:opacity-100 transition-opacity p-0.5 hover:text-white"
+                                                                    className="opacity-0 group-hover/row:opacity-100 transition-opacity p-0.5 hover:text-foreground"
                                                                     onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(asset.address); }}
                                                                     title="Copy Address"
                                                                 >
@@ -209,7 +210,7 @@ export function PortfolioPage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-sm tabular-nums text-white">{hideValues ? '****' : asset.balance}</div>
+                                                    <div className="font-bold text-sm tabular-nums text-foreground">{hideValues ? '****' : asset.balance}</div>
                                                     <div className="flex items-center justify-end gap-1">
                                                         <span className={`text-[10px] font-medium ${parseFloat(asset.valueUsd) > 0 ? 'text-green-500' : 'text-muted-foreground'}`}>
                                                             {hideValues ? '****' : `$${asset.valueUsd || '0.00'}`}
@@ -288,7 +289,6 @@ export function PortfolioPage() {
             <WithdrawModal
                 isOpen={showWithdrawModal}
                 onClose={() => setShowWithdrawModal(false)}
-                availableBalance={parseFloat(balance?.availableBalance || '0')}
                 onSuccess={() => {
                     // Refresh balance if context exposes a refresh method, or just wait for next poll
                     // Assuming useDeposit context might verify balance internally or we can trigger it

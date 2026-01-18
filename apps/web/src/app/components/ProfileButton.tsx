@@ -50,10 +50,10 @@ export function ProfileButton({ user, mobile, triggerOnly, children, onNavigate 
             <img
                 src={user.avatarUrl}
                 alt={displayName}
-                className="w-10 h-10 rounded-full object-cover border-2 border-white/10"
+                className="w-10 h-10 rounded-full object-cover border-2 border-border"
             />
         ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium border-2 border-white/10">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium border-2 border-border">
                 {initials}
             </div>
         )

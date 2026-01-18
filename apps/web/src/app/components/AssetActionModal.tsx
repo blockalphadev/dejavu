@@ -285,13 +285,13 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
     const assetConfig = getAssetConfig(asset.symbol);
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
             {/* Modal Card */}
-            <div className="w-full max-w-md bg-[#12141A] sm:rounded-3xl rounded-t-3xl border border-white/10 shadow-2xl flex flex-col overflow-hidden h-[85vh] sm:h-auto max-h-[90vh] animate-in slide-in-from-bottom-10 duration-300">
+            <div className="w-full max-w-md bg-card sm:rounded-3xl rounded-t-3xl border border-border shadow-2xl flex flex-col overflow-hidden h-[85vh] sm:h-auto max-h-[90vh] animate-in slide-in-from-bottom-10 duration-300">
 
                 {/* Header Section */}
-                <div className="relative px-6 pt-6 pb-4 bg-gradient-to-b from-white/5 to-transparent shrink-0">
-                    <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-white transition-colors">
+                <div className="relative px-6 pt-6 pb-4 bg-gradient-to-b from-card/5 to-transparent shrink-0">
+                    <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
                         <X className="w-5 h-5" />
                     </button>
 
@@ -304,14 +304,14 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                             )}
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                                 {asset.symbol}
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${getNetworkColor(asset.chain)}`}>
                                     {asset.chain}
                                 </span>
                             </h2>
                             <div className="text-muted-foreground text-sm font-medium mt-0.5">
-                                Balance: <span className="text-white tabular-nums">{asset.balance}</span>
+                                Balance: <span className="text-foreground tabular-nums">{asset.balance}</span>
                             </div>
                         </div>
                     </div>
@@ -319,16 +319,16 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
 
                 {/* Tab Switcher - Simple & Professional */}
                 <div className="px-6 pb-2">
-                    <div className="flex p-1 bg-black/40 rounded-xl border border-white/5">
+                    <div className="flex p-1 bg-secondary/50 rounded-xl border border-border">
                         <button
                             onClick={() => setActiveTab('deposit')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-lg transition-all ${activeTab === 'deposit' ? 'bg-[#2A2D3A] text-white shadow-lg ring-1 ring-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/5'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-lg transition-all ${activeTab === 'deposit' ? 'bg-card text-foreground shadow-lg ring-1 ring-border' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                         >
                             <Download className="w-4 h-4" /> Deposit
                         </button>
                         <button
                             onClick={() => setActiveTab('withdraw')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-lg transition-all ${activeTab === 'withdraw' ? 'bg-[#2A2D3A] text-white shadow-lg ring-1 ring-white/10' : 'text-muted-foreground hover:text-white hover:bg-white/5'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-lg transition-all ${activeTab === 'withdraw' ? 'bg-card text-foreground shadow-lg ring-1 ring-border' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                         >
                             <Upload className="w-4 h-4" /> Withdraw
                         </button>
@@ -352,23 +352,23 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                                     onClick={() => {
                                         if (asset.address) navigator.clipboard.writeText(asset.address);
                                     }}
-                                    className="flex items-center justify-between bg-[#0A0B0E] border border-white/10 rounded-xl p-4 cursor-pointer hover:border-primary/50 hover:bg-[#0F1116] transition-all group active:scale-[0.99]"
+                                    className="flex items-center justify-between bg-secondary/50 border border-border rounded-xl p-4 cursor-pointer hover:border-primary/50 hover:bg-accent transition-all group active:scale-[0.99]"
                                 >
                                     <div className="flex flex-col overflow-hidden mr-4">
                                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Deposit Address</label>
-                                        <div className="font-mono text-sm text-white truncate w-full select-all">
+                                        <div className="font-mono text-sm text-foreground truncate w-full select-all">
                                             {asset.address || 'Loading...'}
                                         </div>
                                     </div>
-                                    <div className="p-2 bg-white/5 rounded-lg group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                                    <div className="p-2 bg-background rounded-lg group-hover:bg-primary/20 group-hover:text-primary transition-colors text-muted-foreground">
                                         <Copy className="w-4 h-4" />
                                     </div>
                                 </div>
 
-                                <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex gap-3 items-start">
-                                    <ShieldCheck className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-yellow-200/80 leading-relaxed font-medium">
-                                        Send only <strong>{asset.symbol}</strong> ({asset.chain} Network) to this address. Using the wrong network will result in lost funds.
+                                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex gap-3 items-start">
+                                    <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                    <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                                        Send only <strong className="text-foreground">{asset.symbol}</strong> ({asset.chain} Network) to this address. Using the wrong network will result in lost funds.
                                     </p>
                                 </div>
                             </div>
@@ -382,13 +382,13 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                                     <div className="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mb-6 ring-4 ring-emerald-500/10">
                                         <ArrowRight className="w-10 h-10" />
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white mb-2">Withdrawal Sent!</h3>
-                                    <p className="text-gray-400">Your funds are on the way.</p>
+                                    <h3 className="text-2xl font-bold text-foreground mb-2">Withdrawal Sent!</h3>
+                                    <p className="text-muted-foreground">Your funds are on the way.</p>
                                 </div>
                             ) : (
                                 <>
                                     {error && (
-                                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-medium text-red-400 flex items-center gap-2 animate-in slide-in-from-top-2">
+                                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-medium text-red-500 flex items-center gap-2 animate-in slide-in-from-top-2">
                                             <AlertCircle className="w-4 h-4 shrink-0" /> {error}
                                         </div>
                                     )}
@@ -402,12 +402,12 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                                                 value={withdrawAmount}
                                                 onChange={(e) => setWithdrawAmount(e.target.value)}
                                                 placeholder="0.00"
-                                                className="w-full bg-[#0A0B0E] border border-white/10 rounded-xl py-4 pl-4 pr-32 text-xl font-medium text-white placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                                                className="w-full bg-secondary/50 border border-border rounded-xl py-4 pl-4 pr-32 text-xl font-medium text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                                             />
                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                                                <button onClick={() => setPercentageAmount(0.25)} className="px-2 py-1.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white rounded-md transition-colors">25%</button>
-                                                <button onClick={() => setPercentageAmount(0.5)} className="px-2 py-1.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white rounded-md transition-colors">50%</button>
-                                                <button onClick={() => setPercentageAmount(1)} className="px-2 py-1.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-primary rounded-md transition-colors">MAX</button>
+                                                <button onClick={() => setPercentageAmount(0.25)} className="px-2 py-1.5 text-[10px] font-bold bg-background/50 hover:bg-accent text-muted-foreground hover:text-foreground rounded-md transition-colors">25%</button>
+                                                <button onClick={() => setPercentageAmount(0.5)} className="px-2 py-1.5 text-[10px] font-bold bg-background/50 hover:bg-accent text-muted-foreground hover:text-foreground rounded-md transition-colors">50%</button>
+                                                <button onClick={() => setPercentageAmount(1)} className="px-2 py-1.5 text-[10px] font-bold bg-background/50 hover:bg-accent text-primary rounded-md transition-colors">MAX</button>
                                             </div>
                                         </div>
                                         <div className="text-right text-[10px] text-muted-foreground">
@@ -425,11 +425,11 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                                                 value={withdrawAddress}
                                                 onChange={(e) => setWithdrawAddress(e.target.value)}
                                                 placeholder={`Paste ${asset.chain} address`}
-                                                className="w-full bg-[#0A0B0E] border border-white/10 rounded-xl py-4 pl-10 pr-12 text-sm font-mono text-white placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+                                                className="w-full bg-secondary/50 border border-border rounded-xl py-4 pl-10 pr-12 text-sm font-mono text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
                                             />
                                             <button
                                                 onClick={() => setShowScanner(true)}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                                 title="Scan QR Code"
                                             >
                                                 <Scan className="w-4 h-4" />
@@ -451,7 +451,7 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                                     <Button
                                         onClick={handleWithdraw}
                                         disabled={isLoading || !withdrawAmount || !withdrawAddress}
-                                        className="w-full h-14 text-base font-bold bg-white text-black hover:bg-white/90 rounded-xl shadow-lg shadow-white/5 mt-2 transition-all active:scale-[0.98]"
+                                        className="w-full h-14 text-base font-bold bg-foreground text-background hover:bg-foreground/90 rounded-xl shadow-lg shadow-black/5 mt-2 transition-all active:scale-[0.98]"
                                     >
                                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Withdrawal'}
                                     </Button>
@@ -463,15 +463,15 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
             </div>
             {/* QR Code Scanner Modal */}
             {showScanner && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="w-full max-w-md bg-[#13141b] rounded-3xl border border-gray-800 shadow-2xl overflow-hidden relative">
-                        <div className="p-4 border-b border-gray-800 flex justify-between items-center">
-                            <h3 className="text-white font-bold">Scan {asset.chain} Address</h3>
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-background/90 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="w-full max-w-md bg-card rounded-3xl border border-border shadow-2xl overflow-hidden relative">
+                        <div className="p-4 border-b border-border flex justify-between items-center">
+                            <h3 className="text-foreground font-bold">Scan {asset.chain} Address</h3>
                             <button
                                 onClick={() => setShowScanner(false)}
-                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                                className="p-2 hover:bg-accent rounded-full transition-colors"
                             >
-                                <X className="w-5 h-5 text-gray-400" />
+                                <X className="w-5 h-5 text-muted-foreground" />
                             </button>
                         </div>
                         <div className="p-4 relative min-h-[300px] flex flex-col items-center justify-center bg-black">
@@ -481,7 +481,7 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                                     <p className="text-red-400 font-medium">{scannerError}</p>
                                     <Button
                                         variant="outline"
-                                        className="mt-4 border-gray-700 text-gray-300 hover:bg-gray-800"
+                                        className="mt-4 border-border text-muted-foreground hover:bg-accent"
                                         onClick={() => setShowScanner(false)}
                                     >
                                         Close

@@ -370,17 +370,17 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="w-full max-w-lg bg-[#13141b] rounded-3xl border border-gray-800/50 shadow-2xl relative flex flex-col max-h-[90dvh] overflow-hidden ring-1 ring-white/5">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="w-full max-w-lg bg-card rounded-3xl border border-border shadow-2xl relative flex flex-col max-h-[90dvh] overflow-hidden ring-1 ring-border/50">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-800/50 flex justify-between items-center bg-[#13141b]/50 backdrop-blur-sm sticky top-0 z-10">
+                <div className="p-6 border-b border-border flex justify-between items-center bg-card/50 backdrop-blur-sm sticky top-0 z-10">
                     <div>
-                        <h2 className="text-xl font-bold text-white">Withdraw Assets</h2>
-                        <p className="text-xs text-gray-500 mt-1">Transfer funds securely to your wallet</p>
+                        <h2 className="text-xl font-bold text-foreground">Withdraw Assets</h2>
+                        <p className="text-xs text-muted-foreground mt-1">Transfer funds securely to your wallet</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-white/5 rounded-xl transition-colors text-gray-400 hover:text-white group"
+                        className="p-2 hover:bg-accent rounded-xl transition-colors text-muted-foreground hover:text-foreground group"
                     >
                         <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
                     </button>
@@ -398,29 +398,29 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
 
                             {/* Asset Selection */}
                             <div className="space-y-3">
-                                <label className="text-sm font-medium text-gray-400 ml-1">Select Asset</label>
+                                <label className="text-sm font-medium text-muted-foreground ml-1">Select Asset</label>
                                 <div className="relative">
                                     <button
                                         onClick={() => setShowTokenDropdown(!showTokenDropdown)}
-                                        className="w-full h-[72px] flex items-center justify-between px-4 bg-[#1a1b23] border border-gray-800 hover:border-gray-700 rounded-2xl transition-all group hover:bg-[#1f2029]"
+                                        className="w-full h-[72px] flex items-center justify-between px-4 bg-secondary/50 border border-border hover:border-border/80 rounded-2xl transition-all group hover:bg-accent"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-gray-800 p-0.5 ring-2 ring-black">
+                                            <div className="w-10 h-10 rounded-full bg-background p-0.5 ring-2 ring-border">
                                                 <img src={selectedToken.icon} alt={selectedToken.symbol} className="w-full h-full rounded-full object-cover" />
                                             </div>
                                             <div className="text-left">
-                                                <div className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
+                                                <div className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
                                                     {selectedToken.symbol}
                                                 </div>
-                                                <div className="text-xs text-gray-500 font-medium">
+                                                <div className="text-xs text-muted-foreground font-medium">
                                                     {selectedToken.name}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <div className="text-right hidden sm:block">
-                                                <div className="text-sm font-medium text-gray-300">Balance</div>
-                                                <div className="text-sm text-gray-500 font-mono">
+                                                <div className="text-sm font-medium text-muted-foreground/80">Balance</div>
+                                                <div className="text-sm text-muted-foreground font-mono">
                                                     {isBalancesLoading ? (
                                                         <Loader2 className="w-3 h-3 animate-spin inline ml-1" />
                                                     ) : (
@@ -428,12 +428,12 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                                                     )}
                                                 </div>
                                             </div>
-                                            <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${showTokenDropdown ? 'rotate-180' : ''}`} />
+                                            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${showTokenDropdown ? 'rotate-180' : ''}`} />
                                         </div>
                                     </button>
 
                                     {showTokenDropdown && (
-                                        <div className="mt-2 bg-[#1a1b23] rounded-2xl border border-gray-800 shadow-inner max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent p-2 animate-in slide-in-from-top-2 fade-in-20">
+                                        <div className="mt-2 bg-popover rounded-2xl border border-border shadow-inner max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent p-2 animate-in slide-in-from-top-2 fade-in-20">
                                             {TOKENS.map((token) => {
                                                 const tokenTotalBalance = token.chains.reduce((sum, chainId) => sum + (balances[`${token.symbol}-${chainId}`] || 0), 0);
                                                 return (
@@ -441,25 +441,25 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                                                         key={token.symbol}
                                                         onClick={() => handleTokenChange(token)}
                                                         className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${selectedToken.symbol === token.symbol
-                                                            ? 'bg-blue-600/10 border border-blue-500/20'
-                                                            : 'hover:bg-white/5 border border-transparent'
+                                                            ? 'bg-primary/10 border border-primary/20'
+                                                            : 'hover:bg-accent border border-transparent'
                                                             }`}
                                                     >
                                                         <img src={token.icon} alt={token.symbol} className="w-8 h-8 rounded-full" />
                                                         <div className="text-left flex-1">
                                                             <div className="flex justify-between items-center">
-                                                                <div className={`font-bold ${selectedToken.symbol === token.symbol ? 'text-blue-400' : 'text-white'}`}>
+                                                                <div className={`font-bold ${selectedToken.symbol === token.symbol ? 'text-primary' : 'text-foreground'}`}>
                                                                     {token.symbol}
                                                                 </div>
-                                                                <div className="text-xs text-gray-400 font-mono">
+                                                                <div className="text-xs text-muted-foreground font-mono">
                                                                     {tokenTotalBalance > 0 ? tokenTotalBalance.toLocaleString('en-US', { maximumFractionDigits: 4 }) : '0.00'}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-xs text-gray-500">{token.name}</div>
+                                                            <div className="text-xs text-muted-foreground">{token.name}</div>
                                                         </div>
                                                         {selectedToken.symbol === token.symbol && (
-                                                            <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                                                                <Check className="w-3.5 h-3.5 text-blue-400" />
+                                                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                                                <Check className="w-3.5 h-3.5 text-primary" />
                                                             </div>
                                                         )}
                                                     </button>
@@ -472,7 +472,7 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
 
                             {/* Network Selection */}
                             <div className="space-y-3">
-                                <label className="text-sm font-medium text-gray-400 ml-1">Select Network</label>
+                                <label className="text-sm font-medium text-muted-foreground ml-1">Select Network</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {CHAINS.filter(c => selectedToken.chains.includes(c.id)).map(chain => {
                                         const chainBalance = balances[`${selectedToken.symbol}-${chain.id}`] || 0;
@@ -485,21 +485,21 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                                                     setError(null);
                                                 }}
                                                 className={`relative h-[60px] flex items-center gap-3 px-4 rounded-xl border transition-all duration-200 overflow-hidden ${selectedChain.id === chain.id
-                                                    ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-blue-500/20'
-                                                    : 'bg-[#1a1b23] border-gray-800 hover:border-gray-600 hover:bg-[#1f2029]'
+                                                    ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-primary/20'
+                                                    : 'bg-secondary/50 border-border hover:border-muted-foreground/50 hover:bg-accent'
                                                     }`}
                                             >
                                                 <img src={chain.icon} alt={chain.name} className="w-6 h-6 rounded-full" />
                                                 <div className="text-left">
-                                                    <div className={`font-semibold text-sm ${selectedChain.id === chain.id ? 'text-white' : 'text-gray-400'}`}>
+                                                    <div className={`font-semibold text-sm ${selectedChain.id === chain.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                                                         {chain.name}
                                                     </div>
-                                                    <div className="text-xs text-gray-500 font-mono">
+                                                    <div className="text-xs text-muted-foreground font-mono">
                                                         {chainBalance > 0 ? chainBalance.toLocaleString('en-US', { maximumFractionDigits: 4 }) : '0.00'}
                                                     </div>
                                                 </div>
                                                 {selectedChain.id === chain.id && (
-                                                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-blue-500" />
+                                                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary" />
                                                 )}
                                             </button>
                                         );
@@ -509,7 +509,7 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
 
                             {/* Amount Input */}
                             <div className="space-y-3">
-                                <label className="text-sm font-medium text-gray-400 ml-1">
+                                <label className="text-sm font-medium text-muted-foreground ml-1">
                                     Amount to Withdraw
                                 </label>
                                 <div className="relative group">
@@ -517,24 +517,24 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                                         type="number"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
-                                        className="w-full bg-[#1a1b23] border border-gray-800 rounded-2xl px-4 py-5 text-white text-2xl font-bold text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-gray-700 tracking-tight"
+                                        className="w-full bg-secondary/50 border border-border rounded-2xl px-4 py-5 text-foreground text-2xl font-bold text-center focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50 tracking-tight"
                                         placeholder="0.00"
                                     />
                                     <div className="absolute inset-y-0 right-4 flex items-center">
                                         <button
                                             onClick={() => setAmount(currentBalance.toString())}
-                                            className="px-3 py-1.5 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 hover:text-blue-300 rounded-lg transition-colors uppercase tracking-wider"
+                                            className="px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 hover:text-primary rounded-lg transition-colors uppercase tracking-wider"
                                         >
                                             Max
                                         </button>
                                     </div>
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                        <span className="text-gray-600 font-bold text-lg">$</span>
+                                        <span className="text-muted-foreground font-bold text-lg">$</span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center px-1">
-                                    <span className="text-xs text-gray-500 font-medium">Available Balance</span>
-                                    <span className={`text-xs font-mono bg-gray-800/50 px-2 py-0.5 rounded-md ${currentBalance > 0 ? 'text-green-400' : 'text-gray-400'}`}>
+                                    <span className="text-xs text-muted-foreground font-medium">Available Balance</span>
+                                    <span className={`text-xs font-mono bg-accent px-2 py-0.5 rounded-md ${currentBalance > 0 ? 'text-green-500' : 'text-muted-foreground'}`}>
                                         {currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} {selectedToken.symbol}
                                     </span>
                                 </div>
@@ -543,9 +543,9 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                             {/* Address Input */}
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <label className="text-sm font-medium text-gray-400 ml-1">Recipient Address</label>
+                                    <label className="text-sm font-medium text-muted-foreground ml-1">Recipient Address</label>
                                     {address && isValidAddress(address, selectedChain.id) && (
-                                        <span className="text-xs text-green-400 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-md font-medium">
+                                        <span className="text-xs text-green-500 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-md font-medium">
                                             <Check className="w-3 h-3" /> Valid
                                         </span>
                                     )}
@@ -555,11 +555,11 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                                         type="text"
                                         value={address}
                                         onChange={(e) => setAddress(e.target.value)}
-                                        className={`w-full bg-[#1a1b23] border rounded-2xl px-4 py-4 pr-10 text-white font-mono text-sm focus:outline-none focus:ring-1 transition-all placeholder:text-gray-700 ${address && !isValidAddress(address, selectedChain.id)
+                                        className={`w-full bg-secondary/50 border rounded-2xl px-4 py-4 pr-10 text-foreground font-mono text-sm focus:outline-none focus:ring-1 transition-all placeholder:text-muted-foreground/50 ${address && !isValidAddress(address, selectedChain.id)
                                             ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
                                             : address && isValidAddress(address, selectedChain.id)
                                                 ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500/20'
-                                                : 'border-gray-800 focus:border-blue-500 focus:ring-blue-500/50'
+                                                : 'border-border focus:border-primary focus:ring-primary/50'
                                             }`}
                                         placeholder={getAddressPlaceholder(selectedChain.id)}
                                     />
@@ -575,17 +575,17 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                                         )}
                                         <button
                                             onClick={() => setShowScanner(true)}
-                                            className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+                                            className="p-2 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                                             title="Scan QR Code"
                                         >
                                             <Scan className="w-5 h-5" />
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 px-1 bg-blue-500/5 border border-blue-500/10 p-2 rounded-lg">
-                                    <AlertCircle className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                                    <p className="text-[11px] text-gray-400 leading-tight">
-                                        Ensure address matches the <span className="text-blue-300 font-semibold">{selectedChain.name}</span> network. Transactions are irreversible.
+                                <div className="flex items-center gap-2 px-1 bg-primary/5 border border-primary/10 p-2 rounded-lg">
+                                    <AlertCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                                    <p className="text-[11px] text-muted-foreground leading-tight">
+                                        Ensure address matches the <span className="text-primary font-semibold">{selectedChain.name}</span> network. Transactions are irreversible.
                                     </p>
                                 </div>
                             </div>
@@ -595,14 +595,14 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                     {step === 'processing' && (
                         <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in-95 duration-300">
                             <div className="relative mb-8">
-                                <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full" />
-                                <div className="w-24 h-24 bg-[#1a1b23] border border-blue-500/30 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-                                    <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
+                                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                                <div className="w-24 h-24 bg-card border border-primary/30 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
                                 </div>
                             </div>
-                            <h3 className="text-2xl font-bold mb-3 text-white">Processing Withdrawal</h3>
-                            <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 max-w-[280px]">
-                                <p className="text-blue-200 text-sm leading-relaxed">
+                            <h3 className="text-2xl font-bold mb-3 text-foreground">Processing Withdrawal</h3>
+                            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 max-w-[280px]">
+                                <p className="text-primary text-sm leading-relaxed">
                                     Please verify and sign the transaction in your wallet to proceed.
                                 </p>
                             </div>
@@ -613,12 +613,12 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                         <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in-95 duration-300">
                             <div className="relative mb-8">
                                 <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-                                <div className="w-24 h-24 bg-[#1a1b23] border border-green-500/30 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                                    <Check className="w-12 h-12 text-green-400" />
+                                <div className="w-24 h-24 bg-card border border-green-500/30 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                    <Check className="w-12 h-12 text-green-500" />
                                 </div>
                             </div>
-                            <h3 className="text-2xl font-bold mb-2 text-white">Withdrawal Initiated</h3>
-                            <p className="text-gray-400 text-sm max-w-[260px]">
+                            <h3 className="text-2xl font-bold mb-2 text-foreground">Withdrawal Initiated</h3>
+                            <p className="text-muted-foreground text-sm max-w-[260px]">
                                 Your assets are on the way. Funds typically arrive within a few minutes.
                             </p>
                         </div>
@@ -627,7 +627,7 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
 
                 {/* Footer Actions */}
                 {step === 'input' && (
-                    <div className="p-6 pb-8 border-t border-gray-800/50 bg-[#13141b]/50 backdrop-blur-sm mt-auto sticky bottom-0">
+                    <div className="p-6 pb-8 border-t border-border bg-card/50 backdrop-blur-sm mt-auto sticky bottom-0">
                         <Button
                             className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl transition-all shadow-[0_8px_20px_rgba(37,99,235,0.2)] hover:shadow-[0_12px_24px_rgba(37,99,235,0.3)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none text-lg flex items-center justify-center gap-3"
                             onClick={handleWithdraw}
