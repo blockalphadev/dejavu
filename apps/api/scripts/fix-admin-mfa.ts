@@ -26,7 +26,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 async function fixMfa() {
-    const email = 'siabang35@gmail.com';
+    const email = '';
     console.log(`\n🔧 Fixing MFA settings for user: ${email}`);
     console.log('==================================================');
 

@@ -24,7 +24,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Admin credentials - can be overridden via environment variables
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@dejavu.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@123!Secure';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const ADMIN_FULL_NAME = process.env.ADMIN_FULL_NAME || 'System Administrator';
 
 async function seedAdmin() {

@@ -40,6 +40,7 @@ export interface AuthResponse {
         email?: string;
         fullName?: string;
         avatarUrl?: string;
+        bio?: string;
         walletAddresses?: Array<{ address: string; chain: string }>;
     };
     tokens: AuthTokens;
@@ -138,6 +139,7 @@ export class AuthService {
                 id: authData.user.id,
                 email,
                 fullName: profile.full_name || undefined,
+                bio: profile.bio || undefined,
             },
             tokens,
         };
@@ -199,6 +201,11 @@ export class AuthService {
                 email: data.user.email,
                 fullName: profile?.full_name || undefined,
                 avatarUrl: profile?.avatar_url || undefined,
+                bio: profile?.bio || undefined,
+                walletAddresses: profile?.wallet_addresses?.map((w) => ({
+                    address: w.address,
+                    chain: w.chain,
+                })),
             },
             tokens,
         };
@@ -362,6 +369,7 @@ export class AuthService {
                 email: user?.email || undefined,
                 fullName: user?.full_name || undefined,
                 avatarUrl: user?.avatar_url || undefined,
+                bio: user?.bio || undefined,
                 walletAddresses: user?.wallet_addresses?.map((w) => ({
                     address: w.address,
                     chain: w.chain,
@@ -424,6 +432,11 @@ export class AuthService {
                 email: user?.email || email,
                 fullName: user?.full_name || fullName,
                 avatarUrl: user?.avatar_url || avatarUrl,
+                bio: user?.bio || undefined,
+                walletAddresses: user?.wallet_addresses?.map((w) => ({
+                    address: w.address,
+                    chain: w.chain,
+                })),
             },
             tokens,
         };
