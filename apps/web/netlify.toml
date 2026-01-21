@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "cd ../.. && npx turbo build --filter=@dejavu/web"
   publish = "dist"
 
 # Proxy for Polymarket API to match vite.config.ts dev proxy
