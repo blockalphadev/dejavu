@@ -619,4 +619,317 @@ export class AuthService {
             }
         }
     }
+
+    // ============================================
+    // Profile Completion Methods (Google OAuth)
+    // ============================================
+
+    /**
+     * Check if username is available (with validation)
+     * OWASP A03:2021 - Input validation
+     */
+    async checkUsernameAvailable(username: string): Promise<{
+        available: boolean;
+        username: string;
+        message?: string;
+    }> {
+        const normalized = username.toLowerCase().trim();
+
+        // Validate format
+        if (!this.validateUsernameFormat(normalized)) {
+            return {
+                available: false,
+                username: normalized,
+                message: 'Invalid username format. Use 3-30 alphanumeric characters or underscores.',
+            };
+        }
+
+        // Check reserved usernames
+        const reserved = [
+            'admin', 'administrator', 'mod', 'moderator', 'support', 'help',
+            'dejavu', 'official', 'system', 'root', 'api', 'www', 'mail',
+            'bot', 'null', 'undefined', 'anonymous', 'guest', 'test', 'demo',
+        ];
+        if (reserved.includes(normalized)) {
+            return {
+                available: false,
+                username: normalized,
+                message: 'This username is reserved.',
+            };
+        }
+
+        // Check database
+        const supabase = this.supabaseService.getAdminClient();
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .ilike('username', normalized)
+            .maybeSingle();
+
+        if (error) {
+            this.logger.error(`Username check failed: ${error.message}`);
+            throw new BadRequestException('Unable to check username availability');
+        }
+
+        return {
+            available: !data,
+            username: normalized,
+            message: data ? 'Username already taken' : undefined,
+        };
+    }
+
+    /**
+     * Validate username format
+     */
+    private validateUsernameFormat(username: string): boolean {
+        if (!username || username.length < 3 || username.length > 30) {
+            return false;
+        }
+        // Alphanumeric and underscore, must start with letter
+        return /^[a-zA-Z][a-zA-Z0-9_]*$/.test(username);
+    }
+
+    /**
+     * Complete profile for Google OAuth user
+     * Creates Privy embedded wallets after profile completion
+     */
+    async completeGoogleProfile(
+        userId: string,
+        dto: {
+            username: string;
+            fullName?: string;
+            agreeToTerms: boolean;
+            agreeToPrivacy: boolean;
+        },
+        ipAddress?: string,
+    ): Promise<AuthResponse> {
+        const { username, fullName, agreeToTerms, agreeToPrivacy } = dto;
+
+        // Validate terms acceptance
+        if (!agreeToTerms || !agreeToPrivacy) {
+            throw new BadRequestException('You must agree to Terms of Service and Privacy Policy');
+        }
+
+        // Check username availability
+        const usernameCheck = await this.checkUsernameAvailable(username);
+        if (!usernameCheck.available) {
+            throw new BadRequestException(usernameCheck.message || 'Username not available');
+        }
+
+        // Get existing user
+        const user = await this.usersService.findById(userId);
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        // Check if already completed
+        if (user.profile_completed) {
+            throw new BadRequestException('Profile already completed');
+        }
+
+        const supabase = this.supabaseService.getAdminClient();
+        const now = new Date().toISOString();
+
+        // Update profile
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                username: usernameCheck.username,
+                full_name: fullName?.trim() || user.full_name,
+                agreed_to_terms_at: now,
+                agreed_to_privacy_at: now,
+                profile_completed: true,
+                updated_at: now,
+            })
+            .eq('id', userId);
+
+        if (updateError) {
+            this.logger.error(`Profile completion failed: ${updateError.message}`);
+            throw new BadRequestException('Failed to complete profile');
+        }
+
+        // Log profile completion
+        await this.logLoginAttempt({
+            email: user.email ?? undefined,
+            ipAddress: ipAddress || 'profile_completion',
+            success: true,
+        });
+
+        this.logger.log(`Profile completed for user ${userId}: @${usernameCheck.username}`);
+
+        // Refresh user data
+        const updatedUser = await this.usersService.findById(userId);
+
+        // Generate new tokens
+        const tokens = await this.generateTokens({ sub: userId, email: user.email ?? undefined });
+
+        return {
+            user: {
+                id: userId,
+                email: updatedUser?.email ?? undefined,
+                fullName: updatedUser?.full_name ?? fullName ?? undefined,
+                avatarUrl: updatedUser?.avatar_url ?? undefined,
+                bio: updatedUser?.bio ?? undefined,
+                walletAddresses: updatedUser?.wallet_addresses?.map((w) => ({
+                    address: w.address,
+                    chain: w.chain,
+                })),
+            },
+            tokens,
+        };
+    }
+
+    /**
+     * Generate OAuth state token for CSRF protection
+     * OWASP A05:2021 - Security Misconfiguration Prevention
+     */
+    async generateOAuthState(ipAddress?: string, userAgent?: string): Promise<string> {
+        // Generate cryptographically secure random state
+        const stateBytes = new Uint8Array(32);
+        crypto.getRandomValues(stateBytes);
+        const state = Array.from(stateBytes)
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+
+        // Store in database with expiry
+        const supabase = this.supabaseService.getAdminClient();
+        const { error } = await supabase.from('oauth_state_tokens').insert({
+            state_token: state,
+            provider: 'google',
+            ip_address: ipAddress,
+            user_agent: userAgent,
+            expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        });
+
+        if (error) {
+            this.logger.error(`Failed to create OAuth state: ${error.message}`);
+            throw new BadRequestException('Failed to initiate OAuth flow');
+        }
+
+        return state;
+    }
+
+    /**
+     * Verify OAuth state token (CSRF protection)
+     */
+    async verifyOAuthState(state: string): Promise<boolean> {
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Find and lock the token
+        const { data, error } = await supabase
+            .from('oauth_state_tokens')
+            .select('*')
+            .eq('state_token', state)
+            .is('used_at', null)
+            .gte('expires_at', new Date().toISOString())
+            .maybeSingle();
+
+        if (error || !data) {
+            this.logger.warn(`Invalid OAuth state token: ${state.substring(0, 10)}...`);
+            return false;
+        }
+
+        // Mark as used (prevent replay attacks)
+        const { error: updateError } = await supabase
+            .from('oauth_state_tokens')
+            .update({ used_at: new Date().toISOString() })
+            .eq('id', data.id);
+
+        if (updateError) {
+            this.logger.error(`Failed to mark OAuth state as used: ${updateError.message}`);
+        }
+
+        return true;
+    }
+
+    /**
+     * Enhanced Google callback with profile pending detection
+     */
+    async handleGoogleCallbackEnhanced(googleUser: {
+        googleId: string;
+        email: string;
+        fullName: string;
+        avatarUrl?: string;
+    }): Promise<AuthResponse & { profilePending: boolean }> {
+        const { googleId, email, fullName, avatarUrl } = googleUser;
+
+        // Check if user exists
+        let user = await this.usersService.findByEmail(email);
+        let isNewUser = false;
+
+        if (!user) {
+            // Create new user
+            const supabase = this.supabaseService.getAdminClient();
+            const { data: authData, error } = await supabase.auth.admin.createUser({
+                email,
+                email_confirm: true,
+                user_metadata: {
+                    full_name: fullName,
+                    avatar_url: avatarUrl,
+                    google_id: googleId,
+                },
+            });
+
+            if (error || !authData.user) {
+                throw new BadRequestException('Failed to create Google user');
+            }
+
+            await this.usersService.createProfile({
+                id: authData.user.id,
+                email,
+                full_name: fullName,
+                avatar_url: avatarUrl || null,
+                wallet_addresses: [],
+            });
+
+            // Set Google ID and auth provider
+            await supabase
+                .from('profiles')
+                .update({
+                    google_id: googleId,
+                    auth_provider: 'google',
+                    profile_completed: false,
+                })
+                .eq('id', authData.user.id);
+
+            user = await this.usersService.findById(authData.user.id);
+            isNewUser = true;
+
+            this.logger.log(`Google user created: ${email}`);
+        } else {
+            // Update existing user with Google ID if not set
+            const supabase = this.supabaseService.getAdminClient();
+            if (!user.google_id) {
+                await supabase
+                    .from('profiles')
+                    .update({
+                        google_id: googleId,
+                        avatar_url: user.avatar_url || avatarUrl,
+                    })
+                    .eq('id', user.id);
+            }
+        }
+
+        // Check if profile is complete
+        const profilePending = !user?.profile_completed && !user?.username;
+
+        // Generate tokens
+        const tokens = await this.generateTokens({ sub: user!.id, email });
+
+        return {
+            user: {
+                id: user!.id,
+                email: user?.email || email,
+                fullName: user?.full_name || fullName,
+                avatarUrl: user?.avatar_url || avatarUrl,
+                bio: user?.bio || undefined,
+                walletAddresses: user?.wallet_addresses?.map((w) => ({
+                    address: w.address,
+                    chain: w.chain,
+                })),
+            },
+            tokens,
+            profilePending,
+        };
+    }
 }

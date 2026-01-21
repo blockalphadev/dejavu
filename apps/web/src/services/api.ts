@@ -294,6 +294,37 @@ export const authApi = {
     getGoogleAuthUrl(): string {
         return `${API_URL}/auth/google`;
     },
+
+    /**
+     * Complete profile for Google OAuth users
+     * @param data Profile completion data
+     */
+    async completeGoogleProfile(data: {
+        username: string;
+        fullName?: string;
+        agreeToTerms: boolean;
+        agreeToPrivacy: boolean;
+    }): Promise<AuthResponse> {
+        const response = await apiRequest<AuthResponse>('/auth/google/complete-profile', {
+            method: 'POST',
+            body: data,
+        });
+        setAccessToken(response.tokens.accessToken, response.tokens.expiresIn);
+        setRefreshToken(response.tokens.refreshToken);
+        return response;
+    },
+
+    /**
+     * Check username availability
+     * @param username Username to check
+     */
+    async checkUsernameAvailable(username: string): Promise<{
+        available: boolean;
+        username: string;
+        message?: string;
+    }> {
+        return apiRequest(`/auth/check-username/${encodeURIComponent(username)}`);
+    },
 };
 
 // ============================================

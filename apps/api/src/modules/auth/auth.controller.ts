@@ -23,6 +23,7 @@ import {
     RefreshTokenDto,
     WalletChallengeDto,
     WalletVerifyDto,
+    GoogleProfileCompletionDto,
 } from './dto/index.js';
 
 /**
@@ -142,7 +143,7 @@ export class AuthController {
 
     /**
      * GET /auth/google/callback
-     * Google OAuth callback
+     * Google OAuth callback - Enhanced with profile pending detection
      */
     @Public()
     @Get('google/callback')
@@ -156,14 +157,16 @@ export class AuthController {
                 avatarUrl?: string;
             };
 
-            const result = await this.authService.handleGoogleCallback(googleUser);
+            // Use enhanced callback that detects profile pending
+            const result = await this.authService.handleGoogleCallbackEnhanced(googleUser);
             this.setTokenCookies(res, result.tokens.refreshToken);
 
-            // Redirect to frontend with tokens
+            // Redirect to frontend with tokens and profile status
             const frontendUrl = this.configService.get('CORS_ORIGINS', 'http://localhost:5173').split(',')[0];
             const redirectUrl = new URL('/auth/callback', frontendUrl);
             redirectUrl.searchParams.set('access_token', result.tokens.accessToken);
             redirectUrl.searchParams.set('expires_in', result.tokens.expiresIn.toString());
+            redirectUrl.searchParams.set('profile_pending', result.profilePending.toString());
 
             res.redirect(redirectUrl.toString());
         } catch (error) {
@@ -195,6 +198,37 @@ export class AuthController {
         const tokens = await this.authService.refreshTokens(refreshToken);
         this.setTokenCookies(res, tokens.refreshToken);
         return tokens;
+    }
+
+    /**
+     * POST /auth/google/complete-profile
+     * Complete profile for new Google OAuth users
+     */
+    @Post('google/complete-profile')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async completeGoogleProfile(
+        @CurrentUser('id') userId: string,
+        @Body() dto: GoogleProfileCompletionDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const result = await this.authService.completeGoogleProfile(userId, dto, ipAddress);
+        this.setTokenCookies(res, result.tokens.refreshToken);
+        return result;
+    }
+
+    /**
+     * GET /auth/check-username/:username
+     * Check if username is available (rate limited in frontend)
+     */
+    @Public()
+    @Get('check-username/:username')
+    @HttpCode(HttpStatus.OK)
+    async checkUsername(@Req() req: Request) {
+        const username = req.params.username;
+        return this.authService.checkUsernameAvailable(username || '');
     }
 
     /**

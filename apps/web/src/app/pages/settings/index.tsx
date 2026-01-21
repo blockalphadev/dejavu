@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     User,
     Shield,
@@ -28,7 +29,7 @@ import { Toast } from '../../components/Toast';
 import { useTheme } from '../../components/ThemeProvider';
 import { Input } from '../../components/ui/input';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { ProfileCompletionModal } from '../../components/auth/ProfileCompletionModal';
 
 type SettingsTab = 'profile' | 'wallets' | 'appearance' | 'security' | 'builder' | 'keys';
 
@@ -46,7 +47,11 @@ export function SettingsPage() {
 
     const [activeTab, setActiveTab] = useState<SettingsTab | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+
+    // Profile completion modal state
+    const [showProfileCompletion, setShowProfileCompletion] = useState(false);
 
     // Responsive State
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -63,6 +68,15 @@ export function SettingsPage() {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, [activeTab]);
+
+    // Check for profile completion URL param (after Google OAuth)
+    useEffect(() => {
+        if (searchParams.get('complete_profile') === 'true') {
+            setShowProfileCompletion(true);
+            // Clear the URL param
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -698,6 +712,19 @@ export function SettingsPage() {
             </div>
 
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+            {/* Profile Completion Modal - shown after Google OAuth for new users */}
+            <ProfileCompletionModal
+                isOpen={showProfileCompletion}
+                onClose={() => setShowProfileCompletion(false)}
+                onComplete={() => {
+                    setShowProfileCompletion(false);
+                    showToast('Profile completed successfully! Welcome to DeJaVu.', 'success');
+                    // Navigate to profile tab
+                    setActiveTab('profile');
+                }}
+                prefillFullName={user?.fullName}
+            />
         </div>
     );
 }

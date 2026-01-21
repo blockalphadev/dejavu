@@ -86,9 +86,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                         icon={<AuthIcons.Google />}
                         variant="solid"
                         className="bg-white text-black hover:bg-gray-100 border-none shadow-md shadow-gray-200/10 dark:shadow-none"
+                        disabled={!agreed}
                         onClick={() => {
-                            // Simulate Google Logic
-                            handleWalletConnect("Google");
+                            if (!agreed) return;
+                            // Redirect to backend Google OAuth endpoint
+                            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+                            window.location.href = `${apiUrl}/auth/google`;
                         }}
                     >
                         Continue with Google

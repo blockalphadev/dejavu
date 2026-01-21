@@ -17,6 +17,14 @@ export interface Profile {
     wallet_addresses: WalletAddress[];
     created_at: string;
     updated_at: string;
+    // Google OAuth fields
+    username?: string | null;
+    profile_completed?: boolean;
+    google_id?: string | null;
+    privy_user_id?: string | null;
+    auth_provider?: string | null;
+    agreed_to_terms_at?: string | null;
+    agreed_to_privacy_at?: string | null;
 }
 
 export interface ProfileInsert {

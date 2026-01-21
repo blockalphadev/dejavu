@@ -13,6 +13,10 @@ const SearchPage = lazy(() => import("./pages/search").then(module => ({ default
 const NotificationsPage = lazy(() => import("./pages/notifications").then(module => ({ default: module.NotificationsPage })));
 const SettingsPage = lazy(() => import("./pages/settings").then(module => ({ default: module.SettingsPage })));
 
+// Auth Pages (Lazy Loaded)
+const AuthCallbackPage = lazy(() => import("./pages/auth/AuthCallbackPage").then(module => ({ default: module.AuthCallbackPage })));
+const AuthErrorPage = lazy(() => import("./pages/auth/AuthErrorPage").then(module => ({ default: module.AuthErrorPage })));
+
 // Admin Pages (Lazy Loaded)
 const AdminLayout = lazy(() => import("./admin/AdminLayout").then(module => ({ default: module.AdminLayout })));
 const AdminOverview = lazy(() => import("./admin/AdminOverview").then(module => ({ default: module.AdminOverview })));
@@ -92,6 +96,18 @@ function App() {
           <Route path="ranks" element={<div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>} />
           <Route path="activity" element={<div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>} />
           <Route path="rewards" element={<div className="p-8 text-center text-muted-foreground">Rewards & Airdrops Coming Soon</div>} />
+
+          {/* Auth Routes - OAuth Callback */}
+          <Route path="auth/callback" element={
+            <Suspense fallback={<PageLoader />}>
+              <AuthCallbackPage />
+            </Suspense>
+          } />
+          <Route path="auth/error" element={
+            <Suspense fallback={<PageLoader />}>
+              <AuthErrorPage />
+            </Suspense>
+          } />
 
           {/* Admin Routes */}
           <Route path="admin" element={

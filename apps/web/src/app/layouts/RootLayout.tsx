@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { PrivyProvider } from "@privy-io/react-auth";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { AuthProvider } from "../components/auth/AuthContext";
 import { AdminProvider } from "../contexts/AdminContext";
@@ -15,6 +16,29 @@ import { DepositModal } from "../components/DepositModal";
 import { AuthModal } from "../components/auth/AuthModal";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ChevronLeft } from "lucide-react";
+
+// Privy configuration for embedded wallets
+const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
+
+const privyConfig = {
+    // Appearance
+    appearance: {
+        theme: 'dark' as const,
+        accentColor: '#6366f1' as `#${string}`, // Indigo-500 to match app theme
+        logo: '/logo.png',
+    },
+    // Embedded wallet configuration (per-chain, latest SDK format)
+    embeddedWallets: {
+        ethereum: {
+            createOnLogin: 'off' as const, // We create wallets manually after profile completion
+        },
+        solana: {
+            createOnLogin: 'off' as const,
+        },
+    },
+    // Login methods - focus on Google OAuth
+    loginMethods: ['google' as const, 'email' as const],
+};
 
 function RootLayoutContent() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -108,7 +132,10 @@ function RootLayoutContent() {
 }
 
 export function RootLayout() {
-    return (
+    // Only render PrivyProvider if configured
+    const hasPrivy = !!PRIVY_APP_ID;
+
+    const content = (
         <ErrorBoundary>
             <ThemeProvider>
                 <AuthProvider>
@@ -123,4 +150,18 @@ export function RootLayout() {
             </ThemeProvider>
         </ErrorBoundary>
     );
+
+    // Wrap with PrivyProvider if configured
+    if (hasPrivy) {
+        return (
+            <PrivyProvider
+                appId={PRIVY_APP_ID}
+                config={privyConfig}
+            >
+                {content}
+            </PrivyProvider>
+        );
+    }
+
+    return content;
 }

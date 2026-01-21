@@ -399,7 +399,9 @@ colors: {
 | 11 | **Referrals** | `/referrals` | 5 | No |
 | 12 | **Transactions** | `/transactions` | 4 | No |
 
-### 6.2 Auth Module (609 lines)
+### 6.2 Auth Module (900+ lines)
+
+> **Detailed Guide:** [Google-OAuth-Integration.md](./Google-OAuth-Integration.md)
 
 **AuthService Methods:**
 
@@ -410,7 +412,11 @@ colors: {
 | `sendMagicLink()` | Passwordless email login |
 | `getWalletChallenge()` | Generate signing challenge |
 | `verifyWallet()` | Verify wallet signature (EVM/Solana/Sui) |
-| `handleGoogleCallback()` | OAuth flow completion |
+| `handleGoogleCallbackEnhanced()` | Google OAuth completion with profile check |
+| `checkUsernameAvailable()` | Username availability (case-insensitive) |
+| `completeGoogleProfile()` | Complete profile after OAuth |
+| `generateOAuthState()` | CSRF state token generation |
+| `verifyOAuthState()` | State token verification (single use) |
 | `refreshTokens()` | JWT rotation |
 | `getCurrentUser()` | Get user from token |
 | `checkAccountLockout()` | Brute force protection |
@@ -460,8 +466,9 @@ colors: {
 | 007 | Security | 5 tables | 7 funcs | 21KB |
 | 008 | Non-Custodial | 5 tables | 6 funcs | 20KB |
 | 009 | Admin | 6 tables, 3 views | 7 funcs | 29KB |
+| 024 | **Google OAuth** | oauth_state_tokens | 6 funcs | 18KB |
 
-**Total: ~160KB of SQL, 30+ tables, 40+ functions**
+**Total: ~180KB of SQL, 35+ tables, 50+ functions**
 
 ### 7.2 Core Tables
 
@@ -743,7 +750,7 @@ packages/domain/src/
 
 | Category | Base Path | Endpoints | Auth |
 |----------|-----------|-----------|------|
-| Authentication | `/auth` | 10 | Mixed |
+| Authentication | `/auth` | 12 | Mixed |
 | Users | `/users` | 4 | JWT |
 | Markets | `/markets` | 5 | Mixed |
 | Orders | `/orders` | 4 | JWT |
@@ -757,6 +764,8 @@ packages/domain/src/
 
 ### 11.2 Authentication Endpoints
 
+> **Detailed Guide:** [Google-OAuth-Integration.md](./Google-OAuth-Integration.md)
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | `/auth/signup` | Public | Register with email |
@@ -764,8 +773,10 @@ packages/domain/src/
 | POST | `/auth/magic-link` | Public | Send magic link |
 | POST | `/auth/wallet/challenge` | Public | Get signing challenge |
 | POST | `/auth/wallet/verify` | Public | Verify signature |
-| GET | `/auth/google` | Public | Initiate OAuth |
-| GET | `/auth/google/callback` | Public | OAuth callback |
+| GET | `/auth/google` | Public | Initiate Google OAuth |
+| GET | `/auth/google/callback` | Public | OAuth callback handler |
+| POST | `/auth/google/complete-profile` | JWT | Complete profile after OAuth |
+| GET | `/auth/check-username/:username` | JWT | Check username availability |
 | POST | `/auth/refresh` | Public | Refresh tokens |
 | POST | `/auth/logout` | JWT | Logout |
 | GET | `/auth/me` | JWT | Get current user |
