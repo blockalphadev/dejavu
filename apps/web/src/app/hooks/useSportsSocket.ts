@@ -6,11 +6,27 @@ import { WS_URL } from '../../config';
 
 export type SportsSocketEvent = 'sports.update' | 'market.update';
 
+// Strict Payload Types (Anti-Hack: Type Safety)
+export interface MarketUpdatePayload {
+    id: string;
+    price?: number;
+    volume?: number;
+    [key: string]: unknown; // Allow extensibility but ban `any`
+}
+
+export interface SportsUpdatePayload {
+    eventId: string;
+    homeScore?: number;
+    awayScore?: number;
+    status?: string;
+    [key: string]: unknown;
+}
+
 interface UseSportsSocketProps {
     onConnect?: () => void;
     onDisconnect?: () => void;
-    onMarketUpdate?: (data: any) => void;
-    onSportsUpdate?: (data: any) => void;
+    onMarketUpdate?: (data: MarketUpdatePayload) => void;
+    onSportsUpdate?: (data: SportsUpdatePayload) => void;
 }
 
 export function useSportsSocket({

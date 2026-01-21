@@ -21,7 +21,7 @@ import {
     BarChart,
     Bar
 } from 'recharts';
-import { motion } from 'motion/react';
+
 
 
 // Mock chart data

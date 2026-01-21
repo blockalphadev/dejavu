@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { depositApi, BalanceResponse, DepositTransaction, DepositChain } from '../../services/deposit';
-import { useAuth } from './auth/AuthContext';
+import { useAuth } from '../components/auth/AuthContext';
 
 /**
  * Deposit context state

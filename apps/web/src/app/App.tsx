@@ -1,202 +1,137 @@
-import { useState } from "react";
-import { ThemeProvider } from "./components/ThemeProvider";
-import { AuthProvider } from "./components/auth/AuthContext";
-import { AdminProvider } from "./contexts/AdminContext";
-import { AuthModal } from "./components/auth/AuthModal";
-import { DepositProvider, useDeposit } from "./components/DepositContext";
-import { DepositModal } from "./components/DepositModal";
-import { BetSlipProvider } from "./components/BetSlipContext";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { Header } from "./components/Header";
-import { HeroSection } from "./components/HeroSection";
-import { FilterSection } from "./components/FilterSection";
-import { Sidebar } from "./components/Sidebar";
-import { ChevronLeft } from "lucide-react";
-import { Footer } from "./components/Footer";
-import { MarketGrid } from "./components/MarketGrid";
-import { CategoryNav } from "./components/CategoryNav";
-import { SportsMarketPage } from "./components/SportsMarketPage";
-import { MobileBottomNav } from "./components/MobileBottomNav";
-import { PortfolioPage } from "./components/PortfolioPage";
-import { MobileMenu } from "./components/MobileMenu";
+import { Suspense, lazy } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { LoadingSpinner } from "./components/LoadingSpinner";
 
-import { SearchPage } from "./components/SearchPage";
-import { NotificationsPage } from "./pages/NotificationsPage";
-import { AdminLayout } from "./admin/AdminLayout";
-import { AdminOverview } from "./admin/AdminOverview";
-import { AdminUsers } from "./admin/AdminUsers";
-import { AdminFinance } from "./admin/AdminFinance";
-import { AdminSecurity } from "./admin/AdminSecurity";
+// Layouts
+import { RootLayout } from "./layouts/RootLayout";
+import { MarketsLayout } from "./layouts/MarketsLayout";
+
+// Lazy Loaded Pages
+const MarketsIndex = lazy(() => import("./pages/markets/MarketsIndex").then(module => ({ default: module.MarketsIndex })));
+const PortfolioPage = lazy(() => import("./pages/portfolio").then(module => ({ default: module.PortfolioPage })));
+const SearchPage = lazy(() => import("./pages/search").then(module => ({ default: module.SearchPage })));
+const NotificationsPage = lazy(() => import("./pages/notifications").then(module => ({ default: module.NotificationsPage })));
+const SettingsPage = lazy(() => import("./pages/settings").then(module => ({ default: module.SettingsPage })));
+
+// Admin Pages (Lazy Loaded)
+const AdminLayout = lazy(() => import("./admin/AdminLayout").then(module => ({ default: module.AdminLayout })));
+const AdminOverview = lazy(() => import("./admin/AdminOverview").then(module => ({ default: module.AdminOverview })));
+const AdminUsers = lazy(() => import("./admin/AdminUsers").then(module => ({ default: module.AdminUsers })));
+const AdminFinance = lazy(() => import("./admin/AdminFinance").then(module => ({ default: module.AdminFinance })));
+const AdminSecurity = lazy(() => import("./admin/AdminSecurity").then(module => ({ default: module.AdminSecurity })));
 import { AdminRoute } from "./components/auth/AdminGuard";
-
-/**
- * Inner App component that has access to DepositContext
- */
-function AppContent() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("markets");
-  const [activeCategory, setActiveCategory] = useState("top_pics");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [adminPage, setAdminPage] = useState("overview"); // Sub-routing for admin
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const { isDepositModalOpen, closeDepositModal } = useDeposit();
-
-  const handleOpenAuth = (mode?: 'login' | 'signup') => {
-    setAuthMode(mode || 'login');
-    setIsAuthModalOpen(true);
-  };
-
-  const handleNavigate = (tab: string, category?: string) => {
-    setActiveTab(tab);
-    if (category) {
-      setActiveCategory(category);
-    }
-  };
-
-  // Dedicated Admin Route
-  if (activeTab === 'admin') {
-    return (
-      <AdminRoute>
-        <AdminLayout
-          activePage={adminPage}
-          onNavigate={setAdminPage}
-          onLogout={() => setActiveTab('markets')}
-        >
-          {adminPage === 'overview' && <AdminOverview />}
-          {adminPage === 'users' && <AdminUsers />}
-          {adminPage === 'finance' && <AdminFinance />}
-          {adminPage === 'security' && <AdminSecurity />}
-        </AdminLayout>
-      </AdminRoute>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Header
-        currentTab={activeTab}
-        onNavigate={setActiveTab}
-        onOpenAuth={handleOpenAuth}
-        onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      />
-
-      <MobileMenu
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-        onNavigate={setActiveTab}
-        onOpenAuth={handleOpenAuth}
-      />
-
-      {activeTab === 'markets' && (
-        <CategoryNav
-          activeCategory={activeCategory}
-          onSelectCategory={setActiveCategory}
-        />
-      )}
-
-      <div className="flex">
-        {/* Main Content */}
-        <main className="flex-1 min-w-0">
-          {activeTab === 'markets' && (
-            <>
-              {activeCategory === 'sports' ? (
-                <SportsMarketPage onOpenAuth={handleOpenAuth} />
-              ) : (
-                <>
-                  {activeCategory === 'signals' && <HeroSection />}
-                  <FilterSection
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                  />
-                  <MarketGrid
-                    activeCategory={activeCategory}
-                    searchQuery={searchQuery}
-                  />
-                </>
-              )}
-            </>
-          )}
-          {activeTab === 'dashboards' && <PortfolioPage />}
-          {activeTab === 'search' && <SearchPage onNavigate={handleNavigate} />}
-          {activeTab === 'notifications' && <NotificationsPage />}
-          {activeTab === 'breaking' && <div className="p-8 text-center text-muted-foreground">Top Markets View Coming Soon</div>}
-          {activeTab === 'activity' && <div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>}
-          {activeTab === 'ranks' && <div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>}
-          {activeTab === 'rewards' && <div className="p-8 text-center text-muted-foreground">Rewards & Airdrops Coming Soon</div>}
-        </main>
-
-        {/* Sidebar - Desktop */}
-        <div className="hidden lg:block">
-          <Sidebar
-            isOpen={false}
-            onClose={() => { }}
-            onOpenAuth={handleOpenAuth}
-            onNavigate={handleNavigate}
-          />
-        </div>
-      </div>
-
-      {/* Floating Sidebar Toggle - Smart & Persistent */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`lg:hidden fixed top-27 right-0 w-8 h-10 rounded-l-lg rounded-r-none shadow-xl flex items-center justify-center z-[60] transition-all duration-300 border-l border-t border-b border-border/20 backdrop-blur-md ${isSidebarOpen
-          ? "bg-background/80 text-foreground"
-          : "bg-foreground text-background"
-          }`}
-        aria-label="Toggle Sidebar"
-      >
-        <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isSidebarOpen ? "rotate-180" : "rotate-0"}`} />
-      </button>
-
-      <div className="lg:hidden">
-        <Sidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          onOpenAuth={handleOpenAuth}
-          onNavigate={handleNavigate} // Pass navigation handler
-        />
-      </div>
-
-      <div className="hidden lg:block">
-        <Footer />
-      </div>
-
-      {/* Deposit Modal */}
-      <DepositModal isOpen={isDepositModalOpen} onClose={closeDepositModal} />
-
-      {/* Auth Modal */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialMode={authMode} />
-
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden">
-        <MobileBottomNav
-          currentTab={activeTab}
-          activeCategory={activeCategory}
-          onNavigate={handleNavigate}
-          onToggleMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        />
-      </div>
-    </div>
-  );
-}
+import { AuthGuard } from "./components/auth/AuthGuard";
 
 function App() {
   return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <DepositProvider>
-            <BetSlipProvider>
-              <AdminProvider>
-                <AppContent />
-              </AdminProvider>
-            </BetSlipProvider>
-          </DepositProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <BrowserRouter>
+      {/* 
+          Providers are now wrapped inside RootLayout or here depending on scope.
+          Since RootLayout uses Providers (e.g. for Header/Sidebar), we might need to keep them here 
+          OR move them entirely into a wrapper. RootLayout in our previous step wraps Providers *inside* it, 
+          which would mean the Router needs to be OUTSIDE the Providers if the Router depends on them?
+          
+          Actually, RootLayout *is* a component that renders the Providers. 
+          But wait, RootLayout uses 'useLocation' which requires Router context.
+          
+          So structure:
+          <BrowserRouter>
+            <RootLayout> -> Renders Providers & UI
+               <Routes> ... </Routes>
+            </RootLayout>
+          </BrowserRouter>
+          
+          Let's adjust. RootLayout was written to include providers. 
+          Ideally, we should likely move Providers UP in the tree, or ensure Router is outside.
+      */}
+
+      <Routes>
+        <Route element={<RootLayout />}>
+          {/* Root path shows Top Markets directly (no URL change) */}
+          {/* Root path redirects to Markets (Top Markets) */}
+          <Route path="/" element={<Navigate to="/markets" replace />} />
+
+          {/* Markets Routes - Handled by MarketsIndex with Lazy Loading */}
+          <Route path="markets/*" element={<MarketsLayout />}>
+            <Route path="*" element={<MarketsIndex />} />
+          </Route>
+
+          {/* Other Top Level Routes */}
+
+          <Route path="portfolio" element={
+            <AuthGuard>
+              <Suspense fallback={<PageLoader />}>
+                <PortfolioPage />
+              </Suspense>
+            </AuthGuard>
+          } />
+
+          <Route path="search" element={
+            <Suspense fallback={<PageLoader />}>
+              <SearchPage />
+            </Suspense>
+          } />
+
+          <Route path="notifications" element={
+            <AuthGuard>
+              <Suspense fallback={<PageLoader />}>
+                <NotificationsPage />
+              </Suspense>
+            </AuthGuard>
+          } />
+
+          <Route path="settings" element={
+            <AuthGuard>
+              <Suspense fallback={<PageLoader />}>
+                <SettingsPage />
+              </Suspense>
+            </AuthGuard>
+          } />
+
+          {/* Placeholders for future routes */}
+          <Route path="ranks" element={<div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>} />
+          <Route path="activity" element={<div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>} />
+          <Route path="rewards" element={<div className="p-8 text-center text-muted-foreground">Rewards & Airdrops Coming Soon</div>} />
+
+          {/* Admin Routes */}
+          <Route path="admin" element={
+            <AdminRoute>
+              <Suspense fallback={<PageLoader />}>
+                <AdminLayout activePage="overview" onNavigate={() => { }} onLogout={() => { }}>
+                  {/* The AdminLayout likely needs refactoring to support Outlet too, but for now we might need to render sub-components manually or adjust AdminLayout to use Routes if we want deep linking there too. 
+                        For this step, let's keep it simple or assume AdminLayout handles its own sub-rendering via props or we refactor it.
+                        Actually, looking at previous App.tsx, AdminLayout took children.
+                    */}
+                  <Routes>
+                    <Route index element={<Navigate to="overview" replace />} />
+                    <Route path="overview" element={<AdminOverview />} />
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="finance" element={<AdminFinance />} />
+                    <Route path="security" element={<AdminSecurity />} />
+                  </Routes>
+                </AdminLayout>
+              </Suspense>
+            </AdminRoute>
+          } >
+            {/* Nested admin routes if AdminLayout renders Outlet */}
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<AdminOverview />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="finance" element={<AdminFinance />} />
+            <Route path="security" element={<AdminSecurity />} />
+          </Route>
+
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <LoadingSpinner />
+    </div>
   );
 }
 

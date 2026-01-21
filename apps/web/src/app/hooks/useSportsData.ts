@@ -11,7 +11,6 @@ import {
     SportsEvent,
     SportsLeague,
     SportType,
-    EventStatus,
     SPORT_CATEGORIES,
 } from '../../services/sports.service';
 

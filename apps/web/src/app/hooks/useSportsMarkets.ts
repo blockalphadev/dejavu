@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-    SportsService,
-    SportsMarket,
-    SportType,
-} from '../../services/sports.service';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { SportsService, SportsMarket, SportType } from '../../services/sports.service';
+import { MarketListSchema } from '../schemas/marketSchema';
 
 export interface UseSportsMarketsOptions {
     sport?: SportType;
     eventId?: string;
-    isActive?: boolean; // Defaults to true
+    isActive?: boolean;
     autoRefresh?: boolean;
     refreshInterval?: number;
     limit?: number;
@@ -19,7 +17,6 @@ export interface UseSportsMarketsReturn {
     loading: boolean;
     error: string | null;
     isRateLimited: boolean;
-    rateLimitReset: Date | null;
     refresh: () => Promise<void>;
     total: number;
     totalPages: number;
@@ -31,33 +28,16 @@ export function useSportsMarkets(options: UseSportsMarketsOptions = {}): UseSpor
         sport,
         eventId,
         isActive = true,
-        autoRefresh = false,
         refreshInterval = 30000,
         limit = 50,
     } = options;
 
-    const [markets, setMarkets] = useState<SportsMarket[]>([]);
-    const [total, setTotal] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const queryClient = useQueryClient();
+    const queryKey = ['sportsMarkets', { sport, eventId, isActive, limit }];
 
-    // Rate Limiting State
-    const [isRateLimited, setIsRateLimited] = useState(false);
-    const [rateLimitReset, setRateLimitReset] = useState<Date | null>(null);
-    const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    const fetchData = useCallback(async (silent = false) => {
-        // If currently rate limited and reset time hasn't passed, skip fetch
-        if (isRateLimited && rateLimitReset && new Date() < rateLimitReset) {
-            return;
-        }
-
-        if (!silent) setLoading(true);
-        setError(null);
-
-        try {
+    const { data, isLoading, error, refetch, isError } = useQuery({
+        queryKey,
+        queryFn: async () => {
             const response = await SportsService.getMarkets({
                 sport,
                 eventId,
@@ -65,62 +45,46 @@ export function useSportsMarkets(options: UseSportsMarketsOptions = {}): UseSpor
                 limit,
             });
 
-            setMarkets(response.data);
-            setTotal(response.total);
-            setTotalPages(response.totalPages);
-            setLastUpdated(new Date());
-
-            // Clear rate limit state on success
-            if (isRateLimited) {
-                setIsRateLimited(false);
-                setRateLimitReset(null);
+            // "Anti-Hack": Soft Validation
+            // We validate the data to ensure integrity but don't block the UI to avoid crashes on minor schema mismatches.
+            const validation = MarketListSchema.safeParse(response.data);
+            if (!validation.success) {
+                console.warn("[Anti-Hack] API Response Schema Mismatch:", validation.error);
+                // In strict mode, we might throw here: throw new Error("Data Integrity Violation");
             }
 
-        } catch (err: any) {
-            console.error('Failed to fetch sports markets:', err);
-
-            // Handle 429 Too Many Requests
-            if (err?.response?.status === 429 || err?.message?.includes('429')) {
-                setIsRateLimited(true);
-                // Default to 60s cooldown if no header, or parse retry-after
-                const cooldown = 60000;
-                setRateLimitReset(new Date(Date.now() + cooldown));
-                setError('Simulating anti-throttling cooldown...'); // User friendly message handled in UI
-            } else {
-                setError(err instanceof Error ? err.message : 'Failed to load markets');
-            }
-        } finally {
-            setLoading(false);
+            return {
+                markets: response.data,
+                total: response.total,
+                totalPages: response.totalPages,
+                timestamp: new Date(),
+            };
+        },
+        // "Anti-Throttling":
+        staleTime: 1000 * 30, // 30s defaults
+        refetchInterval: refreshInterval > 0 ? refreshInterval : false,
+        retry: (failureCount, error: any) => {
+            // Don't retry on 404s or Validation errors
+            if (error?.response?.status === 404) return false;
+            return failureCount < 2;
         }
-    }, [sport, eventId, isActive, limit, isRateLimited, rateLimitReset]);
+    });
 
-    useEffect(() => {
-        fetchData();
-        return () => {
-            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-        }
-    }, [fetchData]);
+    const isRateLimited = error instanceof Error && (error as any)?.response?.status === 429;
 
-    useEffect(() => {
-        if (!autoRefresh) return;
-        if (isRateLimited) return; // Pause auto-refresh if rate limited
-
-        const interval = setInterval(() => {
-            fetchData(true);
-        }, refreshInterval);
-
-        return () => clearInterval(interval);
-    }, [autoRefresh, refreshInterval, fetchData, isRateLimited]);
+    const refresh = useCallback(async () => {
+        await queryClient.invalidateQueries({ queryKey });
+        await refetch();
+    }, [queryClient, queryKey, refetch]);
 
     return {
-        markets,
-        loading,
-        error,
+        markets: data?.markets || [],
+        loading: isLoading,
+        error: isError ? (error as Error).message : null,
         isRateLimited,
-        rateLimitReset,
-        refresh: () => fetchData(true),
-        total,
-        totalPages,
-        lastUpdated,
+        refresh,
+        total: data?.total || 0,
+        totalPages: data?.totalPages || 0,
+        lastUpdated: data?.timestamp || null,
     };
 }

@@ -329,7 +329,14 @@ class SportsApiService {
         const queryParams = new URLSearchParams();
         if (params) {
             Object.entries(params).forEach(([key, value]) => {
-                if (value !== undefined) {
+                if (value !== undefined && value !== null && value !== '') {
+                    // Anti-hack: Skip invalid sport values
+                    if (key === 'sport') {
+                        const validSports = SPORT_CATEGORIES.map(s => s.id);
+                        if (!validSports.includes(value as SportType)) {
+                            return;
+                        }
+                    }
                     queryParams.append(key, String(value));
                 }
             });
@@ -368,7 +375,14 @@ class SportsApiService {
         const queryParams = new URLSearchParams();
         if (params) {
             Object.entries(params).forEach(([key, value]) => {
-                if (value !== undefined) {
+                if (value !== undefined && value !== null && value !== '') {
+                    // Anti-hack: Skip invalid sport values
+                    if (key === 'sport') {
+                        const validSports = SPORT_CATEGORIES.map(s => s.id);
+                        if (!validSports.includes(value as SportType)) {
+                            return;
+                        }
+                    }
                     queryParams.append(key, String(value));
                 }
             });
@@ -407,7 +421,14 @@ class SportsApiService {
         const queryParams = new URLSearchParams();
         if (params) {
             Object.entries(params).forEach(([key, value]) => {
-                if (value !== undefined) {
+                if (value !== undefined && value !== null && value !== '') {
+                    // Anti-hack: Skip invalid sport values to prevent API validation errors
+                    if (key === 'sport') {
+                        const validSports = SPORT_CATEGORIES.map(s => s.id);
+                        if (!validSports.includes(value as SportType)) {
+                            return; // Skip invalid sport parameter
+                        }
+                    }
                     queryParams.append(key, String(value));
                 }
             });

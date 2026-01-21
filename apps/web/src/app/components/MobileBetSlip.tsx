@@ -12,7 +12,7 @@ import { Button } from './ui/button';
 import { cn } from './ui/utils';
 import { ChevronUp, ChevronDown, Zap } from 'lucide-react';
 import { BetSlip } from './BetSlip';
-import { useBetSlip } from './BetSlipContext';
+import { useBetSlip } from '../contexts/BetSlipContext';
 
 export function MobileBetSlip() {
     const { selections, isOpen, openBetSlip, closeBetSlip } = useBetSlip();

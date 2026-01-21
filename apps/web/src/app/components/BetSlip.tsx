@@ -20,8 +20,8 @@ import {
     Wallet,
     AlertCircle
 } from 'lucide-react';
-import { useBetSlip } from './BetSlipContext';
-import { useDeposit } from './DepositContext';
+import { useBetSlip } from '../contexts/BetSlipContext';
+import { useDeposit } from '../contexts/DepositContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface BetSlipProps {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useDeposit } from './DepositContext';
+import { useDeposit } from '../contexts/DepositContext';
 import { depositApi } from '../../services/deposit';
 import { useAuth } from './auth/AuthContext';
 

@@ -8,7 +8,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { TOKENS, CHAINS, type Token, type Chain } from '../../constants/tokens';
 import { base, mainnet } from 'viem/chains';
 import { useTokenBalances } from '../../hooks/useTokenBalances';
-import { useDeposit } from './DepositContext';
+import { useDeposit } from '../contexts/DepositContext';
 
 // Security: Rate limiting configuration
 const RATE_LIMIT = {
@@ -91,61 +91,144 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
     const [showTokenDropdown, setShowTokenDropdown] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
 
+    // QR Scanner state
     const [scannerError, setScannerError] = useState<string | null>(null);
     const scannerRef = useRef<Html5Qrcode | null>(null);
 
+    // Track scanner retry state
+    const [canRetryScanner, setCanRetryScanner] = useState(false);
+
+    // Helper function to request camera permission explicitly
+    const requestCameraPermission = async (): Promise<boolean> => {
+        try {
+            // First, check if getUserMedia is available (needed for HTTPS or localhost)
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.warn('getUserMedia not available - camera may not work');
+                return true; // Let Html5Qrcode handle the error
+            }
+
+            // Request camera permission explicitly
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+
+            // Stop the stream immediately - we just needed permission
+            stream.getTracks().forEach(track => track.stop());
+            return true;
+        } catch (err: any) {
+            console.error('Camera permission error:', err);
+            if (err.name === 'NotAllowedError') {
+                setScannerError('Camera permission denied. Please allow camera access in your browser settings and try again.');
+            } else if (err.name === 'NotFoundError') {
+                setScannerError('No camera found. Please ensure your device has a camera.');
+            } else if (err.name === 'NotReadableError') {
+                setScannerError('Camera is in use by another application. Please close other apps using the camera.');
+            } else if (err.name === 'OverconstrainedError') {
+                setScannerError('Camera not compatible. Trying alternative...');
+                // Try without environment constraint
+                try {
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    fallbackStream.getTracks().forEach(track => track.stop());
+                    return true;
+                } catch {
+                    setScannerError('Camera access failed. Please try again.');
+                    return false;
+                }
+            } else {
+                setScannerError('Camera access failed. Please check permissions and try again.');
+            }
+            return false;
+        }
+    };
+
+    // Start scanner function (can be retried)
+    const startScanner = async () => {
+        setScannerError(null);
+        setCanRetryScanner(false);
+
+        // Request camera permission first
+        const hasPermission = await requestCameraPermission();
+        if (!hasPermission) {
+            setCanRetryScanner(true);
+            return;
+        }
+
+        // Wait for DOM element to be ready
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        const readerElement = document.getElementById('reader');
+        if (!readerElement) {
+            setScannerError('Scanner initialization failed. Please try again.');
+            setCanRetryScanner(true);
+            return;
+        }
+
+        try {
+            const scanner = new Html5Qrcode('reader');
+            scannerRef.current = scanner;
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+            };
+
+            await scanner.start(
+                { facingMode: 'environment' },
+                config,
+                (decodedText) => {
+                    // Anti-Hack: Strict validation of scanned data
+                    const cleanText = decodedText.trim();
+                    // Parse payment URIs (e.g., ethereum:0x...)
+                    const cleanAddress = cleanText.split(':').pop() || cleanText;
+
+                    // Validate against selected chain rules before setting
+                    if (isValidAddress(cleanAddress, selectedChain.id)) {
+                        setAddress(cleanAddress);
+                        setShowScanner(false);
+                    }
+                },
+                () => { /* ignore frame errors */ }
+            );
+        } catch (err: any) {
+            console.error('Scanner start failed:', err);
+
+            // Provide specific error messages
+            if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
+                setScannerError('Camera permission denied. Please allow camera access and try again.');
+            } else if (err.toString().includes('NotFoundError') || err.toString().includes('not found')) {
+                setScannerError('No camera found on this device.');
+            } else if (err.toString().includes('NotReadableError') || err.toString().includes('in use')) {
+                setScannerError('Camera is busy. Close other apps using the camera and try again.');
+            } else {
+                setScannerError('Could not start camera. Please check permissions.');
+            }
+            setCanRetryScanner(true);
+        }
+    };
+
     useEffect(() => {
         if (showScanner) {
-            setScannerError(null);
-            const timer = setTimeout(() => {
-                const scanner = new Html5Qrcode("reader");
-                scannerRef.current = scanner;
-
-                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-                scanner.start(
-                    { facingMode: "environment" },
-                    config,
-                    (decodedText) => {
-                        // Anti-Hack: Strict validation of scanned data
-                        // Only accept strings, prevent XSS/Injection by minimal parsing
-                        const cleanText = decodedText.trim();
-
-                        // Parse payment URIs (e.g., ethereum:0x...)
-                        const cleanAddress = cleanText.split(':').pop() || cleanText;
-
-                        // Validate against selected chain rules before setting
-                        if (isValidAddress(cleanAddress, selectedChain.id)) {
-                            setAddress(cleanAddress);
-                            setShowScanner(false);
-                            scanner.stop().then(() => scanner.clear()).catch(console.error);
-                        } else {
-                            // Optional: Show temporary "Invalid Address" feedback in scanner UI
-                            // For now, we just don't accept it to keep the flow clean
-                        }
-                    },
-                    (_) => {
-                        // ignore frame errors
-                    }
-                ).catch((err) => {
-                    console.error("Camera start failed", err);
-                    setScannerError("Camera access denied or not available. Please grant permission.");
-                });
-
-                return () => {
-                    if (scanner.isScanning) {
-                        scanner.stop().then(() => scanner.clear()).catch(console.error);
-                    }
-                };
-            }, 100);
-
-            return () => clearTimeout(timer);
-        } else {
-            // Ensure cleanup if modal closes
-            if (scannerRef.current?.isScanning) {
-                scannerRef.current.stop().then(() => scannerRef.current?.clear()).catch(console.error);
-            }
+            startScanner();
         }
+
+        // Cleanup function - properly at useEffect level
+        return () => {
+            if (scannerRef.current) {
+                if (scannerRef.current.isScanning) {
+                    scannerRef.current.stop()
+                        .then(() => scannerRef.current?.clear())
+                        .catch(err => console.warn('Scanner cleanup error:', err));
+                } else {
+                    try {
+                        scannerRef.current.clear();
+                    } catch (e) {
+                        // Ignore clear errors
+                    }
+                }
+                scannerRef.current = null;
+            }
+        };
     }, [showScanner, selectedChain.id]);
 
     const [isLoading, setIsLoading] = useState(false);
@@ -665,14 +748,31 @@ export function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawModalProps
                             {scannerError ? (
                                 <div className="text-center p-4">
                                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                    <p className="text-red-400 font-medium">{scannerError}</p>
-                                    <Button
-                                        variant="outline"
-                                        className="mt-4 border-gray-700 text-gray-300 hover:bg-gray-800"
-                                        onClick={() => setShowScanner(false)}
-                                    >
-                                        Close
-                                    </Button>
+                                    <p className="text-red-400 font-medium mb-4">{scannerError}</p>
+                                    <div className="flex gap-3 justify-center">
+                                        {canRetryScanner && (
+                                            <Button
+                                                variant="default"
+                                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                onClick={() => {
+                                                    setScannerError(null);
+                                                    setCanRetryScanner(false);
+                                                    // Trigger scanner restart
+                                                    setShowScanner(false);
+                                                    setTimeout(() => setShowScanner(true), 100);
+                                                }}
+                                            >
+                                                Try Again
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="outline"
+                                            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                                            onClick={() => setShowScanner(false)}
+                                        >
+                                            Close
+                                        </Button>
+                                    </div>
                                 </div>
                             ) : (
                                 <>

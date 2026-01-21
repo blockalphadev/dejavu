@@ -636,51 +636,46 @@ class SportsApiService {
   // Fetch events with pagination
   async getEvents(params?: SportsEventsQuery): Promise<PaginatedResponse<SportsEvent>>;
   
-  // Fetch live events
-  async getLiveEvents(sport?: SportType): Promise<SportsEvent[]>;
-  
-  // Fetch upcoming events
-  async getUpcomingEvents(sport?: SportType, limit?: number): Promise<SportsEvent[]>;
+  // Fetch markets with strict Zod validation
+  async getMarkets(options: SportsMarketsOptions): Promise<PaginatedResponse<SportsMarket>>;
 }
 
 export const SportsService = new SportsApiService();
 ```
 
-### React Hooks
+### React Hooks (Modern Architecture)
 
-#### useSportsData
-Fetches and manages sports data with auto-refresh.
+#### useSportsMarkets
+Top-level hook for fetching markets with **React Query** and **Zod Validation**.
+
+- **Anti-Throttling**: Automatically de-dupes requests and caches data for 30 seconds (`staleTime`).
+- **Anti-Hack**: Validates incoming data against `MarketSchema`. Logs warnings for schema mismatches.
+- **Smart Retries**: Fails fast on 404/429 errors.
 
 ```typescript
-const { events, liveEvents, loading, error, refresh } = useSportsData({
+// Usage
+const { markets, loading, isRateLimited } = useSportsMarkets({
   sport: 'nba',
-  autoRefresh: true,
-  refreshInterval: 60000 // 1 minute
+  isActive: true,
+  refreshInterval: 10000 // Auto-refresh every 10s
 });
-```
 
-#### useSportsRealtime
-Connects to WebSocket for live updates.
-
-```typescript
-const { isConnected } = useSportsRealtime({
-  activeSport: 'live',
-  onEventUpdate: (event) => {
-    // Handle real-time update
-    console.log('Live update:', event);
-  }
+// The hook internally uses useQuery:
+useQuery({
+    queryKey: ['sportsMarkets', { sport, ... }],
+    queryFn: () => SportsService.getMarkets(...),
+    staleTime: 30000, // 30s cache
 });
 ```
 
 #### useSportsSocket
-Custom hook for managing WebSocket connections and real-time subscriptions.
+Custom hook for managing WebSocket connections and real-time subscriptions with automatic cleanup.
 
 ```typescript
-const { isConnected, joinRoom, leaveRoom } = useSportsSocket({
-    sport: 'football',
-    onEventUpdate: (update) => {
-        console.log('Received live update:', update);
-        // Optimistically update UI
+const { joinSport, leaveSport } = useSportsSocket({
+    onMarketUpdate: (update) => {
+        // Optimistically update UI via React State
+        setRealTimeMarkets(prev => mergeUpdate(prev, update));
     }
 });
 ```

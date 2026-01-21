@@ -237,7 +237,11 @@ dejavu/
 │           ├── 📁 app/
 │           │   ├── 📁 admin/           # Admin Dashboard (5 pages)
 │           │   ├── 📁 components/      # 85+ UI components
+│           │   ├── 📁 contexts/        # Global State Contexts
 │           │   ├── 📁 hooks/           # Custom React hooks
+│           │   ├── 📁 layouts/         # Page Layouts
+│           │   ├── 📁 pages/           # Application Views
+│           │   ├── 📁 schemas/         # Zod Validation Schemas
 │           │   └── 📁 utils/           # Helper functions
 │           ├── 📁 services/            # API clients
 │           └── 📁 styles/              # Global styles
@@ -315,78 +319,62 @@ graph LR
 
 ## 5. Frontend Architecture
 
-### 5.1 Application Structure
+> **Note:** For detailed guidelines, patterns, and hook registries, refer to [Frontend-Architecture.md](./Frontend-Architecture.md).
 
-| Directory | Contents | Count |
-|-----------|----------|-------|
-| `admin/` | Admin Dashboard pages | 5 files |
-| `components/` | UI Components | 85+ files |
-| `components/auth/` | Auth modals/forms | 6 files |
-| `components/ui/` | Base primitives | 48 files |
-| `hooks/` | Custom React hooks | 3 files |
+### 5.1 Architecture Overview
 
-### 5.2 Component Catalog
+The frontend is built on **React 19** and **Vite**, utilizing a "Polymarket++" design system. It prioritizes performance (anti-throttling) and security (anti-hack) through architectural choices.
+
+| Feature | Implementation | Purpose |
+|---------|----------------|---------|
+| **Data Fetching** | TanStack Query v5 | Caching (30s staleTime), deduping, auto-retries |
+| **Validation** | Zod Schemas | Runtime API response validation (Soft Enforcement) |
+| **Routing** | React Router + Lazy Loading | Route-based code splitting for 12+ sport categories |
+| **State** | Context API + Query Cache | Minimal global state, maximum server state |
+
+### 5.2 Application Structure
+
+| Directory | Contents | Key Changes |
+|-----------|----------|-------------|
+| `contexts/` | Global State | Consolidates `DepositContext`, `BetSlipContext`, `AdminContext` |
+| `hooks/` | Custom Hooks | Includes `useSportsMarkets` (Query+Zod), `useSportsSocket` |
+| `pages/markets/` | Market Views | Modular, lazy-loaded categories (`sports/nba`, `crypto`, etc.) |
+| `components/` | UI Components | Atomic design, Shadcn UI + Tailwind |
+
+### 5.3 Component Catalog
 
 #### Layout Components
-
 | Component | File | Description |
 |-----------|------|-------------|
-| Header | `Header.tsx` | Main navigation (8KB) |
-| Footer | `Footer.tsx` | Site footer |
-| Sidebar | `Sidebar.tsx` | Right sidebar with widgets |
-| MobileBottomNav | `MobileBottomNav.tsx` | Mobile navigation |
-| MobileMenu | `MobileMenu.tsx` | Mobile hamburger menu |
+| RootLayout | `layouts/RootLayout.tsx` | App-wide providers and structure |
+| Header | `Header.tsx` | Main navigation and user controls |
+| Sidebar | `Sidebar.tsx` | Collapsible sports navigation |
+| MobileBetSlip | `MobileBetSlip.tsx` | Swipeable bottom sheet for mobile betting |
 
-#### Feature Components
-
-| Component | File | Size | Description |
-|-----------|------|------|-------------|
-| AssetActionModal | `AssetActionModal.tsx` | 22KB | Unified deposit and withdrawal interface |
-| SettingsModal | `SettingsModal.tsx` | 18KB | User preferences |
-| PortfolioPage | `PortfolioPage.tsx` | 10KB | Portfolio dashboard |
-| ProfileButton | `ProfileButton.tsx` | 8KB | User profile dropdown |
-
-#### Admin Dashboard
-
+#### Core Feature Components
 | Component | File | Description |
 |-----------|------|-------------|
-| AdminLayout | `admin/AdminLayout.tsx` | Dashboard layout |
-| AdminOverview | `admin/AdminOverview.tsx` | Stats, charts |
-| AdminUsers | `admin/AdminUsers.tsx` | User management |
-| AdminFinance | `admin/AdminFinance.tsx` | Withdrawal approvals |
-| AdminSecurity | `admin/AdminSecurity.tsx` | Security monitoring |
-
-### 5.3 State Management
-
-| Context | Purpose | Key State |
-|---------|---------|-----------|
-| `AuthContext` | Authentication | user, tokens, isAuthenticated |
-| `DepositContext` | Deposits | balance, transactions, modal state |
-| `ThemeProvider` | Theming | theme (light/dark/system) |
+| SportsMarketCard | `SportsMarketCard.tsx` | Premium market display with live odds |
+| DepositModal | `DepositModal.tsx` | Crypto deposit interface (QR, Copy) |
+| AssetActionModal | `AssetActionModal.tsx` | Unified asset management |
+| SettingsPage | `pages/settings/index.tsx` | User preferences & profile settings |
 
 ### 5.4 Theme System
 
-```css
-/* CSS Variables (theme.css) */
-:root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --text-primary: #1a1a2e;
-  --text-secondary: #64748b;
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --border-radius: 12px;
-}
+- **Glassmorphism**: Extensive use of `backdrop-filter: blur()` and semi-transparent backgrounds.
+- **Dark Mode First**: Colors optimized for dark themes (`bg-background` #0a0a1a) with high contrast accents.
+- **Animations**: Framer Motion used for page transitions and micro-interactions.
 
-[data-theme="dark"] {
-  --bg-primary: #0a0a1a;
-  --bg-secondary: #1a1a2e;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --accent: #8b5cf6;
+```css
+/* Tailwind Config (tailwind.config.js) */
+colors: {
+  background: "hsl(var(--background))",
+  foreground: "hsl(var(--foreground))",
+  primary: {
+    DEFAULT: "hsl(var(--primary))",
+    foreground: "hsl(var(--primary-foreground))",
+  },
+  // ...
 }
 ```
 

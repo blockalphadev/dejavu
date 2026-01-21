@@ -57,7 +57,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         try {
             const userData = await authApi.me() as User;
-            console.log('[AuthContext] User data fetched:', userData);
             setUser(userData);
         } catch (error) {
             console.error('[AuthContext] Failed to refresh user:', error);

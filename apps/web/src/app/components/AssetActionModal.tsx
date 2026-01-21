@@ -84,53 +84,133 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
     const [lastWithdrawTime, setLastWithdrawTime] = useState(0);
+    const [canRetryScanner, setCanRetryScanner] = useState(false);
 
     // Refs for anti-throttling
     const lastClickTimeRef = useRef(0);
     const scannerRef = useRef<Html5Qrcode | null>(null);
 
-    // Scanner Logic
+    // Helper function to request camera permission explicitly
+    const requestCameraPermission = async (): Promise<boolean> => {
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.warn('getUserMedia not available');
+                return true;
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+            stream.getTracks().forEach(track => track.stop());
+            return true;
+        } catch (err: any) {
+            console.error('Camera permission error:', err);
+            if (err.name === 'NotAllowedError') {
+                setScannerError('Camera permission denied. Please allow camera access in your browser settings.');
+            } else if (err.name === 'NotFoundError') {
+                setScannerError('No camera found. Please ensure your device has a camera.');
+            } else if (err.name === 'NotReadableError') {
+                setScannerError('Camera is in use by another application.');
+            } else if (err.name === 'OverconstrainedError') {
+                try {
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    fallbackStream.getTracks().forEach(track => track.stop());
+                    return true;
+                } catch {
+                    setScannerError('Camera access failed. Please try again.');
+                    return false;
+                }
+            } else {
+                setScannerError('Camera access failed. Please check permissions.');
+            }
+            return false;
+        }
+    };
+
+    // Start scanner function (can be retried)
+    const startScanner = async () => {
+        if (!asset) return;
+
+        setScannerError(null);
+        setCanRetryScanner(false);
+
+        const hasPermission = await requestCameraPermission();
+        if (!hasPermission) {
+            setCanRetryScanner(true);
+            return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        const readerElement = document.getElementById('reader-asset');
+        if (!readerElement) {
+            setScannerError('Scanner initialization failed. Please try again.');
+            setCanRetryScanner(true);
+            return;
+        }
+
+        try {
+            const scanner = new Html5Qrcode('reader-asset');
+            scannerRef.current = scanner;
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+            };
+
+            await scanner.start(
+                { facingMode: 'environment' },
+                config,
+                (decodedText) => {
+                    const cleanText = decodedText.trim();
+                    const cleanAddress = cleanText.split(':').pop() || cleanText;
+
+                    if (isValidAddress(cleanAddress, asset.chain)) {
+                        setWithdrawAddress(cleanAddress);
+                        setShowScanner(false);
+                    }
+                },
+                () => { /* ignore frame errors */ }
+            );
+        } catch (err: any) {
+            console.error('Scanner start failed:', err);
+
+            if (err.toString().includes('NotAllowedError') || err.toString().includes('Permission')) {
+                setScannerError('Camera permission denied. Please allow camera access and try again.');
+            } else if (err.toString().includes('NotFoundError') || err.toString().includes('not found')) {
+                setScannerError('No camera found on this device.');
+            } else if (err.toString().includes('NotReadableError') || err.toString().includes('in use')) {
+                setScannerError('Camera is busy. Close other apps using the camera and try again.');
+            } else {
+                setScannerError('Could not start camera. Please check permissions.');
+            }
+            setCanRetryScanner(true);
+        }
+    };
+
+    // Scanner Effect
     useEffect(() => {
         if (showScanner && asset) {
-            setScannerError(null);
-            const timer = setTimeout(() => {
-                const scanner = new Html5Qrcode("reader-asset");
-                scannerRef.current = scanner;
-
-                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-                scanner.start(
-                    { facingMode: "environment" },
-                    config,
-                    (decodedText) => {
-                        const cleanText = decodedText.trim();
-                        const cleanAddress = cleanText.split(':').pop() || cleanText;
-
-                        if (isValidAddress(cleanAddress, asset.chain)) {
-                            setWithdrawAddress(cleanAddress);
-                            setShowScanner(false);
-                            scanner.stop().then(() => scanner.clear()).catch(console.error);
-                        }
-                    },
-                    (_) => { /* ignore frame errors */ }
-                ).catch((err) => {
-                    console.error("Camera start failed", err);
-                    setScannerError("Camera access denied or not available. Please grant permission.");
-                });
-
-                return () => {
-                    if (scanner.isScanning) {
-                        scanner.stop().then(() => scanner.clear()).catch(console.error);
-                    }
-                };
-            }, 100);
-
-            return () => clearTimeout(timer);
-        } else {
-            if (scannerRef.current?.isScanning) {
-                scannerRef.current.stop().then(() => scannerRef.current?.clear()).catch(console.error);
-            }
+            startScanner();
         }
+
+        return () => {
+            if (scannerRef.current) {
+                if (scannerRef.current.isScanning) {
+                    scannerRef.current.stop()
+                        .then(() => scannerRef.current?.clear())
+                        .catch(err => console.warn('Scanner cleanup error:', err));
+                } else {
+                    try {
+                        scannerRef.current.clear();
+                    } catch (e) {
+                        // Ignore clear errors
+                    }
+                }
+                scannerRef.current = null;
+            }
+        };
     }, [showScanner, asset?.chain]);
 
     // Reset state when asset changes
@@ -478,14 +558,30 @@ export function AssetActionModal({ asset, onClose, onSuccess }: AssetActionModal
                             {scannerError ? (
                                 <div className="text-center p-4">
                                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-                                    <p className="text-red-400 font-medium">{scannerError}</p>
-                                    <Button
-                                        variant="outline"
-                                        className="mt-4 border-border text-muted-foreground hover:bg-accent"
-                                        onClick={() => setShowScanner(false)}
-                                    >
-                                        Close
-                                    </Button>
+                                    <p className="text-red-400 font-medium mb-4">{scannerError}</p>
+                                    <div className="flex gap-3 justify-center">
+                                        {canRetryScanner && (
+                                            <Button
+                                                variant="default"
+                                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                onClick={() => {
+                                                    setScannerError(null);
+                                                    setCanRetryScanner(false);
+                                                    setShowScanner(false);
+                                                    setTimeout(() => setShowScanner(true), 100);
+                                                }}
+                                            >
+                                                Try Again
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="outline"
+                                            className="border-border text-muted-foreground hover:bg-accent"
+                                            onClick={() => setShowScanner(false)}
+                                        >
+                                            Close
+                                        </Button>
+                                    </div>
                                 </div>
                             ) : (
                                 <>

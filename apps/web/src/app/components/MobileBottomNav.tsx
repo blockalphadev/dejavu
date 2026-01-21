@@ -1,16 +1,21 @@
-import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { House, Search, LayoutGrid, PieChart, Activity } from "lucide-react";
 import { useAuth } from "./auth/AuthContext";
 
-
 interface MobileBottomNavProps {
     currentTab: string;
-    activeCategory?: string;
-    onNavigate: (tab: string, category?: string) => void;
     onToggleMenu?: () => void;
 }
 
-export function MobileBottomNav({ currentTab, activeCategory, onNavigate, onToggleMenu }: MobileBottomNavProps) {
+export function MobileBottomNav({ currentTab, onToggleMenu }: MobileBottomNavProps) {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const isMarketsActive = currentTab === 'markets';
+    const isTopPicsActive = isMarketsActive && (location.pathname === '/markets/top_pics' || location.pathname === '/markets' || location.pathname === '/');
+
+    const isForYouActive = isMarketsActive && location.pathname === '/markets/for-you';
+
     const { isAuthenticated } = useAuth();
 
     return (
@@ -20,22 +25,22 @@ export function MobileBottomNav({ currentTab, activeCategory, onNavigate, onTogg
                 <BottomNavItem
                     icon={<House className="w-6 h-6" />}
                     label="Home"
-                    active={currentTab === 'markets' && activeCategory === 'top_pics'}
-                    onClick={() => onNavigate('markets', 'top_pics')}
+                    active={isTopPicsActive}
+                    onClick={() => navigate('/markets')}
                 />
 
                 <BottomNavItem
                     icon={<Search className="w-6 h-6" />}
                     label="Search"
                     active={currentTab === 'search'}
-                    onClick={() => onNavigate('search')}
+                    onClick={() => navigate('/search')}
                 />
 
                 <BottomNavItem
                     icon={<Activity className="w-6 h-6" />}
                     label="For You"
-                    active={currentTab === 'markets' && activeCategory === 'for_you'}
-                    onClick={() => onNavigate('markets', 'for_you')}
+                    active={isForYouActive}
+                    onClick={() => navigate('/markets/for-you')}
                 />
 
 
@@ -44,7 +49,7 @@ export function MobileBottomNav({ currentTab, activeCategory, onNavigate, onTogg
                         icon={<PieChart className="w-6 h-6" />}
                         label="Portfolio"
                         active={currentTab === 'dashboards'}
-                        onClick={() => onNavigate('dashboards')}
+                        onClick={() => navigate('/portfolio')}
                     />
                 ) : (
                     <BottomNavItem

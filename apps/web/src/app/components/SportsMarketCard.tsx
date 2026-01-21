@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 // import { usePredictionMarket } from '../hooks/usePredictionMarket';
 // import { useWallet } from '../hooks/useWallet';
 import { Activity, Clock, Check } from 'lucide-react';
-import { useBetSlip } from './BetSlipContext';
+import { useBetSlip } from '../contexts/BetSlipContext';
 
 // Sport-specific emoji mapping
 const SPORT_EMOJIS: Record<string, string> = {

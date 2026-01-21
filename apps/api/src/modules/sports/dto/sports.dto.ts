@@ -13,9 +13,28 @@ import { SportType, EventStatus, SportsMarketType } from '../types/sports.types.
 // Query DTOs
 // ========================
 
+// Valid sport values for sanitization
+const VALID_SPORTS = Object.values(SportType) as string[];
+
+/**
+ * Transform function to sanitize sport parameter
+ * - Converts to lowercase and trims whitespace
+ * - Returns undefined for wildcards (*, **, all, any)
+ * - Returns undefined if value is not a valid SportType
+ */
+const sanitizeSportParam = ({ value }: { value: unknown }): SportType | undefined => {
+    if (!value || typeof value !== 'string') return undefined;
+    const sanitized = value.toLowerCase().trim();
+    // Reject wildcards and invalid patterns
+    if (['*', '**', 'all', 'any', ''].includes(sanitized)) return undefined;
+    // Only return if it's a valid SportType
+    return VALID_SPORTS.includes(sanitized) ? (sanitized as SportType) : undefined;
+};
+
 export class SportsEventsQueryDto {
     @ApiPropertyOptional({ enum: SportType })
     @IsOptional()
+    @Transform(sanitizeSportParam)
     @IsEnum(SportType)
     sport?: SportType;
 
@@ -87,6 +106,7 @@ export class SportsEventsQueryDto {
 export class SportsMarketsQueryDto {
     @ApiPropertyOptional({ enum: SportType })
     @IsOptional()
+    @Transform(sanitizeSportParam)
     @IsEnum(SportType)
     sport?: SportType;
 
@@ -147,6 +167,7 @@ export class SportsMarketsQueryDto {
 export class SportsLeaguesQueryDto {
     @ApiPropertyOptional({ enum: SportType })
     @IsOptional()
+    @Transform(sanitizeSportParam)
     @IsEnum(SportType)
     sport?: SportType;
 

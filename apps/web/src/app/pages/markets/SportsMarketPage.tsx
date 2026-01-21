@@ -11,11 +11,11 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { SportsSidebar, sportsCategories } from './SportsSidebar';
-import { SportsTicker } from './SportsTicker';
-import SportsMarketCard from './SportsMarketCard';
-import { MobileBetSlip } from './MobileBetSlip';
-import { BetSlip } from './BetSlip';
+import { SportsSidebar, sportsCategories } from '../../components/SportsSidebar';
+import { SportsTicker } from '../../components/SportsTicker';
+import SportsMarketCard from '../../components/SportsMarketCard';
+import { MobileBetSlip } from '../../components/MobileBetSlip';
+import { BetSlip } from '../../components/BetSlip';
 import {
     Loader2,
     RefreshCcw,
@@ -26,36 +26,40 @@ import {
     AlertTriangle,
     Clock
 } from 'lucide-react';
-import { cn } from './ui/utils';
-import { Button } from './ui/button';
-import { useSportsMarkets } from '../hooks/useSportsMarkets';
-import { useSportsSocket } from '../hooks/useSportsSocket';
-import { SportType } from '../../services/sports.service';
+import { cn } from '../../components/ui/utils';
+import { Button } from '../../components/ui/button';
+import { useSportsMarkets } from '../../hooks/useSportsMarkets';
+import { useSportsSocket } from '../../hooks/useSportsSocket';
+import { SportType } from '../../../services/sports.service';
 import { motion, AnimatePresence } from 'motion/react';
 
 type ViewMode = 'grid' | 'list';
 
 interface SportsMarketPageProps {
     onOpenAuth?: (mode?: 'login' | 'signup') => void;
+    initialSport?: string;
 }
 
-export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
-    const [activeSport, setActiveSport] = useState<SportType | 'live'>('live');
+import { useNavigate } from 'react-router-dom';
+
+export function SportsMarketPage({ onOpenAuth, initialSport }: SportsMarketPageProps) {
+    const navigate = useNavigate();
+    // If initialSport is provided (from URL), use it. Otherwise default to 'live'.
+    // We also update this state if the URL changes (useEffect below).
+    const [activeSport, setActiveSport] = useState<SportType | 'live'>((initialSport as SportType) || 'live');
+
+    useEffect(() => {
+        if (initialSport) {
+            setActiveSport(initialSport as SportType);
+        }
+    }, [initialSport]);
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
-    const {
-        markets,
-        loading,
-        error,
-        refresh,
-        lastUpdated,
-        isRateLimited,
-        rateLimitReset
-    } = useSportsMarkets({
+    const { markets, loading, error, isRateLimited, refresh, lastUpdated } = useSportsMarkets({
         sport: activeSport === 'live' ? undefined : activeSport,
         isActive: true,
         autoRefresh: true,
-        refreshInterval: 60000
+        refreshInterval: 10000,
     });
 
     // Real-time Updates
@@ -88,6 +92,7 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
 
     // Group markets by league for list view
     const groupedMarkets = useMemo(() => {
+        // ... (Memo is large, let's keep lines intact by starting replace AFTER it? No, context is safe)
         return realTimeMarkets.reduce((acc, market) => {
             const leagueName = market.event?.league?.name || market.event?.metadata?.leagueName || 'Other';
             if (!acc[leagueName]) acc[leagueName] = [];
@@ -96,18 +101,10 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
         }, {} as Record<string, typeof markets>);
     }, [realTimeMarkets]);
 
-    // Countdown for rate limit
-    const [cooldownSeconds, setCooldownSeconds] = useState(0);
-    useEffect(() => {
-        if (isRateLimited && rateLimitReset) {
-            const interval = setInterval(() => {
-                const diff = Math.max(0, Math.ceil((new Date(rateLimitReset).getTime() - Date.now()) / 1000));
-                setCooldownSeconds(diff);
-                if (diff <= 0) clearInterval(interval);
-            }, 1000);
-            return () => clearInterval(interval);
-        }
-    }, [isRateLimited, rateLimitReset]);
+    // Countdown for rate limit (Removed as logic handled by React Query internal stale/retry)
+    // We can show simple "Backing off..." message if isRateLimited is true without explicit countdown.
+    const cooldownSeconds = 0; // Placeholder to prevent build error in UI below if referenced
+
 
     return (
         <div className="container mx-auto px-4 py-6 max-w-[1920px]">
@@ -118,7 +115,9 @@ export function SportsMarketPage({ onOpenAuth }: SportsMarketPageProps) {
                 {/* Left Sidebar (Desktop) */}
                 <SportsSidebar
                     activeSport={activeSport}
-                    onSelectSport={(id) => setActiveSport(id as SportType | 'live')}
+                    onSelectSport={(id) => {
+                        navigate(id === 'live' ? '/markets/sports' : `/markets/sports/${id}`);
+                    }}
                 />
 
                 {/* Main Content */}

@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { Settings, Download, Upload, Search, Filter, EyeOff, Eye, ArrowRight, TrendingUp, Copy } from "lucide-react";
-import { useAuth } from "./auth/AuthContext";
-import { useDeposit } from "./DepositContext";
-import { ProfileButton } from "./ProfileButton";
-import { WithdrawModal } from "./WithdrawModal";
-import { Button } from "./ui/button";
-import { AssetActionModal } from "./AssetActionModal";
+import { useAuth } from "../../components/auth/AuthContext";
+import { useDeposit } from "../../contexts/DepositContext";
+import { ProfileButton } from "../../components/ProfileButton";
+import { WithdrawModal } from "../../components/WithdrawModal";
+import { Button } from "../../components/ui/button";
+import { AssetActionModal } from "../../components/AssetActionModal";
 
 export function PortfolioPage() {
     const { user, isAuthenticated } = useAuth();
