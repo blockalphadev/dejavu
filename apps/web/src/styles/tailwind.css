@@ -1,5 +1,4 @@
-@import 'tailwindcss' source(none);
-@source '../**/*.{js,ts,jsx,tsx}';
+@import 'tailwindcss';
 
 @import 'tw-animate-css';
 
@@ -14,7 +13,7 @@ html {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -55,7 +54,7 @@ html {
     padding-top: 100%;
   }
 
-  .aspect-ratio-box > * {
+  .aspect-ratio-box>* {
     position: absolute;
     top: 0;
     left: 0;

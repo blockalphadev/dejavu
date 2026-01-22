@@ -25,7 +25,7 @@ export function CategoryNav({ activeCategory, onSelectCategory }: CategoryNavPro
             <div className="container mx-auto px-4">
                 <div
                     ref={scrollRef}
-                    className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 mask-linear-fade"
+                    className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 mask-linear-fade lg:pl-24"
                 >
                     {CATEGORIES.map((cat) => {
                         const Icon = cat.icon;
