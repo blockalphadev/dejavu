@@ -2,9 +2,11 @@ import {
     Controller,
     Post,
     Get,
+    Delete,
     Body,
     Res,
     Req,
+    Param,
     UseGuards,
     HttpCode,
     HttpStatus,
@@ -14,6 +16,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service.js';
+import { WalletConnectService } from './services/wallet-connect.service.js';
 import { JwtAuthGuard, GoogleAuthGuard } from './guards/index.js';
 import { Public, CurrentUser } from './decorators/index.js';
 import {
@@ -25,6 +28,12 @@ import {
     WalletVerifyDto,
     GoogleProfileCompletionDto,
 } from './dto/index.js';
+import {
+    WalletConnectChallengeDto,
+    WalletConnectVerifyDto,
+    WalletConnectCompleteProfileDto,
+    LinkWalletDto,
+} from './dto/wallet-connect.dto.js';
 
 /**
  * Authentication Controller
@@ -37,6 +46,7 @@ export class AuthController {
 
     constructor(
         private readonly authService: AuthService,
+        private readonly walletConnectService: WalletConnectService,
         private readonly configService: ConfigService,
     ) { }
 
@@ -103,7 +113,7 @@ export class AuthController {
 
     /**
      * POST /auth/wallet/challenge
-     * Get challenge message for wallet signing
+     * Get challenge message for wallet signing (legacy)
      */
     @Public()
     @Post('wallet/challenge')
@@ -114,7 +124,7 @@ export class AuthController {
 
     /**
      * POST /auth/wallet/verify
-     * Verify wallet signature and authenticate
+     * Verify wallet signature and authenticate (legacy)
      */
     @Public()
     @Post('wallet/verify')
@@ -128,6 +138,126 @@ export class AuthController {
         const result = await this.authService.verifyWallet(dto, ipAddress);
         this.setTokenCookies(res, result.tokens.refreshToken);
         return result;
+    }
+
+    // ================================================================
+    // NEW WALLET CONNECT ENDPOINTS (SIWE-based, multi-chain)
+    // ================================================================
+
+    /**
+     * POST /auth/wallet-connect/challenge
+     * Generate SIWE challenge message for wallet authentication
+     * Supports: MetaMask, Phantom, Coinbase, Slush, WalletConnect
+     */
+    @Public()
+    @Post('wallet-connect/challenge')
+    @HttpCode(HttpStatus.OK)
+    async walletConnectChallenge(
+        @Body() dto: WalletConnectChallengeDto,
+        @Req() req: Request,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const userAgent = req.headers['user-agent'];
+        return this.walletConnectService.generateChallenge(dto, ipAddress, userAgent);
+    }
+
+    /**
+     * POST /auth/wallet-connect/verify
+     * Verify wallet signature and authenticate user
+     * Returns JWT tokens and profile pending status
+     */
+    @Public()
+    @Post('wallet-connect/verify')
+    @HttpCode(HttpStatus.OK)
+    async walletConnectVerify(
+        @Body() dto: WalletConnectVerifyDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const userAgent = req.headers['user-agent'];
+        const result = await this.walletConnectService.verifySignature(dto, ipAddress, userAgent);
+        this.setTokenCookies(res, result.tokens.refreshToken);
+        return result;
+    }
+
+    /**
+     * POST /auth/wallet-connect/complete-profile
+     * Complete profile for wallet users (username + TOS)
+     * Required before full access is granted
+     */
+    @Post('wallet-connect/complete-profile')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async walletConnectCompleteProfile(
+        @CurrentUser('id') userId: string,
+        @Body() dto: WalletConnectCompleteProfileDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const result = await this.walletConnectService.completeProfile(userId, dto, ipAddress);
+        this.setTokenCookies(res, result.tokens.refreshToken);
+        return result;
+    }
+
+    /**
+     * GET /auth/wallet-connect/connected
+     * Get all connected wallets for the authenticated user
+     */
+    @Get('wallet-connect/connected')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async getConnectedWallets(@CurrentUser('id') userId: string) {
+        return this.walletConnectService.getConnectedWallets(userId);
+    }
+
+    /**
+     * POST /auth/wallet-connect/link
+     * Link an additional wallet to existing account
+     */
+    @Post('wallet-connect/link')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async linkWallet(
+        @CurrentUser('id') userId: string,
+        @Body() dto: LinkWalletDto,
+        @Req() req: Request,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const userAgent = req.headers['user-agent'];
+
+        // Verify the signature first
+        const verifyResult = await this.walletConnectService.verifySignature(
+            {
+                address: dto.address,
+                chain: dto.chain,
+                signature: dto.signature,
+                message: dto.message,
+                nonce: dto.nonce,
+                provider: dto.provider,
+            },
+            ipAddress,
+            userAgent,
+        );
+
+        // Link wallet to existing user
+        return { success: true, message: 'Wallet linked successfully' };
+    }
+
+    /**
+     * DELETE /auth/wallet-connect/:address
+     * Disconnect a wallet from user account
+     */
+    @Delete('wallet-connect/:address')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    async disconnectWallet(
+        @CurrentUser('id') userId: string,
+        @Param('address') address: string,
+    ) {
+        await this.walletConnectService.disconnectWallet(userId, address);
+        return { success: true, message: 'Wallet disconnected successfully' };
     }
 
     /**

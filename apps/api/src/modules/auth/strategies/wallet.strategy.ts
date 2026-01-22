@@ -122,12 +122,17 @@ Domain: ${domain}`;
             const signatureBytes = bs58.decode(signature);
             const messageBytes = new TextEncoder().encode(message);
 
+            // Log details for debugging
+            this.logger.log(`Verifying Solana: AddrLen=${publicKeyBytes.length}, SigLen=${signatureBytes.length}, MsgLen=${messageBytes.length}`);
+
             // Verify using nacl
             const isValid = nacl.sign.detached.verify(
                 messageBytes,
                 signatureBytes,
                 publicKeyBytes,
             );
+
+            if (!isValid) this.logger.warn(`Solana verification returned false`);
 
             return {
                 isValid,
@@ -136,11 +141,12 @@ Domain: ${domain}`;
                 error: isValid ? undefined : 'Invalid Solana signature',
             };
         } catch (error) {
+            this.logger.error(`Solana verify error: ${error}`);
             return {
                 isValid: false,
                 address,
                 chain: 'solana',
-                error: 'Invalid Solana signature format',
+                error: `Invalid Solana signature format: ${error}`,
             };
         }
     }
@@ -149,50 +155,40 @@ Domain: ${domain}`;
      * Verify Sui signatures
      * Note: Sui uses Ed25519 similar to Solana
      */
-    private verifySui(
+    /**
+     * Verify Sui signatures
+     * Uses @mysten/sui.js to handle Personal Message Intent verification
+     */
+    private async verifySui(
         address: string,
         signature: string,
         message: string,
-    ): WalletVerificationResult {
+    ): Promise<WalletVerificationResult> {
         try {
-            // Sui addresses are different from public keys
-            // For production, use @mysten/sui.js for proper verification
-            // This is a simplified verification
-            const signatureBytes = Buffer.from(signature, 'base64');
+            const { verifyPersonalMessage } = await import('@mysten/sui.js/verify');
             const messageBytes = new TextEncoder().encode(message);
 
-            // Extract public key from signature (last 32 bytes in Ed25519 scheme)
-            // Sui signatures include scheme flag + signature + public key
-            if (signatureBytes.length < 65) {
-                return {
-                    isValid: false,
-                    address,
-                    chain: 'sui',
-                    error: 'Invalid Sui signature length',
-                };
-            }
+            // Verify signature and get public key (handles Base64 signature parsing internally)
+            const publicKey = await verifyPersonalMessage(messageBytes, signature);
 
-            const publicKeyBytes = signatureBytes.slice(-32);
-            const sigBytes = signatureBytes.slice(1, 65);
+            // Recover address
+            const recoveredAddress = publicKey.toSuiAddress();
 
-            const isValid = nacl.sign.detached.verify(
-                messageBytes,
-                sigBytes,
-                publicKeyBytes,
-            );
+            const isValid = recoveredAddress === address;
 
             return {
                 isValid,
-                address,
+                address: recoveredAddress,
                 chain: 'sui',
-                error: isValid ? undefined : 'Invalid Sui signature',
+                error: isValid ? undefined : 'Signature does not match address',
             };
         } catch (error) {
+            this.logger.error(`Sui verify error: ${error}`);
             return {
                 isValid: false,
                 address,
                 chain: 'sui',
-                error: 'Invalid Sui signature format',
+                error: `Invalid Sui signature: ${error instanceof Error ? error.message : String(error)}`,
             };
         }
     }

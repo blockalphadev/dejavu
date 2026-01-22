@@ -9,6 +9,7 @@ import { JwtAuthGuard, CsrfGuard } from './guards/index.js';
 import { UsersModule } from '../users/users.module.js';
 import { PasswordValidator } from './validators/index.js';
 import { TokenBlacklistService, SecurityEventService } from './services/index.js';
+import { WalletConnectService } from './services/wallet-connect.service.js';
 
 @Module({
     imports: [
@@ -28,6 +29,7 @@ import { TokenBlacklistService, SecurityEventService } from './services/index.js
     controllers: [AuthController],
     providers: [
         AuthService,
+        WalletConnectService,
         JwtStrategy,
         GoogleStrategy,
         WalletStrategy,
@@ -39,6 +41,7 @@ import { TokenBlacklistService, SecurityEventService } from './services/index.js
     ],
     exports: [
         AuthService,
+        WalletConnectService,
         JwtAuthGuard,
         CsrfGuard,
         PasswordValidator,

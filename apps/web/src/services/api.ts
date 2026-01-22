@@ -328,6 +328,138 @@ export const authApi = {
 };
 
 // ============================================
+// Wallet Auth API (SIWE-based multi-chain)
+// ============================================
+
+export interface WalletChallengeResponse {
+    message: string;
+    nonce: string;
+    issuedAt: string;
+    expiresAt: string;
+    domain: string;
+}
+
+export interface WalletAuthResponse {
+    user: {
+        id: string;
+        email?: string;
+        username?: string;
+        fullName?: string;
+        avatarUrl?: string;
+        bio?: string;
+        walletAddresses?: Array<{ address: string; chain: string }>;
+    };
+    tokens: AuthTokens;
+    profilePending: boolean;
+    wallet: {
+        address: string;
+        chain: string;
+        provider?: string;
+    };
+}
+
+export interface ConnectedWallet {
+    id: string;
+    address: string;
+    chain: string;
+    provider: string;
+    label?: string;
+    isPrimary: boolean;
+    isVerified: boolean;
+    verifiedAt?: string;
+    createdAt: string;
+}
+
+export const walletAuthApi = {
+    /**
+     * Get SIWE challenge message for wallet authentication
+     */
+    async getChallenge(
+        address: string,
+        chain: string,
+        provider?: string,
+    ): Promise<WalletChallengeResponse> {
+        return apiRequest('/auth/wallet-connect/challenge', {
+            method: 'POST',
+            body: { address, chain, provider },
+        });
+    },
+
+    /**
+     * Verify wallet signature and authenticate
+     */
+    async verify(data: {
+        address: string;
+        chain: string;
+        signature: string;
+        message: string;
+        nonce: string;
+        provider?: string;
+    }): Promise<WalletAuthResponse> {
+        const response = await apiRequest<WalletAuthResponse>('/auth/wallet-connect/verify', {
+            method: 'POST',
+            body: data,
+        });
+        setAccessToken(response.tokens.accessToken, response.tokens.expiresIn);
+        setRefreshToken(response.tokens.refreshToken);
+        return response;
+    },
+
+    /**
+     * Complete profile for wallet users (username + TOS)
+     */
+    async completeProfile(data: {
+        username: string;
+        fullName?: string;
+        agreeToTerms: boolean;
+        agreeToPrivacy: boolean;
+    }): Promise<WalletAuthResponse> {
+        const response = await apiRequest<WalletAuthResponse>('/auth/wallet-connect/complete-profile', {
+            method: 'POST',
+            body: data,
+        });
+        setAccessToken(response.tokens.accessToken, response.tokens.expiresIn);
+        setRefreshToken(response.tokens.refreshToken);
+        return response;
+    },
+
+    /**
+     * Get all connected wallets for current user
+     */
+    async getConnectedWallets(): Promise<ConnectedWallet[]> {
+        return apiRequest('/auth/wallet-connect/connected');
+    },
+
+    /**
+     * Link additional wallet to current account
+     */
+    async linkWallet(data: {
+        address: string;
+        chain: string;
+        signature: string;
+        message: string;
+        nonce: string;
+        label?: string;
+        isPrimary?: boolean;
+        provider?: string;
+    }): Promise<{ success: boolean; message: string }> {
+        return apiRequest('/auth/wallet-connect/link', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    /**
+     * Disconnect a wallet from current account
+     */
+    async disconnectWallet(address: string): Promise<{ success: boolean; message: string }> {
+        return apiRequest(`/auth/wallet-connect/${encodeURIComponent(address)}`, {
+            method: 'DELETE',
+        });
+    },
+};
+
+// ============================================
 // Dashboard API
 // ============================================
 

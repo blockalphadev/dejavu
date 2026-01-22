@@ -1,10 +1,25 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Dialog, DialogContent } from '../ui/dialog';
+import { useState, useEffect, useCallback } from 'react';
+import { X, AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { AuthIcons } from './AuthIcons';
 import { SocialButton } from './SocialButton';
 import { WalletOption } from './WalletOption';
 import { EmailForm } from './EmailForm';
+import { WalletProfileModal } from './WalletProfileModal';
+import { useAuth } from './AuthContext';
+import {
+    WalletProvider,
+    WalletChain,
+    getWalletAdapter,
+    MetaMaskAdapter,
+    PhantomAdapter,
+    CoinbaseAdapter,
+    isMessageSafe,
+} from '../../../services/walletAdapters';
+import { walletAuthApi } from '../../../services/api';
+import { useConnectWallet, useWallets, useSignPersonalMessage, useCurrentAccount } from '@mysten/dapp-kit';
+import { useAppKit } from '@reown/appkit/react';
+import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
 
 
 interface AuthModalProps {
@@ -13,32 +28,251 @@ interface AuthModalProps {
     initialMode?: 'login' | 'signup';
 }
 
-type AuthView = 'MAIN' | 'EMAIL' | 'WALLET_CONNECTING';
+type AuthView = 'MAIN' | 'EMAIL' | 'WALLET_CONNECTING' | 'WALLET_SIGNING' | 'WALLET_ERROR' | 'WALLET_SUCCESS';
+
+interface WalletState {
+    provider: WalletProvider;
+    address: string;
+    chain: WalletChain;
+    challenge?: {
+        message: string;
+        nonce: string;
+        expiresAt: string;
+    };
+    error?: string;
+}
 
 export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
+    const { refreshUser } = useAuth();
     const [view, setView] = useState<AuthView>('MAIN');
-    const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
+    const [walletState, setWalletState] = useState<WalletState | null>(null);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+
+    // SUI SDK Hooks
+    const { mutateAsync: connectSui } = useConnectWallet();
+    const { mutateAsync: signSuiMessage } = useSignPersonalMessage();
+    const suiWallets = useWallets();
+    const currentSuiAccount = useCurrentAccount();
+
+    // AppKit / Wagmi Hooks (WalletConnect)
+    const { open } = useAppKit();
+    const { address: wagmiAddress, isConnected: isWagmiConnected } = useAccount();
+    const { signMessageAsync } = useSignMessage();
+    const { disconnect: disconnectWagmi } = useDisconnect();
 
     // Reset state on close
     useEffect(() => {
         if (!isOpen) {
             setTimeout(() => {
                 setView('MAIN');
-                setConnectingWallet(null);
-            }, 300); // Wait for exit animation
+                setWalletState(null);
+            }, 300);
         }
     }, [isOpen]);
 
-    const handleWalletConnect = (walletName: string) => {
-        setConnectingWallet(walletName);
+    // Handle WalletConnect detection
+    useEffect(() => {
+        if (view === 'WALLET_CONNECTING' && walletState?.provider === 'walletconnect' && isWagmiConnected && wagmiAddress) {
+            const initWalletConnectSession = async () => {
+                try {
+                    setWalletState(prev => ({ ...prev!, address: wagmiAddress, chain: 'ethereum' }));
+
+                    // Get SIWE challenge
+                    const challenge = await walletAuthApi.getChallenge(wagmiAddress, 'ethereum', 'walletconnect');
+
+                    // Safety check
+                    const safetyCheck = isMessageSafe(challenge.message);
+                    if (!safetyCheck.safe) console.warn(safetyCheck.issues);
+
+                    setWalletState(prev => ({
+                        ...prev!,
+                        address: wagmiAddress,
+                        challenge: {
+                            message: challenge.message,
+                            nonce: challenge.nonce,
+                            expiresAt: challenge.expiresAt
+                        }
+                    }));
+                    setView('WALLET_SIGNING');
+                } catch (error) {
+                    console.error('WalletConnect init error:', error);
+                    setWalletState(prev => prev ? { ...prev, error: 'Failed to initialize session' } : null);
+                    setView('WALLET_ERROR');
+                }
+            };
+            initWalletConnectSession();
+        }
+    }, [isWagmiConnected, wagmiAddress, view, walletState?.provider]);
+
+    /**
+     * Handle wallet connection - uses real adapters
+     */
+    const handleWalletConnect = useCallback(async (providerName: string) => {
+        // Map display names to adapter names
+        const providerMap: Record<string, WalletProvider> = {
+            'Metamask': 'metamask',
+            'Phantom': 'phantom',
+            'Coinbase': 'coinbase',
+            'Slush': 'slush',
+            'WalletConnect': 'walletconnect',
+        };
+        const provider = providerMap[providerName] || providerName.toLowerCase() as WalletProvider;
+
+        setWalletState({ provider, address: '', chain: 'ethereum' });
         setView('WALLET_CONNECTING');
 
-        // Simulate connection
-        setTimeout(() => {
-            onClose();
-            // Here you would trigger actual global login success
-        }, 2000);
-    };
+        try {
+            let address = '';
+            let chain: WalletChain = 'ethereum';
+
+            // Special handling for Slush (SUI) via SDK
+
+
+            // ... Re-implementing logic with checks
+
+            if (provider === 'walletconnect') {
+                await open();
+                // Wait for effect to pick up connection
+                return;
+            }
+
+            if (provider === 'slush') {
+                // Find Slush or any SUI wallet
+                const targetWallet = suiWallets.find(w => w.name.toLowerCase().includes('slush'))
+                    || suiWallets.find(w => w.name.toLowerCase().includes('sui'))
+                    || suiWallets[0];
+
+                if (!targetWallet) {
+                    throw new Error('Slush Wallet (or compatible SUI wallet) not detected. Please install it.');
+                }
+
+                await connectSui({ wallet: targetWallet });
+
+                // Get address from account
+                address = targetWallet.accounts[0]?.address;
+                if (!address && currentSuiAccount) address = currentSuiAccount.address;
+
+                if (!address) throw new Error('Failed to get SUI address');
+                chain = 'sui';
+            } else {
+                // Standard Adapters for Phase 1
+                const adapter = getWalletAdapter(provider);
+                if (!adapter) {
+                    throw new Error(`Unknown wallet: ${provider}`);
+                }
+
+                // Check if installed (except WalletConnect)
+                if (!adapter.isInstalled()) {
+                    throw new Error(`${adapter.displayName} is not installed. Please install the extension.`);
+                }
+
+                // Connect to wallet
+                address = await adapter.connect();
+                chain = await adapter.getChain() || (provider === 'phantom' ? 'solana' : 'ethereum');
+            }
+
+            // Get SIWE challenge from backend
+            const challenge = await walletAuthApi.getChallenge(address, chain, provider);
+
+            // Validate message is safe (anti-drain)
+            const safetyCheck = isMessageSafe(challenge.message);
+            if (!safetyCheck.safe) {
+                console.warn('Challenge message safety issues:', safetyCheck.issues);
+            }
+
+            setWalletState({
+                provider,
+                address,
+                chain,
+                challenge: {
+                    message: challenge.message,
+                    nonce: challenge.nonce,
+                    expiresAt: challenge.expiresAt,
+                },
+            });
+            setView('WALLET_SIGNING');
+
+        } catch (error) {
+            console.error('Wallet connection error:', error);
+            const message = error instanceof Error ? error.message : 'Failed to connect wallet';
+            setWalletState(prev => prev ? { ...prev, error: message } : null);
+            setView('WALLET_ERROR');
+        }
+    }, [suiWallets, connectSui, currentSuiAccount, open]);
+
+    /**
+     * Handle signature and verification
+     */
+    const handleSign = useCallback(async () => {
+        if (!walletState?.challenge) return;
+
+        setView('WALLET_CONNECTING');
+
+        try {
+            let signature = '';
+
+            if (walletState.provider === 'slush') {
+                const messageBytes = new TextEncoder().encode(walletState.challenge.message);
+                const result = await signSuiMessage({ message: messageBytes });
+                signature = result.signature;
+            } else if (walletState.provider === 'walletconnect') {
+                signature = await signMessageAsync({ message: walletState.challenge.message });
+            } else {
+                const adapter = getWalletAdapter(walletState.provider);
+                if (!adapter) throw new Error('Wallet not available');
+                signature = await adapter.signMessage(walletState.challenge.message);
+            }
+
+            // Verify with backend
+            const result = await walletAuthApi.verify({
+                address: walletState.address,
+                chain: walletState.chain,
+                signature,
+                message: walletState.challenge.message,
+                nonce: walletState.challenge.nonce,
+                provider: walletState.provider,
+            });
+
+            // Check if profile completion is needed
+            if (result.profilePending) {
+                setView('WALLET_SUCCESS');
+                setTimeout(() => {
+                    onClose();
+                    setShowProfileModal(true);
+                }, 1000);
+            } else {
+                // Refresh user context
+                await refreshUser();
+                setView('WALLET_SUCCESS');
+                setTimeout(() => {
+                    onClose();
+                }, 1500);
+            }
+
+        } catch (error) {
+            console.error('Signing error:', error);
+            const message = error instanceof Error ? error.message : 'Failed to verify signature';
+            setWalletState(prev => prev ? { ...prev, error: message } : null);
+            setView('WALLET_ERROR');
+        }
+    }, [walletState, refreshUser, onClose, signSuiMessage]);
+
+    /**
+     * Handle retry after error
+     */
+    const handleRetry = useCallback(() => {
+        if (walletState?.provider === 'walletconnect') disconnectWagmi();
+        setWalletState(null);
+        setView('MAIN');
+    }, [walletState?.provider, disconnectWagmi]);
+
+    /**
+     * Handle profile completion modal close
+     */
+    const handleProfileComplete = useCallback(async () => {
+        setShowProfileModal(false);
+        await refreshUser();
+    }, [refreshUser]);
 
     const renderContent = () => {
         if (view === 'EMAIL') {
@@ -46,22 +280,108 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         }
 
         if (view === 'WALLET_CONNECTING') {
+            const displayName = walletState?.provider
+                ? getWalletAdapter(walletState.provider)?.displayName || walletState.provider
+                : 'wallet';
+
             return (
                 <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in duration-300">
                     <div className="relative w-20 h-20 mb-6">
                         <div className="absolute inset-0 rounded-full border-4 border-accent/30 animate-pulse" />
                         <div className="absolute inset-0 rounded-full border-t-4 border-primary animate-spin" />
                         <div className="absolute inset-2 bg-card rounded-full flex items-center justify-center p-3">
-                            {connectingWallet === 'Metamask' && <AuthIcons.Metamask className="w-full h-full" />}
-                            {connectingWallet === 'Phantom' && <AuthIcons.Phantom className="w-full h-full" />}
-                            {connectingWallet === 'Slush' && <AuthIcons.Slush className="w-full h-full" />}
-                            {connectingWallet === 'Solflare' && <AuthIcons.Solflare className="w-full h-full" />}
-                            {connectingWallet === 'Coinbase' && <AuthIcons.Coinbase className="w-full h-full" />}
-                            {connectingWallet === 'WalletConnect' && <AuthIcons.WalletConnect className="w-full h-full" />}
+                            {walletState?.provider === 'metamask' && <AuthIcons.Metamask className="w-full h-full" />}
+                            {walletState?.provider === 'phantom' && <AuthIcons.Phantom className="w-full h-full" />}
+                            {walletState?.provider === 'slush' && <AuthIcons.Slush className="w-full h-full" />}
+                            {walletState?.provider === 'coinbase' && <AuthIcons.Coinbase className="w-full h-full" />}
+                            {walletState?.provider === 'walletconnect' && <AuthIcons.WalletConnect className="w-full h-full" />}
                         </div>
                     </div>
-                    <h3 className="text-lg font-bold">Connecting to {connectingWallet}...</h3>
+                    <h3 className="text-lg font-bold">Connecting to {displayName}...</h3>
                     <p className="text-muted-foreground text-sm mt-2">Please approve the request in your wallet.</p>
+                </div>
+            );
+        }
+
+        if (view === 'WALLET_SIGNING') {
+            const shortAddress = walletState?.address
+                ? `${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}`
+                : '';
+
+            return (
+                <div className="flex flex-col items-center py-8 animate-in fade-in zoom-in duration-300">
+                    <div className="w-16 h-16 mb-4 rounded-full bg-accent/50 flex items-center justify-center">
+                        {walletState?.provider === 'metamask' && <AuthIcons.Metamask className="w-10 h-10" />}
+                        {walletState?.provider === 'phantom' && <AuthIcons.Phantom className="w-10 h-10" />}
+                        {walletState?.provider === 'slush' && <AuthIcons.Slush className="w-10 h-10" />}
+                        {walletState?.provider === 'coinbase' && <AuthIcons.Coinbase className="w-10 h-10" />}
+                        {walletState?.provider === 'walletconnect' && <AuthIcons.WalletConnect className="w-10 h-10" />}
+                    </div>
+
+                    <h3 className="text-lg font-bold mb-1">Sign Message</h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                        Connected: <span className="font-mono">{shortAddress}</span>
+                    </p>
+
+                    {/* Message Preview */}
+                    <div className="w-full bg-accent/30 rounded-lg p-4 mb-4 max-h-40 overflow-y-auto">
+                        <p className="text-xs text-muted-foreground font-mono whitespace-pre-wrap break-all">
+                            {walletState?.challenge?.message || 'Loading...'}
+                        </p>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground text-center mb-4">
+                        This will NOT trigger a blockchain transaction or cost any gas fees.
+                    </p>
+
+                    <button
+                        onClick={handleSign}
+                        className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors"
+                    >
+                        Sign Message to Login
+                    </button>
+
+                    <button
+                        onClick={handleRetry}
+                        className="mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Use different wallet
+                    </button>
+                </div>
+            );
+        }
+
+        if (view === 'WALLET_ERROR') {
+            return (
+                <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in duration-300">
+                    <div className="w-16 h-16 mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <AlertCircle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Connection Failed</h3>
+                    <p className="text-muted-foreground text-sm text-center mb-6 max-w-xs">
+                        {walletState?.error || 'Something went wrong. Please try again.'}
+                    </p>
+                    <button
+                        onClick={handleRetry}
+                        className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            );
+        }
+
+        if (view === 'WALLET_SUCCESS') {
+            return (
+                <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in duration-300">
+                    <div className="w-16 h-16 mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+                        <CheckCircle className="w-8 h-8 text-green-500" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Connected!</h3>
+                    <p className="text-muted-foreground text-sm">
+                        Redirecting...
+                    </p>
                 </div>
             );
         }
@@ -86,7 +406,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                         variant="solid"
                         className="bg-white text-black hover:bg-gray-100 border-none shadow-md shadow-gray-200/10 dark:shadow-none"
                         onClick={() => {
-                            // Redirect to backend Google OAuth endpoint
                             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
                             window.location.href = `${apiUrl}/auth/google`;
                         }}
@@ -108,27 +427,32 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             icon={<AuthIcons.Metamask />}
                             name="Metamask"
                             recommended
+                            installed={MetaMaskAdapter.isInstalled()}
                             onClick={() => handleWalletConnect('Metamask')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Phantom />}
                             name="Phantom"
+                            installed={PhantomAdapter.isInstalled()}
                             onClick={() => handleWalletConnect('Phantom')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Coinbase />}
                             name="Coinbase"
+                            installed={CoinbaseAdapter.isInstalled()}
                             onClick={() => handleWalletConnect('Coinbase')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Slush />}
                             name="Slush"
+                            installed={true}
                             onClick={() => handleWalletConnect('Slush')}
                         />
                         <WalletOption
                             icon={<AuthIcons.WalletConnect />}
                             name="WalletConnect"
                             className="col-span-2"
+                            installed={true}
                             onClick={() => handleWalletConnect('WalletConnect')}
                         />
                     </div>
@@ -144,7 +468,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
                 <div className="flex items-center justify-center px-4 mt-2">
                     <p className="text-[11px] text-muted-foreground/60 text-center leading-tight">
-                        By continuing, you agree to our <a href="#" className="underline hover:text-foreground relative z-10">Terms of Service</a> and <a href="#" className="underline hover:text-foreground relative z-10">Privacy Policy</a>.
+                        By continuing, you agree to our <a href="/terms" className="underline hover:text-foreground relative z-10">Terms of Service</a> and <a href="/privacy" className="underline hover:text-foreground relative z-10">Privacy Policy</a>.
                     </p>
                 </div>
             </div>
@@ -152,30 +476,44 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden bg-background/80 backdrop-blur-xl border-white/10 shadow-2xl duration-300 [&>button]:hidden ring-1 ring-white/5">
-                {/* Close button - absolute for styling */}
-                {/* Close button - absolute for styling */}
-                <div className="absolute right-4 top-4 z-50">
-                    <button
-                        onClick={onClose}
-                        className="rounded-full p-2 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground cursor-pointer ring-1 ring-inset ring-black/5 dark:ring-white/5"
-                        aria-label="Close"
-                    >
-                        <X className="h-5 w-5" />
-                        <span className="sr-only">Close</span>
-                    </button>
-                </div>
+        <>
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden bg-background/80 backdrop-blur-xl border-white/10 shadow-2xl duration-300 [&>button]:hidden ring-1 ring-white/5">
+                    <DialogTitle className="sr-only">Authentication</DialogTitle>
+                    <DialogDescription className="sr-only">Sign in or create an account to access DeJaVu.</DialogDescription>
 
-                {/* Animated Gradient Background Effect */}
-                <div className="absolute top-0 left-0 w-full h-[180px] bg-gradient-to-b from-blue-500/10 via-purple-500/10 to-transparent pointer-events-none" />
-                <div className="absolute -top-[100px] -left-[100px] w-[200px] h-[200px] bg-blue-500/20 blur-[100px] rounded-full pointer-events-none" />
-                <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-purple-500/20 blur-[80px] rounded-full pointer-events-none" />
+                    {/* Close button */}
+                    <div className="absolute right-4 top-4 z-50">
+                        <button
+                            onClick={onClose}
+                            className="rounded-full p-2 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 transition-all text-muted-foreground hover:text-foreground cursor-pointer ring-1 ring-inset ring-black/5 dark:ring-white/5"
+                            aria-label="Close"
+                        >
+                            <X className="h-5 w-5" />
+                            <span className="sr-only">Close</span>
+                        </button>
+                    </div>
 
-                <div className="p-8 pb-10 relative">
-                    {renderContent()}
-                </div>
-            </DialogContent>
-        </Dialog>
+                    {/* Animated Gradient Background Effect */}
+                    <div className="absolute top-0 left-0 w-full h-[180px] bg-gradient-to-b from-blue-500/10 via-purple-500/10 to-transparent pointer-events-none" />
+                    <div className="absolute -top-[100px] -left-[100px] w-[200px] h-[200px] bg-blue-500/20 blur-[100px] rounded-full pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-purple-500/20 blur-[80px] rounded-full pointer-events-none" />
+
+                    <div className="p-8 pb-10 relative">
+                        {renderContent()}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Profile Completion Modal */}
+            <WalletProfileModal
+                isOpen={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
+                onComplete={handleProfileComplete}
+                walletAddress={walletState?.address}
+                walletChain={walletState?.chain}
+            />
+        </>
     );
 }
+

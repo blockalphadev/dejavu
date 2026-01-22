@@ -16,6 +16,8 @@ import { DepositModal } from "../components/DepositModal";
 import { AuthModal } from "../components/auth/AuthModal";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ChevronLeft } from "lucide-react";
+import { SuiProvider } from "../../providers/SuiProvider";
+import { AppKitProvider } from "../../providers/AppKitProvider";
 
 // Privy configuration for embedded wallets
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
@@ -138,15 +140,19 @@ export function RootLayout() {
     const content = (
         <ErrorBoundary>
             <ThemeProvider>
-                <AuthProvider>
-                    <DepositProvider>
-                        <BetSlipProvider>
-                            <AdminProvider>
-                                <RootLayoutContent />
-                            </AdminProvider>
-                        </BetSlipProvider>
-                    </DepositProvider>
-                </AuthProvider>
+                <SuiProvider>
+                    <AppKitProvider>
+                        <AuthProvider>
+                            <DepositProvider>
+                                <BetSlipProvider>
+                                    <AdminProvider>
+                                        <RootLayoutContent />
+                                    </AdminProvider>
+                                </BetSlipProvider>
+                            </DepositProvider>
+                        </AuthProvider>
+                    </AppKitProvider>
+                </SuiProvider>
             </ThemeProvider>
         </ErrorBoundary>
     );
