@@ -2,6 +2,10 @@
   command = "npx turbo build --filter=@dejavu/web"
   publish = "apps/web/dist"
 
+[build.environment]
+  NODE_OPTIONS = "--max-old-space-size=4096"
+  GENERATE_SOURCEMAP = "false"
+
 # Proxy for Polymarket API to match vite.config.ts dev proxy
 # This prevents CORS issues and maintains the same API path structure in production
 [[redirects]]
