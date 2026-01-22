@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { AuthIcons } from './AuthIcons';
 import { SocialButton } from './SocialButton';
@@ -18,6 +18,7 @@ type AuthView = 'MAIN' | 'EMAIL' | 'WALLET_CONNECTING';
 export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
     const [view, setView] = useState<AuthView>('MAIN');
     const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
+    const [agreed, setAgreed] = useState(false);
 
     // Reset state on close
     useEffect(() => {
@@ -85,7 +86,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                         icon={<AuthIcons.Google />}
                         variant="solid"
                         className="bg-white text-black hover:bg-gray-100 border-none shadow-md shadow-gray-200/10 dark:shadow-none"
+                        disabled={!agreed}
                         onClick={() => {
+                            if (!agreed) return;
                             // Redirect to backend Google OAuth endpoint
                             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
                             window.location.href = `${apiUrl}/auth/google`;
@@ -142,9 +145,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     </SocialButton>
                 </div>
 
-                <p className="text-[11px] text-muted-foreground/80 text-center leading-tight mx-auto max-w-[280px] mt-4">
-                    By continuing, you agree to our <a href="#" className="underline hover:text-foreground relative z-10" onClick={(e) => e.stopPropagation()}>Terms of Service</a> and <a href="#" className="underline hover:text-foreground relative z-10" onClick={(e) => e.stopPropagation()}>Privacy Policy</a>.
-                </p>
+                <div className="flex items-start gap-3 px-4 py-2 mt-2 group cursor-pointer" onClick={() => setAgreed(!agreed)}>
+                    <div className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-200 ${agreed ? 'bg-primary border-primary' : 'border-muted-foreground/30 bg-accent/10 group-hover:border-primary/50'}`}>
+                        {agreed && <Check className="w-3.5 h-3.5 text-primary-foreground stroke-[3px]" />}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground/80 leading-tight flex-1 select-none">
+                        By continuing, you agree to our <a href="#" className="underline hover:text-foreground relative z-10" onClick={(e) => e.stopPropagation()}>Terms of Service</a> and <a href="#" className="underline hover:text-foreground relative z-10" onClick={(e) => e.stopPropagation()}>Privacy Policy</a>.
+                    </p>
+                </div>
             </div>
         );
     };
