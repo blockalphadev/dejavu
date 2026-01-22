@@ -7,10 +7,9 @@ export function MarketsLayout() {
     const location = useLocation();
 
     // Determine active category based on URL path
-    // /markets -> top_pics (path "")
-    // /markets/sports -> sports (path "sports/*")
-    // /markets/sports/baseball -> sports (matches "sports/*")
-    const currentPath = location.pathname.split("/markets/")[1] || "";
+    // / -> top_pics (path "")
+    // /sports -> sports (path "sports/*")
+    const currentPath = location.pathname === "/" ? "" : location.pathname.substring(1);
 
     // Find active category - handle wildcard paths (e.g., "sports/*")
     const activeCategory = MO_MARKET_CATEGORIES.find(c => {
@@ -32,7 +31,7 @@ export function MarketsLayout() {
         if (category) {
             // Remove wildcard for navigation (e.g., "sports/*" -> "sports")
             const navPath = category.path.replace("/*", "");
-            navigate(navPath ? `/markets/${navPath}` : "/markets");
+            navigate(navPath ? `/${navPath}` : "/");
         }
     };
 

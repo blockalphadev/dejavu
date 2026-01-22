@@ -53,10 +53,9 @@ function App() {
         <Route element={<RootLayout />}>
           {/* Root path shows Top Markets directly (no URL change) */}
           {/* Root path redirects to Markets (Top Markets) */}
-          <Route path="/" element={<Navigate to="/markets" replace />} />
-
-          {/* Markets Routes - Handled by MarketsIndex with Lazy Loading */}
-          <Route path="markets/*" element={<MarketsLayout />}>
+          {/* Root path shows Top Markets directly */}
+          <Route path="/" element={<MarketsLayout />}>
+            <Route index element={<MarketsIndex />} />
             <Route path="*" element={<MarketsIndex />} />
           </Route>
 
