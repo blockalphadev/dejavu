@@ -81,7 +81,7 @@ export function Header({ onOpenAuth, onToggleMenu }: HeaderProps) {
 
             <div
               className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => navigate('/markets')}
+              onClick={() => navigate('/')}
             >
               <div className="w-9 h-9 relative">
                 <Logo3D className="w-full h-full" />
@@ -96,7 +96,7 @@ export function Header({ onOpenAuth, onToggleMenu }: HeaderProps) {
               <NavLink
                 icon={<NavIcons.Markets active={currentTab === 'markets'} />}
                 active={currentTab === 'markets'}
-                onClick={() => navigate('/markets')}
+                onClick={() => navigate('/')}
               >
                 Markets
               </NavLink>

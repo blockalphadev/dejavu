@@ -59,6 +59,9 @@ function App() {
             <Route path="*" element={<MarketsIndex />} />
           </Route>
 
+          {/* Redirect /markets to / for legacy compatibility */}
+          <Route path="markets" element={<Navigate to="/" replace />} />
+
           {/* Other Top Level Routes */}
 
           <Route path="portfolio" element={
