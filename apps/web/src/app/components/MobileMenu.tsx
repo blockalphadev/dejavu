@@ -68,7 +68,7 @@ export function MobileMenu({ isOpen, onClose, onOpenAuth }: MobileMenuProps) {
                     <MenuItem
                         icon={<BarChart2 className="w-5 h-5 text-blue-500" />}
                         label="Markets"
-                        onClick={() => { navigate('/markets'); onClose(); }}
+                        onClick={() => { navigate('/'); onClose(); }}
                     />
                     <MenuItem
                         icon={<Trophy className="w-5 h-5 text-yellow-500" />}

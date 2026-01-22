@@ -77,7 +77,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
     // Handle topic click
     const handleTopicClick = (topicId: string) => {
-        navigate(`/markets/${topicId}`);
+        navigate(`/${topicId}`);
         onClose();
     };
 

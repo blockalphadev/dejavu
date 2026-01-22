@@ -11,10 +11,8 @@ export function MobileBottomNav({ currentTab, onToggleMenu }: MobileBottomNavPro
     const navigate = useNavigate();
     const location = useLocation();
 
-    const isMarketsActive = currentTab === 'markets';
-    const isTopPicsActive = isMarketsActive && (location.pathname === '/markets/top_pics' || location.pathname === '/markets' || location.pathname === '/');
-
-    const isForYouActive = isMarketsActive && location.pathname === '/markets/for-you';
+    const isTopPicsActive = location.pathname === '/';
+    const isForYouActive = location.pathname === '/for-you';
 
     const { isAuthenticated } = useAuth();
 
@@ -26,7 +24,7 @@ export function MobileBottomNav({ currentTab, onToggleMenu }: MobileBottomNavPro
                     icon={<House className="w-6 h-6" />}
                     label="Home"
                     active={isTopPicsActive}
-                    onClick={() => navigate('/markets')}
+                    onClick={() => navigate('/')}
                 />
 
                 <BottomNavItem
@@ -40,7 +38,7 @@ export function MobileBottomNav({ currentTab, onToggleMenu }: MobileBottomNavPro
                     icon={<Activity className="w-6 h-6" />}
                     label="For You"
                     active={isForYouActive}
-                    onClick={() => navigate('/markets/for-you')}
+                    onClick={() => navigate('/for-you')}
                 />
 
 

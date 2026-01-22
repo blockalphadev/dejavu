@@ -55,7 +55,7 @@ export function AuthCallbackPage() {
 
                 // Redirect to home/dashboard after short delay
                 setTimeout(() => {
-                    navigate('/markets', { replace: true });
+                    navigate('/', { replace: true });
                 }, 500);
 
             } catch (err) {

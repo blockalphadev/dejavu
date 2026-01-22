@@ -116,7 +116,7 @@ export function SportsMarketPage({ onOpenAuth, initialSport }: SportsMarketPageP
                 <SportsSidebar
                     activeSport={activeSport}
                     onSelectSport={(id) => {
-                        navigate(id === 'live' ? '/markets/sports' : `/markets/sports/${id}`);
+                        navigate(id === 'live' ? '/sports' : `/sports/${id}`);
                     }}
                 />
 
