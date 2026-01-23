@@ -127,13 +127,13 @@ async function seedAdmin() {
         // Success!
         console.log('\n🎉 Admin user created successfully!');
         console.log('='.repeat(50));
-        console.log(`📧 Email: ${ADMIN_EMAIL}`);
-        console.log(`🔑 Password: ${ADMIN_PASSWORD}`);
-        console.log('\n⚠️  IMPORTANT: Change this password after first login!');
+        console.log(`Email: ${ADMIN_EMAIL}`);
+        console.log(`Password: ${ADMIN_PASSWORD}`);
+        console.log('\nIMPORTANT: Change this password after first login!');
         console.log('='.repeat(50));
 
     } catch (error) {
-        console.error('❌ Unexpected error:', error);
+        console.error('Unexpected error:', error);
         process.exit(1);
     }
 }
