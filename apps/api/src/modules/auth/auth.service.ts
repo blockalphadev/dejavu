@@ -236,91 +236,108 @@ export class AuthService {
     }
 
     /**
-     * Generate wallet challenge message
+     * Generate wallet challenge message (DB-backed)
      */
     async getWalletChallenge(dto: WalletChallengeDto): Promise<{ message: string; nonce: string }> {
         const { address, chain } = dto;
+        const supabase = this.supabaseService.getAdminClient();
 
-        const message = this.walletStrategy.generateChallenge(address, chain);
-        const nonce = Math.random().toString(36).substring(2, 15);
-
-        // Store challenge with expiry (5 minutes)
-        this.challengeStore.set(`${address}:${chain}`, {
-            message,
-            timestamp: Date.now(),
+        // Call Supabase RPC to generate nonce and message
+        const { data, error } = await supabase.rpc('generate_wallet_nonce', {
+            p_wallet_address: address,
+            p_chain: chain,
         });
 
-        // Cleanup old challenges
-        this.cleanupChallenges();
+        if (error || !data || data.length === 0) {
+            this.logger.error(`Failed to generate nonce: ${error?.message}`);
+            throw new BadRequestException('Failed to generate authentication challenge');
+        }
 
-        return { message, nonce };
+        const result = data[0]; // RPC returns a table/array
+
+        return {
+            message: result.message,
+            nonce: result.nonce,
+        };
     }
 
     /**
      * Verify wallet signature and authenticate
      */
-    async verifyWallet(dto: WalletVerifyDto, ipAddress?: string): Promise<AuthResponse> {
-        const { address, chain, signature, message } = dto;
+    async verifyWallet(dto: WalletVerifyDto, ipAddress?: string): Promise<AuthResponse & { profilePending?: boolean }> {
+        const { address, chain, signature, message, nonce } = dto;
         const ip = ipAddress || 'unknown';
+        const supabase = this.supabaseService.getAdminClient();
 
-        // Check for account lockout by wallet address
-        const isLocked = await this.checkWalletLockout(address, ip);
-        if (isLocked) {
-            const lockoutDuration = this.configService.get<number>('LOCKOUT_DURATION_MINUTES', 15);
-            throw new ForbiddenException(
-                `Wallet temporarily locked due to too many failed attempts. Please try again in ${lockoutDuration} minutes.`
-            );
-        }
+        // 1. Verify signature logic (Cryptographic check)
+        // We still need the Strategy to verify the crypto signature locally or via helper
+        // But first, let's validate the nonce via DB to prevent replay attacks immediately
+        // However, standard flow is: Verify Crypto Signature -> Then Consume Nonce.
+        // If we consume nonce first, a failed signature would burn the nonce (which is actually good for security).
 
-        // Verify the challenge exists and is not expired
-        const storedChallenge = this.challengeStore.get(`${address}:${chain}`);
-        if (!storedChallenge) {
-            await this.logLoginAttempt({
-                walletAddress: address,
-                ipAddress: ip,
-                success: false,
-                failureReason: 'Challenge not found',
-            });
-            throw new BadRequestException('Challenge expired or not found. Please request a new one.');
-        }
-
-        // Challenge expires after 5 minutes
-        if (Date.now() - storedChallenge.timestamp > 5 * 60 * 1000) {
-            this.challengeStore.delete(`${address}:${chain}`);
-            await this.logLoginAttempt({
-                walletAddress: address,
-                ipAddress: ip,
-                success: false,
-                failureReason: 'Challenge expired',
-            });
-            throw new BadRequestException('Challenge expired. Please request a new one.');
-        }
-
-        // Verify signature
+        // Verify cryptographic signature first to avoid burning nonces on bad sigs if we want to be lenient,
+        // BUT strict security says: Attempt = Burn Nonce.
+        // Let's verify signature first to save DB writes if it's just garbage data.
         const verification = await this.walletStrategy.verify(address, signature, message, chain);
 
         if (!verification.isValid) {
-            await this.logLoginAttempt({
-                walletAddress: address,
-                ipAddress: ip,
-                success: false,
-                failureReason: verification.error || 'Invalid signature',
+            // Log failed attempt
+            await supabase.rpc('log_wallet_auth_attempt', {
+                p_wallet_address: address,
+                p_chain: chain,
+                p_wallet_provider: 'unknown', // We might want to pass this in DTO
+                p_ip_address: ip,
+                p_success: false,
+                p_failure_reason: verification.error || 'Invalid cryptographic signature',
             });
             throw new UnauthorizedException(verification.error || 'Invalid signature');
         }
 
-        // Clean up used challenge
-        this.challengeStore.delete(`${address}:${chain}`);
+        // 2. Consume Nonce (DB)
+        const { data: nonceData, error: nonceError } = await supabase.rpc('consume_wallet_nonce', {
+            p_nonce: nonce,
+            p_wallet_address: address,
+            p_chain: chain,
+        });
 
-        // Find or create user by wallet
-        let user = await this.usersService.findByWalletAddress(address, chain);
+        if (nonceError || !nonceData || nonceData.length === 0) {
+            this.logger.error(`Nonce consumption error: ${nonceError?.message}`);
+            throw new BadRequestException('Authentication failed. Please try again.');
+        }
 
-        if (!user) {
-            // Create new user for wallet
-            const supabase = this.supabaseService.getAdminClient();
+        const nonceResult = nonceData[0];
+        if (!nonceResult.valid) {
+            // Log the specific failure from the DB side
+            await supabase.rpc('log_wallet_auth_attempt', {
+                p_wallet_address: address,
+                p_chain: chain,
+                p_wallet_provider: 'unknown',
+                p_ip_address: ip,
+                p_success: false,
+                p_failure_reason: nonceResult.reason,
+            });
+            throw new BadRequestException(nonceResult.reason || 'Invalid or expired login session');
+        }
+
+        // 3. Find or Create User
+        // Use the new RPC function to handle looking up by wallet or finding legacy users
+        const { data: userData, error: userError } = await supabase.rpc('find_or_create_wallet_user', {
+            p_wallet_address: address,
+            p_chain: chain,
+            p_wallet_provider: 'unknown' // We should update DTO to include provider
+        });
+
+        if (userError || !userData || userData.length === 0) {
+            throw new BadRequestException('Failed to retrieve user data');
+        }
+
+        let { user_id: userId, is_new_user: isNewUser, profile_completed: profileCompleted } = userData[0];
+
+        // 4. If new user, create Supabase Auth User
+        if (!userId) {
             const { data: authData, error: authError } = await supabase.auth.admin.createUser({
                 email: `${address.slice(0, 8)}@wallet.dejavu.app`,
-                password: Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2),
+                password: crypto.randomUUID(), // Secure random password
                 email_confirm: true,
                 user_metadata: {
                     wallet_address: address,
@@ -329,53 +346,69 @@ export class AuthService {
             });
 
             if (authError || !authData.user) {
-                throw new BadRequestException('Failed to create wallet user');
+                throw new BadRequestException('Failed to create wallet user account');
             }
 
-            // Create profile with wallet
+            userId = authData.user.id;
+            isNewUser = true;
+            profileCompleted = false;
+
+            // Create initial profile
             await this.usersService.createProfile({
-                id: authData.user.id,
+                id: userId,
                 email: null,
                 full_name: null,
                 avatar_url: null,
-                wallet_addresses: [{ address, chain, isPrimary: true }],
+                wallet_addresses: [], // populated via link_wallet_to_user
             });
-
-            // Add wallet address
-            await this.usersService.addWalletAddress(authData.user.id, address, chain);
-
-            user = await this.usersService.findById(authData.user.id);
-
-            this.logger.log(`Wallet user created: ${address} (${chain})`);
         }
 
-        // Log successful wallet auth
-        await this.logLoginAttempt({
-            walletAddress: address,
-            ipAddress: ip,
-            success: true,
+        // 5. Link Wallet (Idempotent)
+        await supabase.rpc('link_wallet_to_user', {
+            p_user_id: userId,
+            p_wallet_address: address,
+            p_chain: chain,
+            p_wallet_provider: 'unknown',
+            p_is_primary: isNewUser // Make primary if it's the first one
         });
 
-        // Generate tokens
+        // 6. Log Success
+        await supabase.rpc('log_wallet_auth_attempt', {
+            p_wallet_address: address,
+            p_chain: chain,
+            p_wallet_provider: 'unknown',
+            p_ip_address: ip,
+            p_success: true,
+            p_user_id: userId
+        });
+
+        // 7. Generate Tokens
+        // Need to refactor generateTokens to accept userId directly if we have it
+        // Or just use the existing flow.
+        const userProfile = await this.usersService.findById(userId);
+
         const tokens = await this.generateTokens({
-            sub: user!.id,
+            sub: userId,
             walletAddress: address,
             chain,
         });
 
+        // 8. Return Response
+        // If profile is not completed (no username/TOS), frontend should know
         return {
             user: {
-                id: user!.id,
-                email: user?.email || undefined,
-                fullName: user?.full_name || undefined,
-                avatarUrl: user?.avatar_url || undefined,
-                bio: user?.bio || undefined,
-                walletAddresses: user?.wallet_addresses?.map((w) => ({
+                id: userId,
+                email: userProfile?.email || undefined,
+                fullName: userProfile?.full_name || undefined,
+                avatarUrl: userProfile?.avatar_url || undefined,
+                bio: userProfile?.bio || undefined,
+                walletAddresses: userProfile?.wallet_addresses?.map((w) => ({
                     address: w.address,
                     chain: w.chain,
                 })),
             },
             tokens,
+            profilePending: !profileCompleted
         };
     }
 

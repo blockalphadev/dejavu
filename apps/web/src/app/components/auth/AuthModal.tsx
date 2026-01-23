@@ -125,25 +125,30 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             let address = '';
             let chain: WalletChain = 'ethereum';
 
-            // Special handling for Slush (SUI) via SDK
-
-
-            // ... Re-implementing logic with checks
-
+            // Special handling for WalletConnect (Reown)
             if (provider === 'walletconnect') {
-                await open();
-                // Wait for effect to pick up connection
-                return;
+                // Determine if already connected via Wagmi
+                if (isWagmiConnected && wagmiAddress) {
+                    // Already connected, proceed to signing
+                    address = wagmiAddress;
+                    chain = 'ethereum'; // Default for Wagmi for now, could check chainId
+                } else {
+                    // Open Reown Modal
+                    await open();
+                    // We return here because the useEffect hook at the top will detect
+                    // when the connection is established and trigger the next step.
+                    return;
+                }
             }
-
-            if (provider === 'slush') {
+            // Special handling for Slush (SUI) via SDK
+            else if (provider === 'slush') {
                 // Find Slush or any SUI wallet
                 const targetWallet = suiWallets.find(w => w.name.toLowerCase().includes('slush'))
                     || suiWallets.find(w => w.name.toLowerCase().includes('sui'))
                     || suiWallets[0];
 
                 if (!targetWallet) {
-                    throw new Error('Slush Wallet (or compatible SUI wallet) not detected. Please install it.');
+                    throw new Error('Likely due to Slush Wallet (or compatible SUI wallet) not being detected. Please install it.');
                 }
 
                 await connectSui({ wallet: targetWallet });
@@ -161,7 +166,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     throw new Error(`Unknown wallet: ${provider}`);
                 }
 
-                // Check if installed (except WalletConnect)
+                // Check if installed
                 if (!adapter.isInstalled()) {
                     throw new Error(`${adapter.displayName} is not installed. Please install the extension.`);
                 }
@@ -171,7 +176,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                 chain = await adapter.getChain() || (provider === 'phantom' ? 'solana' : 'ethereum');
             }
 
-            // Get SIWE challenge from backend
+            // Get SIWE challenge from backend (DB-Backed)
             const challenge = await walletAuthApi.getChallenge(address, chain, provider);
 
             // Validate message is safe (anti-drain)
@@ -198,7 +203,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             setWalletState(prev => prev ? { ...prev, error: message } : null);
             setView('WALLET_ERROR');
         }
-    }, [suiWallets, connectSui, currentSuiAccount, open]);
+    }, [suiWallets, connectSui, currentSuiAccount, open, isWagmiConnected, wagmiAddress]);
 
     /**
      * Handle signature and verification
@@ -206,7 +211,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     const handleSign = useCallback(async () => {
         if (!walletState?.challenge) return;
 
-        setView('WALLET_CONNECTING');
+        // Don't switch view immediately to keep the button state or show loading spinner there
+        // But for Global UI consistency we can set 'WALLET_CONNECTING' or similar, 
+        // let's stick to 'WALLET_SIGNING' but maybe add a loading state in the button?
+        // For now, let's keep view simplified.
 
         try {
             let signature = '';
@@ -216,6 +224,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                 const result = await signSuiMessage({ message: messageBytes });
                 signature = result.signature;
             } else if (walletState.provider === 'walletconnect') {
+                // Wagmi signing
                 signature = await signMessageAsync({ message: walletState.challenge.message });
             } else {
                 const adapter = getWalletAdapter(walletState.provider);
@@ -224,6 +233,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             }
 
             // Verify with backend
+            // This now includes "Consuming the Nonce"
             const result = await walletAuthApi.verify({
                 address: walletState.address,
                 chain: walletState.chain,
@@ -233,15 +243,15 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                 provider: walletState.provider,
             });
 
-            // Check if profile completion is needed
+            // Check if profile completion is needed (New Feature)
             if (result.profilePending) {
-                setView('WALLET_SUCCESS');
+                setView('WALLET_SUCCESS'); // Short success animation
                 setTimeout(() => {
                     onClose();
                     setShowProfileModal(true);
                 }, 1000);
             } else {
-                // Refresh user context
+                // Standard Success
                 await refreshUser();
                 setView('WALLET_SUCCESS');
                 setTimeout(() => {
@@ -255,7 +265,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             setWalletState(prev => prev ? { ...prev, error: message } : null);
             setView('WALLET_ERROR');
         }
-    }, [walletState, refreshUser, onClose, signSuiMessage]);
+    }, [walletState, refreshUser, onClose, signSuiMessage, signMessageAsync]);
 
     /**
      * Handle retry after error
