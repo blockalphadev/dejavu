@@ -33,7 +33,7 @@ async function seedAdmin() {
 
     // Validate environment
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-        console.error('❌ Missing required environment variables:');
+        console.error('Missing required environment variables:');
         console.error('   - SUPABASE_URL');
         console.error('   - SUPABASE_SERVICE_ROLE_KEY');
         console.error('\nPlease check your .env file.');
