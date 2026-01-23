@@ -86,11 +86,27 @@ We utilize a **Strategy Pattern** to normalize interactions across disparate blo
 | **Slush (Sui)** | `@mysten/dapp-kit` | Native Move transaction signing |
 | **WalletConnect** | **Reown AppKit v5** | Mobile Deep Linking, QR Scan, Multi-Chain |
 
-### 3.2 Mobile Integration (Reown AppKit)
-For mobile users and comprehensive WalletConnect support, we integrated **Reown AppKit**.
-- **Provider**: `AppKitProvider` wraps the React root.
-- **Configuration**: Uses `VITE_WALLETCONNECT_PROJECT_ID` for relay access.
-- **User Flow**: Calls `useAppKit().open()` to trigger the native modal, ensuring simplified connection on iOS/Android via Deep Links.
+### 3.2 Unified Reown & Mobile Strategy
+We utilize **Reown AppKit** (formerly WalletConnect Web3Modal) as the backbone for our unified authentication strategy, ensuring seamless experience across platforms.
+
+#### **Desktop Integration**
+- **Primary Method**: Direct injection (EIP-6963) for installed wallets (Metamask, Phantom, etc.).
+- **Fallback**: Reown AppKit modal for users wishing to scan QR codes with their mobile wallets.
+- **UX Logic**: 
+  - If a wallet is installed: Shows "Recommended" badge.
+  - If not installed: Shows "Install" badge with direct download link (preventing dead clicks).
+
+#### **Mobile Integration**
+- **Architecture**: **Mobile-First Deep Linking**.
+- **Behavior**: 
+  - **Bypass Installation Checks**: On mobile browsers, "isInstalled" checks are bypassed to prevent false negatives.
+  - **Deep Links**: Clicking "Metamask" or "Phantom" directly triggers the app via Universal Links (e.g., `metamask://`), upgrading the experience from a simple web view to a native app interaction.
+  - **AppKit Fallback**: If specific wallet deep links fail, the Reown AppKit modal serves as a universal connector, handling deep links for hundreds of wallets automatically.
+
+#### **Configuration**
+- **Provider**: `AppKitProvider` wraps the application root.
+- **Project ID**: Configured via `VITE_WALLETCONNECT_PROJECT_ID`.
+- **Chains**: Support for Mainnet, Base, Solana, and SUI via their respective adapters standardizing the connection interface.
 
 ---
 
