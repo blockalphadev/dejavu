@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react';
+import { X, AlertCircle, ArrowLeft, CheckCircle, Wallet } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { AuthIcons } from './AuthIcons';
-import { SocialButton } from './SocialButton';
-import { WalletOption } from './WalletOption';
 import { EmailForm } from './EmailForm';
 import { WalletProfileModal } from './WalletProfileModal';
 import { useAuth } from './AuthContext';
@@ -11,9 +9,6 @@ import {
     WalletProvider,
     WalletChain,
     getWalletAdapter,
-    MetaMaskAdapter,
-    PhantomAdapter,
-    CoinbaseAdapter,
     isMessageSafe,
 } from '../../../services/walletAdapters';
 import { walletAuthApi } from '../../../services/api';
@@ -48,6 +43,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     const [walletState, setWalletState] = useState<WalletState | null>(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
 
+    // Terms Agreement State
+    const [agreeToTerms, setAgreeToTerms] = useState(false);
+
     // SUI SDK Hooks
     const { mutateAsync: connectSui } = useConnectWallet();
     const { mutateAsync: signSuiMessage } = useSignPersonalMessage();
@@ -66,6 +64,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             setTimeout(() => {
                 setView('MAIN');
                 setWalletState(null);
+                setAgreeToTerms(false);
             }, 300);
         }
     }, [isOpen]);
@@ -400,76 +399,68 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     </p>
                 </div>
 
-                <div className="space-y-3">
-                    <SocialButton
-                        icon={<AuthIcons.Google />}
-                        variant="solid"
-                        className="bg-white text-black hover:bg-gray-100 border-none shadow-md shadow-gray-200/10 dark:shadow-none"
-                        onClick={() => {
-                            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
-                            window.location.href = `${apiUrl}/auth/google`;
+                <div className="space-y-4">
+                    {/* Terms Checkbox - REQUIRED FOR ACTION */}
+                    <div className="bg-accent/30 p-4 rounded-xl border border-border/50">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <div className="relative flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="peer sr-only"
+                                    checked={agreeToTerms}
+                                    onChange={() => setAgreeToTerms(!agreeToTerms)}
+                                />
+                                <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-200 ${agreeToTerms
+                                    ? 'bg-primary border-primary'
+                                    : 'border-muted-foreground/40 bg-background group-hover:border-primary/60'
+                                    }`}>
+                                    {agreeToTerms && <CheckCircle className="w-3.5 h-3.5 text-primary-foreground" />}
+                                </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground leading-tight select-none pt-0.5">
+                                I agree to the <a href="/terms" className="underline hover:text-foreground text-foreground/80">Terms of Service</a> and <a href="/privacy" className="underline hover:text-foreground text-foreground/80">Privacy Policy</a>.
+                            </span>
+                        </label>
+                    </div>
+
+                    {/* Main Connect Button (Reown) */}
+                    <button
+                        onClick={async () => {
+                            if (!agreeToTerms) {
+                                // Shake animation or visual cue could be added here
+                                return;
+                            }
+                            // Using Reown for everything (Wallets + Socials)
+                            handleWalletConnect('walletconnect');
                         }}
+                        disabled={!agreeToTerms}
+                        className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-2 group ${agreeToTerms
+                            ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-violet-500/25 scale-[1.02] hover:scale-[1.03]'
+                            : 'bg-muted text-muted-foreground cursor-not-allowed opacity-70'
+                            }`}
                     >
-                        Continue with Google
-                    </SocialButton>
+                        <Wallet className={`w-5 h-5 ${agreeToTerms ? 'animate-pulse' : ''}`} />
+                        {initialMode === 'signup' ? 'Get Started' : 'Connect Wallet / Login'}
+                    </button>
 
                     <div className="relative py-2">
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t border-border/40" />
                         </div>
                         <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                            <span className="bg-card px-2 text-muted-foreground">Supported Logins</span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <WalletOption
-                            icon={<AuthIcons.Metamask />}
-                            name="Metamask"
-                            recommended
-                            installed={MetaMaskAdapter.isInstalled()}
-                            onClick={() => handleWalletConnect('Metamask')}
-                        />
-                        <WalletOption
-                            icon={<AuthIcons.Phantom />}
-                            name="Phantom"
-                            installed={PhantomAdapter.isInstalled()}
-                            onClick={() => handleWalletConnect('Phantom')}
-                        />
-                        <WalletOption
-                            icon={<AuthIcons.Coinbase />}
-                            name="Coinbase"
-                            installed={CoinbaseAdapter.isInstalled()}
-                            onClick={() => handleWalletConnect('Coinbase')}
-                        />
-                        <WalletOption
-                            icon={<AuthIcons.Slush />}
-                            name="Slush"
-                            installed={true}
-                            onClick={() => handleWalletConnect('Slush')}
-                        />
-                        <WalletOption
-                            icon={<AuthIcons.WalletConnect />}
-                            name="WalletConnect"
-                            className="col-span-2"
-                            installed={true}
-                            onClick={() => handleWalletConnect('WalletConnect')}
-                        />
+                    {/* Icons strip just to show what's supported */}
+                    <div className="flex justify-center gap-4 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
+                        <AuthIcons.Google className="w-6 h-6" />
+                        <AuthIcons.Email className="w-6 h-6" />
+                        <AuthIcons.Metamask className="w-6 h-6" />
+                        <AuthIcons.Phantom className="w-6 h-6" />
+                        <AuthIcons.Coinbase className="w-6 h-6" />
+                        <AuthIcons.WalletConnect className="w-6 h-6" />
                     </div>
-
-                    <SocialButton
-                        icon={<AuthIcons.Email className="w-5 h-5" />}
-                        className="mt-2"
-                        onClick={() => setView('EMAIL')}
-                    >
-                        Continue with Email
-                    </SocialButton>
-                </div>
-
-                <div className="flex items-center justify-center px-4 mt-2">
-                    <p className="text-[11px] text-muted-foreground/60 text-center leading-tight">
-                        By continuing, you agree to our <a href="/terms" className="underline hover:text-foreground relative z-10">Terms of Service</a> and <a href="/privacy" className="underline hover:text-foreground relative z-10">Privacy Policy</a>.
-                    </p>
                 </div>
             </div>
         );

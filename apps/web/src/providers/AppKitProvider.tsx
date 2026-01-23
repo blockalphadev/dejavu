@@ -36,7 +36,14 @@ createAppKit({
     projectId,
     metadata,
     features: {
-        analytics: true
+        analytics: true,
+        email: true, // Enable Email Login
+        socials: ['google', 'x', 'github', 'discord', 'apple', 'facebook'], // Enable Social Logins
+    },
+    themeMode: 'dark',
+    themeVariables: {
+        '--w3m-accent': '#8b5cf6', // Violet accent
+        '--w3m-border-radius-master': '1px'
     }
 })
 

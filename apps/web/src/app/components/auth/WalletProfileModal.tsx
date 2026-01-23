@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, Loader2, AlertCircle, Wallet, Shield } from 'lucide-react';
+import { Check, Loader2, AlertCircle, Wallet, Shield } from 'lucide-react';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { walletAuthApi, authApi } from '../../../services/api';
 import { useAuth } from './AuthContext';
@@ -24,7 +24,7 @@ interface WalletProfileModalProps {
  */
 export function WalletProfileModal({
     isOpen,
-    onClose,
+    onClose: _onClose, // Rename to silence unused variable warning
     onComplete,
     walletAddress = '',
     walletChain = '',
@@ -34,8 +34,9 @@ export function WalletProfileModal({
     // Form state
     const [username, setUsername] = useState('');
     const [fullName, setFullName] = useState('');
-    const [agreeToTerms, setAgreeToTerms] = useState(false);
-    const [agreeToPrivacy, setAgreeToPrivacy] = useState(false);
+    // Users technically agreed in the previous step, but good to keep it or pre-check it
+    const [agreeToTerms, setAgreeToTerms] = useState(true);
+    const [agreeToPrivacy, setAgreeToPrivacy] = useState(true);
 
     // UI state
     const [isCheckingUsername, setIsCheckingUsername] = useState(false);
@@ -122,9 +123,10 @@ export function WalletProfileModal({
         : '';
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={() => { /* Prevent closing */ }}>
             <DialogContent className="sm:max-w-[480px] p-0 gap-0 overflow-hidden bg-background/80 backdrop-blur-xl border-white/10 shadow-2xl duration-300 [&>button]:hidden ring-1 ring-white/5">
-                {/* Close button */}
+                {/* Close button - HIDDEN to enforce completion */}
+                {/* 
                 <div className="absolute right-4 top-4 z-50">
                     <button
                         onClick={onClose}
@@ -134,6 +136,7 @@ export function WalletProfileModal({
                         <X className="h-5 w-5" />
                     </button>
                 </div>
+                */}
 
                 {/* Background effects */}
                 <div className="absolute top-0 left-0 w-full h-[180px] bg-gradient-to-b from-violet-500/10 via-purple-500/10 to-transparent pointer-events-none" />
