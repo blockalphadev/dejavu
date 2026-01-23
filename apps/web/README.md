@@ -34,6 +34,19 @@ src/
 └── main.tsx                 # Entry point
 ```
 
+## Environment Variables
+
+Create `.env` file in the root of this directory:
+
+```env
+# Sui Network Configuration (optional, defaults to mainnet)
+# Options: mainnet, testnet, devnet
+VITE_SUI_NETWORK=mainnet
+
+# API URL (if different from default)
+VITE_API_URL=http://localhost:3001/api/v1
+```
+
 ## Dependencies
 
 - `@dejavu/core` - Shared types dan utilities

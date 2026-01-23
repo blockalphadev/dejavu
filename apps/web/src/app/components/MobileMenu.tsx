@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import React from "react";
 import {
     X,
@@ -19,11 +20,11 @@ import { useAdmin } from "../contexts/AdminContext";
 interface MobileMenuProps {
     isOpen: boolean;
     onClose: () => void;
-    onNavigate: (tab: string) => void;
     onOpenAuth: (mode?: 'login' | 'signup') => void;
 }
 
-export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMenuProps) {
+export function MobileMenu({ isOpen, onClose, onOpenAuth }: MobileMenuProps) {
+    const navigate = useNavigate();
     const { user, isAuthenticated, logout } = useAuth();
     const { isAdmin } = useAdmin();
 
@@ -67,29 +68,29 @@ export function MobileMenu({ isOpen, onClose, onNavigate, onOpenAuth }: MobileMe
                     <MenuItem
                         icon={<BarChart2 className="w-5 h-5 text-blue-500" />}
                         label="Markets"
-                        onClick={() => { onNavigate('markets'); onClose(); }}
+                        onClick={() => { navigate('/markets'); onClose(); }}
                     />
                     <MenuItem
                         icon={<Trophy className="w-5 h-5 text-yellow-500" />}
                         label="Ranks"
-                        onClick={() => { onNavigate('ranks'); onClose(); }}
+                        onClick={() => { navigate('/ranks'); onClose(); }}
                     />
                     <MenuItem
                         icon={<History className="w-5 h-5 text-cyan-500" />}
                         label="Activity"
-                        onClick={() => { onNavigate('activity'); onClose(); }}
+                        onClick={() => { navigate('/activity'); onClose(); }}
                     />
                     <MenuItem
                         icon={<Gift className="w-5 h-5 text-pink-500" />}
                         label="Rewards"
-                        onClick={() => { onNavigate('rewards'); onClose(); }}
+                        onClick={() => { navigate('/rewards'); onClose(); }}
                     />
 
                     {isAdmin && (
                         <MenuItem
                             icon={<Shield className="w-5 h-5 text-purple-500" />}
                             label="Admin Panel"
-                            onClick={() => { onNavigate('admin'); onClose(); }}
+                            onClick={() => { navigate('/admin'); onClose(); }}
                         />
                     )}
 

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { depositApi, BalanceResponse, DepositTransaction, DepositChain } from '../../services/deposit';
-import { useAuth } from './auth/AuthContext';
+import { useAuth } from '../components/auth/AuthContext';
+import { getAccessToken } from '../../services/api';
 
 /**
  * Deposit context state
@@ -14,8 +15,10 @@ interface DepositContextType {
     recentTransactions: DepositTransaction[];
     /** Deposit modal open state */
     isDepositModalOpen: boolean;
-    /** Open deposit modal */
-    openDepositModal: () => void;
+    /** Open deposit modal with optional chain pre-selection */
+    openDepositModal: (chain?: DepositChain) => void;
+    /** Currently selected chain for deposit */
+    selectedChain?: DepositChain;
     /** Close deposit modal */
     closeDepositModal: () => void;
     /** Refresh balance */
@@ -49,24 +52,41 @@ export function DepositProvider({ children }: DepositProviderProps) {
     const [isLoadingBalance, setIsLoadingBalance] = useState(false);
     const [recentTransactions, setRecentTransactions] = useState<DepositTransaction[]>([]);
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+    const [selectedChain, setSelectedChain] = useState<DepositChain | undefined>(undefined);
     const [error, setError] = useState<string | null>(null);
 
     /**
      * Refresh user balance
      */
     const refreshBalance = useCallback(async () => {
-        if (!isAuthenticated) {
+        // Check both isAuthenticated and actual token presence
+        const hasToken = getAccessToken() !== null;
+        
+        if (!isAuthenticated || !hasToken) {
             setBalance(null);
             return;
         }
 
         setIsLoadingBalance(true);
+        setError(null);
         try {
             const balanceData = await depositApi.getBalance();
             setBalance(balanceData);
         } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch balance';
+            
+            // Check if this is a session expiration error
+            if (errorMessage.includes('Session expired') || errorMessage.includes('log in again')) {
+                // Clear balance on session expiration
+                setBalance(null);
+                // Don't log or set error for session expiration - it's expected behavior
+                // The auth context will detect the token is cleared and update accordingly
+                // Silently handle session expiration
+            } else {
+                // Only log and set error for unexpected errors
             console.error('Failed to fetch balance:', err);
-            setError(err instanceof Error ? err.message : 'Failed to fetch balance');
+                setError(errorMessage);
+            }
         } finally {
             setIsLoadingBalance(false);
         }
@@ -76,7 +96,10 @@ export function DepositProvider({ children }: DepositProviderProps) {
      * Fetch balance on auth change
      */
     useEffect(() => {
-        if (isAuthenticated) {
+        // Check token presence before fetching
+        const hasToken = getAccessToken() !== null;
+        
+        if (isAuthenticated && hasToken) {
             refreshBalance();
         } else {
             setBalance(null);
@@ -85,9 +108,44 @@ export function DepositProvider({ children }: DepositProviderProps) {
     }, [isAuthenticated, refreshBalance]);
 
     /**
+     * Listen for token changes (e.g., when session expires and tokens are cleared)
+     * This ensures we stop trying to fetch balance when token is cleared
+     */
+    useEffect(() => {
+        const checkToken = () => {
+            const hasToken = getAccessToken() !== null;
+            if (!hasToken && balance !== null) {
+                // Token was cleared, clear balance
+                setBalance(null);
+            }
+        };
+
+        // Check immediately
+        checkToken();
+
+        // Listen for storage changes (when tokens are cleared)
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'dejavu_access_token' || e.key === 'dejavu_refresh_token') {
+                checkToken();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        
+        // Also check periodically in case tokens are cleared in same tab
+        const interval = setInterval(checkToken, 1000);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            clearInterval(interval);
+        };
+    }, [balance]);
+
+    /**
      * Open deposit modal
      */
-    const openDepositModal = useCallback(() => {
+    const openDepositModal = useCallback((chain?: DepositChain) => {
+        if (chain) setSelectedChain(chain);
         setIsDepositModalOpen(true);
         setError(null);
     }, []);
@@ -151,6 +209,7 @@ export function DepositProvider({ children }: DepositProviderProps) {
         recentTransactions,
         isDepositModalOpen,
         openDepositModal,
+        selectedChain,
         closeDepositModal,
         refreshBalance,
         initiateDeposit,

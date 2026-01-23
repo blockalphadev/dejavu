@@ -9,7 +9,7 @@ import {
     Ban,
     AlertCircle
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function AdminUsers() {
     const [users, setUsers] = useState<AdminUser[]>([]);
@@ -22,7 +22,7 @@ export function AdminUsers() {
             setLoading(true);
             try {
                 const data = await adminApi.getUsers(searchQuery);
-                setUsers(data);
+                setUsers(data.data);
             } catch (error) {
                 console.error('Failed to fetch users', error);
             } finally {
@@ -105,7 +105,7 @@ export function AdminUsers() {
                                             <StatusBadge status={user.status} />
                                         </td>
                                         <td className="px-6 py-4 text-right font-mono">
-                                            ${user.balance_usdc.toLocaleString()}
+                                            ${user.balance.toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex justify-center">
@@ -166,11 +166,11 @@ export function AdminUsers() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
                                         <p className="text-xs text-neutral-500 mb-1">Total Balance</p>
-                                        <p className="text-xl font-mono font-bold">${selectedUser.balance_usdc.toLocaleString()}</p>
+                                        <p className="text-xl font-mono font-bold">${selectedUser.balance.toLocaleString()}</p>
                                     </div>
                                     <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
                                         <p className="text-xs text-neutral-500 mb-1">Locked Amount</p>
-                                        <p className="text-xl font-mono font-bold">${selectedUser.locked_usdc.toLocaleString()}</p>
+                                        <p className="text-xl font-mono font-bold">${selectedUser.lockedBalance.toLocaleString()}</p>
                                     </div>
                                 </div>
 
@@ -182,7 +182,7 @@ export function AdminUsers() {
                                     <div className="h-2 bg-neutral-800 rounded-full overflow-hidden mt-2">
                                         <div
                                             className={`h-full ${selectedUser.riskScore > 75 ? 'bg-red-500' :
-                                                    selectedUser.riskScore > 30 ? 'bg-orange-500' : 'bg-green-500'
+                                                selectedUser.riskScore > 30 ? 'bg-orange-500' : 'bg-green-500'
                                                 }`}
                                             style={{ width: `${selectedUser.riskScore}%` }}
                                         />
@@ -197,7 +197,7 @@ export function AdminUsers() {
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between text-xs py-2 border-b border-neutral-800">
                                             <span className="text-white">IP: 192.168.1.1</span>
-                                            <span className="text-neutral-500">{new Date(selectedUser.lastLogin).toLocaleString()}</span>
+                                            <span className="text-neutral-500">{new Date(selectedUser.lastLoginAt).toLocaleString()}</span>
                                         </div>
                                         {/* Mock */}
                                         <div className="flex items-center justify-between text-xs py-2 border-b border-neutral-800">

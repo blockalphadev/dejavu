@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -9,6 +9,7 @@ import { JwtAuthGuard, CsrfGuard } from './guards/index.js';
 import { UsersModule } from '../users/users.module.js';
 import { PasswordValidator } from './validators/index.js';
 import { TokenBlacklistService, SecurityEventService } from './services/index.js';
+import { DepositModule } from '../deposits/deposit.module.js';
 
 @Module({
     imports: [
@@ -24,6 +25,7 @@ import { TokenBlacklistService, SecurityEventService } from './services/index.js
             }),
         }),
         UsersModule,
+        forwardRef(() => DepositModule),
     ],
     controllers: [AuthController],
     providers: [

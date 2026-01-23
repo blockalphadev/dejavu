@@ -6,7 +6,7 @@ import {
     ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHmac } from 'crypto';
 import { SupabaseService } from '../../database/supabase.service.js';
 import { PrivyService } from './services/privy.service.js';
 import {
@@ -54,6 +54,8 @@ export class DepositService {
     private readonly minAmount: number;
     private readonly maxAmount: number;
     private readonly nonceExpirySeconds: number;
+    private readonly nonceSecret: string;
+    private readonly suiNetwork: 'mainnet' | 'testnet' | 'devnet';
 
     // Deposit addresses per chain (in production, these would be dynamic)
     private readonly depositAddresses: Record<DepositChain, string> = {
@@ -71,16 +73,136 @@ export class DepositService {
         this.minAmount = this.configService.get<number>('DEPOSIT_MIN_AMOUNT', 1);
         this.maxAmount = this.configService.get<number>('DEPOSIT_MAX_AMOUNT', 100000);
         this.nonceExpirySeconds = this.configService.get<number>('DEPOSIT_NONCE_EXPIRY_SECONDS', 300);
+        this.nonceSecret = this.configService.get<string>(
+            'DEPOSIT_NONCE_SECRET',
+            'default-nonce-secret-change-in-production'
+        );
+        this.suiNetwork = this.configService.get<'mainnet' | 'testnet' | 'devnet'>(
+            'SUI_NETWORK',
+            'mainnet'
+        );
 
         // Cleanup expired nonces periodically
         setInterval(() => this.cleanupExpiredNonces(), 60000);
     }
 
     /**
-     * Get user's balance
+     * Generate HMAC signature for a nonce
+     * Provides tamper detection for deposit nonces
      */
+    private signNonce(nonce: string): string {
+        return createHmac('sha256', this.nonceSecret)
+            .update(nonce)
+            .digest('hex');
+    }
+
+    /**
+     * Verify HMAC signature for a nonce
+     */
+    private verifyNonceSignature(signedNonce: string): { nonce: string; valid: boolean } {
+        const parts = signedNonce.split('.');
+        if (parts.length !== 2) {
+            // Legacy nonce without signature - still accept but log warning
+            if (signedNonce.startsWith('dep_')) {
+                this.logger.warn(`Legacy unsigned nonce received: ${signedNonce.slice(0, 20)}...`);
+                return { nonce: signedNonce, valid: true };
+            }
+            return { nonce: signedNonce, valid: false };
+        }
+
+        const [nonce, signature] = parts;
+        const expectedSignature = this.signNonce(nonce);
+        const valid = signature === expectedSignature;
+
+        if (!valid) {
+            this.logger.warn(`Invalid nonce signature detected: ${nonce.slice(0, 20)}...`);
+        }
+
+        return { nonce, valid };
+    }
+
+    /**
+     * Get SUI balance from configured network (mainnet/testnet/devnet)
+     */
+    private async getSuiBalance(address: string): Promise<string> {
+        try {
+            // Get RPC URL based on configured network
+            const rpcUrl = this.suiNetwork === 'mainnet'
+                ? 'https://fullnode.mainnet.sui.io:443'
+                : this.suiNetwork === 'testnet'
+                ? 'https://fullnode.testnet.sui.io:443'
+                : 'https://fullnode.devnet.sui.io:443';
+
+            this.logger.debug(`Fetching SUI balance from ${this.suiNetwork} at ${rpcUrl} for address ${address}`);
+
+            const response = await fetch(rpcUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'suix_getBalance',
+                    params: [address]
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`SUI RPC error: ${response.status}`);
+            }
+
+            const data = await response.json() as { result?: { totalBalance?: string }, error?: any };
+
+            if (data.error) {
+                throw new Error(`SUI RPC error: ${JSON.stringify(data.error)}`);
+            }
+
+            // SUI has 9 decimals
+            const rawBalance = data.result?.totalBalance || '0';
+            return (parseInt(rawBalance) / 1_000_000_000).toFixed(4);
+        } catch (error) {
+            this.logger.error(`Error fetching SUI balance for ${address}`, error);
+            return '0';
+        }
+    }
+
+    /**
+     * Get Token Prices from Binance
+     */
+    private async getTokenPrices(): Promise<Record<string, number>> {
+        try {
+            const symbols = ['ETHUSDT', 'SOLUSDT', 'SUIUSDT', 'BTCUSDT', 'DAIUSDT'];
+            // Free public API, no key needed
+            const response = await fetch('https://api.binance.com/api/v3/ticker/price');
+
+            if (!response.ok) return {};
+
+            const data = await response.json() as Array<{ symbol: string, price: string }>;
+            const prices: Record<string, number> = {};
+
+            data.forEach(item => {
+                if (symbols.includes(item.symbol)) {
+                    prices[item.symbol] = parseFloat(item.price);
+                }
+            });
+
+            // Stablecoins are pegged
+            prices['USDCUSDT'] = 1.0;
+            prices['USDTUSDT'] = 1.0;
+
+            return prices;
+        } catch (error) {
+            this.logger.warn('Failed to fetch token prices from Binance', error);
+            return {};
+        }
+    }
+
     async getBalance(userId: string): Promise<BalanceResponseDto> {
         const client = this.supabaseService.getAdminClient();
+
+        // Fetch prices in parallel with balance
+        const pricesPromise = this.getTokenPrices();
 
         const { data, error } = await client
             .from('user_balances')
@@ -96,18 +218,102 @@ export class DepositService {
 
         const balance = parseFloat(data?.balance || '0');
         const lockedBalance = parseFloat(data?.locked_balance || '0');
+        const availableBalance = balance - lockedBalance;
+
+        // Fetch balances for all supported chains
+        const assets: Array<{ symbol: string; balance: string; chain: string; valueUsd: string; address?: string }> = [];
+        const chains = Object.values(DepositChain);
+
+        // Wait for prices
+        const prices = await pricesPromise;
+
+        for (const chain of chains) {
+            let assetBalance = '0.0000';
+            let address: string | undefined;
+
+            try {
+                // Get wallet if exists
+                const wallet = await this.getPrivyWallet(userId, chain);
+                if (wallet) {
+                    address = wallet.address;
+                    // For SUI, fetch real balance
+                    if (chain === DepositChain.SUI) {
+                        assetBalance = await this.getSuiBalance(wallet.address);
+                    }
+                    // For others, currently 0 (or implement RPC calls later)
+                }
+
+                // Calculate Value
+                const symbol = chain === DepositChain.ETHEREUM ? 'ETH' :
+                    chain === DepositChain.SOLANA ? 'SOL' :
+                        chain === DepositChain.SUI ? 'SUI' : 'ETH'; // Base uses ETH price roughly
+
+                const ticker = `${symbol}USDT`;
+                const price = prices[ticker] || 0;
+                const valueUsd = (parseFloat(assetBalance) * price).toFixed(2);
+
+                assets.push({
+                    symbol: chain.toUpperCase(), // e.g. ETHEREUM -> ETHEREUM (frontend can map to ETH)
+                    balance: assetBalance,
+                    chain: chain,
+                    valueUsd: valueUsd,
+                    address: address
+                });
+
+                // --- Inject ERC20s for Ethereum ---
+                if (chain === DepositChain.ETHEREUM && address) {
+                    const erc20s = [
+                        { symbol: 'USDC', ticker: 'USDCUSDT' },
+                        { symbol: 'USDT', ticker: 'USDTUSDT' },
+                        { symbol: 'WBTC', ticker: 'BTCUSDT' }, // WBTC tracks BTC
+                        { symbol: 'DAI', ticker: 'DAIUSDT' }
+                    ];
+
+                    for (const token of erc20s) {
+                        // TODO: Implement real `balanceOf` call here
+                        const tokenBalance = '0.0000';
+                        const tokenPrice = prices[token.ticker] || 0;
+                        const tokenValue = (parseFloat(tokenBalance) * tokenPrice).toFixed(2);
+
+                        assets.push({
+                            symbol: token.symbol,
+                            balance: tokenBalance,
+                            chain: chain, // Still on Ethereum chain
+                            valueUsd: tokenValue,
+                            address: address // Same ETH address
+                        });
+                    }
+                }
+                // ----------------------------------
+
+            } catch (error) {
+                this.logger.warn(`Failed to process asset ${chain} for user ${userId}`, error);
+
+                // Still add the main chain asset with 0 balance
+                assets.push({
+                    symbol: chain.toUpperCase(),
+                    balance: '0.0000',
+                    chain: chain,
+                    valueUsd: '0.00'
+                });
+            }
+        }
 
         return {
             balance: balance.toFixed(2),
             lockedBalance: lockedBalance.toFixed(2),
-            availableBalance: (balance - lockedBalance).toFixed(2),
+            availableBalance: availableBalance.toFixed(2),
             currency: 'USDC',
+            assets,
         };
     }
 
     /**
      * Initiate a new deposit
-     * Returns nonce and deposit address
+     * Returns HMAC-signed nonce and deposit address
+     * 
+     * OWASP A02:2021 - Cryptographic Failures
+     * Uses 256-bit entropy for nonces and HMAC for integrity
      */
     async initiateDeposit(
         userId: string,
@@ -120,14 +326,17 @@ export class DepositService {
             );
         }
 
-        // Generate unique nonce
-        const nonce = `dep_${randomBytes(16).toString('hex')}`;
+        // Generate unique nonce with 256-bit entropy (32 bytes)
+        const nonceBase = `dep_${randomBytes(32).toString('hex')}`;
+        const nonceSignature = this.signNonce(nonceBase);
+        const signedNonce = `${nonceBase}.${nonceSignature}`;
+
         const now = Date.now();
         const expiresAt = now + this.nonceExpirySeconds * 1000;
         const depositAddress = this.depositAddresses[dto.chain];
 
-        // Store pending deposit
-        this.pendingDeposits.set(nonce, {
+        // Store pending deposit (use base nonce for lookups)
+        this.pendingDeposits.set(nonceBase, {
             userId,
             amount: dto.amount,
             chain: dto.chain,
@@ -135,7 +344,7 @@ export class DepositService {
             expiresAt,
         });
 
-        // Create pending transaction in database
+        // Create pending transaction in database (store base nonce)
         const client = this.supabaseService.getAdminClient();
         const { error } = await client
             .from('deposit_transactions')
@@ -146,20 +355,20 @@ export class DepositService {
                 chain: dto.chain,
                 to_address: depositAddress,
                 status: DepositStatus.PENDING,
-                nonce,
+                nonce: nonceBase, // Store base nonce, not signed
                 expires_at: new Date(expiresAt).toISOString(),
             });
 
         if (error) {
             this.logger.error('Failed to create deposit transaction', error);
-            this.pendingDeposits.delete(nonce);
+            this.pendingDeposits.delete(nonceBase);
             throw new BadRequestException('Failed to initiate deposit');
         }
 
-        this.logger.log(`Deposit initiated: ${nonce} for user ${userId}, amount: ${dto.amount} ${dto.chain}`);
+        this.logger.log(`Deposit initiated: ${nonceBase.slice(0, 20)}... for user ${userId}, amount: ${dto.amount} ${dto.chain}`);
 
         return {
-            nonce,
+            nonce: signedNonce, // Return signed nonce to client
             depositAddress,
             expiresInSeconds: this.nonceExpirySeconds,
             amount: dto.amount.toFixed(2),
@@ -169,17 +378,28 @@ export class DepositService {
 
     /**
      * Verify and confirm a deposit transaction
+     * 
+     * OWASP A02:2021 - Cryptographic Failures
+     * Validates HMAC signature on nonce to prevent tampering
      */
     async verifyDeposit(
         userId: string,
         dto: VerifyDepositDto,
     ): Promise<DepositTransactionDto> {
+        // Verify and extract nonce from signed format
+        const { nonce, valid: signatureValid } = this.verifyNonceSignature(dto.nonce);
+
+        if (!signatureValid) {
+            this.logger.warn(`Invalid nonce signature from user ${userId}`);
+            throw new BadRequestException('Invalid or tampered deposit nonce');
+        }
+
         // Validate nonce exists and belongs to user
-        const pending = this.pendingDeposits.get(dto.nonce);
+        const pending = this.pendingDeposits.get(nonce);
 
         if (!pending) {
             // Check if it's in database but not in memory (after restart)
-            const dbPending = await this.getPendingFromDb(dto.nonce);
+            const dbPending = await this.getPendingFromDb(nonce);
             if (!dbPending) {
                 throw new NotFoundException('Invalid or expired deposit nonce');
             }
@@ -194,8 +414,8 @@ export class DepositService {
                 throw new BadRequestException('Invalid deposit');
             }
             if (Date.now() > pending.expiresAt) {
-                this.pendingDeposits.delete(dto.nonce);
-                await this.updateDepositStatus(dto.nonce, DepositStatus.EXPIRED);
+                this.pendingDeposits.delete(nonce);
+                await this.updateDepositStatus(nonce, DepositStatus.EXPIRED);
                 throw new BadRequestException('Deposit session has expired');
             }
         }
@@ -229,7 +449,7 @@ export class DepositService {
                 tx_hash: dto.txHash,
                 confirmed_at: new Date().toISOString(),
             })
-            .eq('nonce', dto.nonce)
+            .eq('nonce', nonce)
             .select()
             .single();
 
@@ -242,9 +462,9 @@ export class DepositService {
         await this.creditBalance(userId, pending?.amount || transaction.amount);
 
         // Cleanup
-        this.pendingDeposits.delete(dto.nonce);
+        this.pendingDeposits.delete(nonce);
 
-        this.logger.log(`Deposit confirmed: ${dto.nonce}, txHash: ${dto.txHash}`);
+        this.logger.log(`Deposit confirmed: ${nonce.slice(0, 20)}..., txHash: ${dto.txHash}`);
 
         return this.mapToTransactionDto(transaction);
     }
@@ -425,29 +645,56 @@ export class DepositService {
     /**
      * Get or create deposit wallet for user
      * Handles mapping between Supabase UUID and Privy DID
+     * 
+     * SECURITY: Validates address format and regenerates if cached wallet is invalid
      */
     async getOrCreateDepositWallet(userId: string, chain: string): Promise<any> {
-        const chainType = chain === 'solana' ? 'solana' : 'ethereum';
+        let chainType: 'ethereum' | 'solana' | 'sui' = 'ethereum';
+        if (chain === 'solana') chainType = 'solana';
+        if (chain === 'sui') chainType = 'sui';
 
         // 1. Check local DB first
         const existing = await this.getPrivyWallet(userId, chain as DepositChain);
         if (existing) {
-            return existing;
+            // Validate the cached address format
+            if (this.privyService.isValidAddressFormat(existing.address, chainType)) {
+                this.logger.debug(`Using cached ${chain} wallet: ${existing.address}`);
+                return existing;
+            } else {
+                // Invalid format - clear the cached wallet and regenerate
+                this.logger.warn(
+                    `Cached ${chain} wallet has invalid format: ${existing.address}. ` +
+                    `Clearing cached wallet and regenerating.`
+                );
+                await this.clearInvalidWallet(userId, chain as DepositChain);
+            }
         }
 
         // 2. Ensure user exists in Privy (Import if needed)
         const privyDid = await this.ensurePrivyUser(userId);
 
-        // 3. Get or create wallet in Privy
+        // 3. Get or create wallet in Privy (with built-in validation)
+        this.logger.log(`Generating new ${chain} wallet for user ${userId}`);
         const privyWallet = await this.privyService.getOrCreateWallet(privyDid, chainType);
 
-        // 4. Save to DB
+        // 4. Final validation before saving
+        if (!this.privyService.isValidAddressFormat(privyWallet.address, chainType)) {
+            this.logger.error(
+                `Privy returned invalid ${chainType} address: ${privyWallet.address}. ` +
+                `Expected ${chainType === 'sui' ? '66' : chainType === 'ethereum' ? '42' : '32-44'} chars.`
+            );
+            throw new BadRequestException(`Failed to generate valid ${chain} wallet`);
+        }
+
+        // 5. Save to DB
         await this.savePrivyWallet(userId, {
             privyUserId: privyDid,
             walletAddress: privyWallet.address,
             chain: chain,
             walletType: 'embedded',
         });
+
+        this.logger.log(`Successfully created ${chain} wallet: ${privyWallet.address.slice(0, 10)}...`);
 
         return {
             address: privyWallet.address,
@@ -456,6 +703,26 @@ export class DepositService {
             createdAt: privyWallet.created_at,
         };
     }
+
+    /**
+     * Clear an invalid cached wallet to force regeneration
+     */
+    private async clearInvalidWallet(userId: string, chain: DepositChain): Promise<void> {
+        const client = this.supabaseService.getAdminClient();
+
+        const { error } = await client
+            .from('privy_wallets')
+            .update({ is_active: false })
+            .eq('user_id', userId)
+            .eq('chain', chain);
+
+        if (error) {
+            this.logger.error(`Failed to clear invalid ${chain} wallet for user ${userId}`, error);
+        } else {
+            this.logger.log(`Cleared invalid ${chain} wallet cache for user ${userId}`);
+        }
+    }
+
 
     /**
      * Ensure user exists in Privy and get their DID
@@ -512,6 +779,13 @@ export class DepositService {
             .single();
 
         if (error || !data) {
+            return null;
+        }
+
+        // Validate SUI address format (must be 66 chars: 0x + 64 hex)
+        // This handles legacy invalid data where EVM addresses were created for SUI
+        if (chain === DepositChain.SUI && data.wallet_address.length !== 66) {
+            this.logger.warn(`Found invalid SUI address ${data.wallet_address} for user ${userId}, ignoring`);
             return null;
         }
 

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ethers } from 'ethers';
 import * as nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 
 export interface WalletVerificationResult {
     isValid: boolean;
@@ -56,7 +57,7 @@ Domain: ${domain}`;
                 case 'solana':
                     return this.verifySolana(address, signature, message);
                 case 'sui':
-                    return this.verifySui(address, signature, message);
+                    return await this.verifySui(address, signature, message);
                 default:
                     return {
                         isValid: false,
@@ -146,53 +147,57 @@ Domain: ${domain}`;
     }
 
     /**
-     * Verify Sui signatures
-     * Note: Sui uses Ed25519 similar to Solana
+     * Verify Sui signatures using @mysten/sui SDK
+     * Handles both standard and BCS-serialized signature formats
      */
-    private verifySui(
+    private async verifySui(
         address: string,
         signature: string,
         message: string,
-    ): WalletVerificationResult {
+    ): Promise<WalletVerificationResult> {
         try {
-            // Sui addresses are different from public keys
-            // For production, use @mysten/sui.js for proper verification
-            // This is a simplified verification
-            const signatureBytes = Buffer.from(signature, 'base64');
-            const messageBytes = new TextEncoder().encode(message);
-
-            // Extract public key from signature (last 32 bytes in Ed25519 scheme)
-            // Sui signatures include scheme flag + signature + public key
-            if (signatureBytes.length < 65) {
+            this.logger.debug(`Verifying Sui signature: address=${address}, sigLength=${signature.length}`);
+            
+            // Use @mysten/sui's built-in verification
+            // This handles BCS-serialized signatures and proper address verification
+            try {
+                const messageBytes = new TextEncoder().encode(message);
+                
+                // verifyPersonalMessageSignature returns the PublicKey if valid, throws if invalid
+                // We can also pass the address to verify it matches
+                const publicKey = await verifyPersonalMessageSignature(
+                    messageBytes,
+                    signature,
+                    { address }, // Verify that the signature matches the expected address
+                );
+                
+                // If we get here, the signature is valid and matches the address
+                const signerAddress = publicKey.toSuiAddress();
+                
+                this.logger.debug(`Signature verified successfully using @mysten/sui. Signer: ${signerAddress}, Expected: ${address}`);
+                
+                return {
+                    isValid: true,
+                    address: signerAddress,
+                    chain: 'sui',
+                };
+            } catch (suiError) {
+                this.logger.warn(`@mysten/sui verification failed: ${suiError instanceof Error ? suiError.message : String(suiError)}`);
                 return {
                     isValid: false,
                     address,
                     chain: 'sui',
-                    error: 'Invalid Sui signature length',
+                    error: `Signature verification failed: ${suiError instanceof Error ? suiError.message : 'Unknown error'}`,
                 };
             }
-
-            const publicKeyBytes = signatureBytes.slice(-32);
-            const sigBytes = signatureBytes.slice(1, 65);
-
-            const isValid = nacl.sign.detached.verify(
-                messageBytes,
-                sigBytes,
-                publicKeyBytes,
-            );
-
-            return {
-                isValid,
-                address,
-                chain: 'sui',
-                error: isValid ? undefined : 'Invalid Sui signature',
-            };
+            
         } catch (error) {
+            this.logger.error(`Sui signature verification error: ${error}`);
             return {
                 isValid: false,
                 address,
                 chain: 'sui',
-                error: 'Invalid Sui signature format',
+                error: `Invalid Sui signature format: ${error instanceof Error ? error.message : 'Unknown error'}`,
             };
         }
     }

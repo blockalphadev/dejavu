@@ -1,4 +1,4 @@
-import { LucideIcon, TrendingUp, Newspaper, Zap, Bitcoin, Activity, Globe, Monitor, Landmark, FlaskConical } from "lucide-react";
+import { TrendingUp, Newspaper, Zap, Bitcoin, Activity, Globe, Monitor, Landmark, FlaskConical } from "lucide-react";
 
 export interface Question {
     text: string;

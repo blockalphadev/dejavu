@@ -1,5 +1,4 @@
 import { ChevronRight } from "lucide-react";
-import heroImage from "figma:asset/23b9b4e70191b182766beeae2afa69fc613a4f7c.png";
 
 export function HeroSection() {
   return (

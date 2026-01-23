@@ -10,16 +10,32 @@ import {
     Bell,
     Search
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
+
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
-    activePage: string;
-    onNavigate: (page: string) => void;
+    // activePage and onNavigate are now derived from router, keeping for compat if needed or removing
+    activePage?: string;
+    onNavigate?: (page: string) => void;
     onLogout: () => void;
 }
 
-export function AdminLayout({ children, activePage, onNavigate, onLogout }: AdminLayoutProps) {
+export function AdminLayout({ children, onLogout }: AdminLayoutProps) {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Determine active page from path
+    const getActivePage = () => {
+        const path = location.pathname;
+        if (path.includes('/admin/users')) return 'users';
+        if (path.includes('/admin/finance')) return 'finance';
+        if (path.includes('/admin/security')) return 'security';
+        return 'overview';
+    };
+
+    const activePage = getActivePage();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -72,10 +88,10 @@ export function AdminLayout({ children, activePage, onNavigate, onLogout }: Admi
                     {navItems.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => onNavigate(item.id)}
+                            onClick={() => navigate(item.id)}
                             className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${activePage === item.id
-                                    ? 'bg-blue-600/10 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.15)] ring-1 ring-blue-600/20'
-                                    : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
+                                ? 'bg-blue-600/10 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.15)] ring-1 ring-blue-600/20'
+                                : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
                                 }`}
                         >
                             {activePage === item.id && (
@@ -195,12 +211,12 @@ export function AdminLayout({ children, activePage, onNavigate, onLogout }: Admi
                                     <button
                                         key={item.id}
                                         onClick={() => {
-                                            onNavigate(item.id);
+                                            navigate(item.id);
                                             setIsMobileMenuOpen(false);
                                         }}
                                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activePage === item.id
-                                                ? 'bg-blue-600/10 text-blue-400 shadow-lg shadow-blue-900/10'
-                                                : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
+                                            ? 'bg-blue-600/10 text-blue-400 shadow-lg shadow-blue-900/10'
+                                            : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
                                             }`}
                                     >
                                         <item.icon size={20} />

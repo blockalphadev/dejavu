@@ -35,8 +35,20 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable sourcemaps for production to reduce build size/time
+    chunkSizeWarningLimit: 1200, // Increase warning limit slightly for Three.js
     rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+          'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-label', '@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge', 'lucide-react', 'motion', 'sonner', 'vaul'],
+          'chart-vendor': ['recharts'],
+          'web3-vendor': ['viem'],
+          'data-vendor': ['@tanstack/react-query', 'zod', 'socket.io-client', 'date-fns', 'html5-qrcode', 'qrcode.react'],
+        },
+      },
       onwarn(warning, warn) {
         if (warning.code === 'INVALID_ANNOTATION') {
           return;

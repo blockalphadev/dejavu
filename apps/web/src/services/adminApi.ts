@@ -73,6 +73,11 @@ export interface SuspiciousActivity {
     status: string;
     ipAddress?: string;
     createdAt: string;
+    // Extended properties for UI display
+    type?: string;
+    description?: string;
+    userId?: string;
+    riskScore?: number;
 }
 
 export interface AdminAuditLogQuery {
@@ -164,5 +169,16 @@ export const adminApi = {
         if (query.limit) params.append('limit', query.limit.toString());
 
         return apiRequest<{ data: SuspiciousActivity[], total: number }>(`/admin/audit-log?${params.toString()}`);
+    },
+
+    async getSuspiciousActivity(): Promise<SuspiciousActivity[]> {
+        const result = await this.getAuditLog({ category: 'security', limit: 50 });
+        return result.data.map(item => ({
+            ...item,
+            type: item.action,
+            description: `${item.action} from ${item.ipAddress || 'unknown IP'}`,
+            userId: item.actorUserId,
+            riskScore: item.status === 'flagged' ? 85 : 50
+        }));
     }
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNotifications } from '../hooks/useNotifications';
+import { useNotifications } from '../../hooks/useNotifications';
 import { Bell, Check, Clock, AlertTriangle, Info, CreditCard, ChevronRight } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Button } from '../../components/ui/button';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -43,8 +43,8 @@ export function NotificationsPage() {
                         <button
                             onClick={() => setFilter('all')}
                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${filter === 'all'
-                                    ? 'bg-background shadow-sm text-foreground'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             All
@@ -52,8 +52,8 @@ export function NotificationsPage() {
                         <button
                             onClick={() => setFilter('unread')}
                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${filter === 'unread'
-                                    ? 'bg-background shadow-sm text-foreground'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             Unread
@@ -97,8 +97,8 @@ export function NotificationsPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 className={`relative group flex gap-4 p-4 rounded-xl border transition-all hover:bg-accent/50 ${notification.is_read
-                                        ? 'bg-card/50 border-transparent'
-                                        : 'bg-card border-l-4 border-l-primary shadow-sm'
+                                    ? 'bg-card/50 border-transparent'
+                                    : 'bg-card border-l-4 border-l-primary shadow-sm'
                                     }`}
                                 onClick={() => !notification.is_read && markAsRead(notification.id)}
                             >

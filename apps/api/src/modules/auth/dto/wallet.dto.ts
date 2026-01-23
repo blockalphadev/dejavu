@@ -85,7 +85,7 @@ export class WalletVerifyDto {
     })
     @IsString()
     @MinLength(1, { message: 'Signature is required' })
-    @MaxLength(1024, { message: 'Signature is too long' })
+    @MaxLength(2048, { message: 'Signature is too long' })
     signature: string;
 
     @ApiProperty({
@@ -139,7 +139,7 @@ export class LinkWalletDto {
     })
     @IsString()
     @MinLength(1, { message: 'Signature is required' })
-    @MaxLength(1024, { message: 'Signature is too long' })
+    @MaxLength(2048, { message: 'Signature is too long' })
     signature: string;
 
     @ApiProperty({

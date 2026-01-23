@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useDeposit } from './DepositContext';
-import { depositApi, type DepositChain } from '../../services/deposit';
+import { useDeposit } from '../contexts/DepositContext';
+import { depositApi } from '../../services/deposit';
 import { useAuth } from './auth/AuthContext';
 
 /**
@@ -47,43 +47,7 @@ const Icons = {
     ),
 };
 
-/**
- * Token definitions
- */
-interface Token {
-    symbol: string;
-    name: string;
-    icon: string;
-    chains: DepositChain[];
-    minDeposit: number;
-}
-
-const TOKENS: Token[] = [
-    { symbol: 'USDC', name: 'USD Coin', icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', chains: ['ethereum', 'base', 'solana', 'sui'], minDeposit: 10 },
-    { symbol: 'USDT', name: 'Tether', icon: 'https://cryptologos.cc/logos/tether-usdt-logo.png', chains: ['ethereum', 'base', 'solana'], minDeposit: 10 },
-    { symbol: 'ETH', name: 'Ethereum', icon: '/images/coin/ethereum.png', chains: ['ethereum', 'base'], minDeposit: 0.001 },
-    { symbol: 'SOL', name: 'Solana', icon: '/images/coin/solana.png', chains: ['solana'], minDeposit: 0.01 },
-    { symbol: 'SUI', name: 'Sui', icon: '/images/coin/sui.png', chains: ['sui'], minDeposit: 0.1 },
-    { symbol: 'WBTC', name: 'Wrapped Bitcoin', icon: 'https://cryptologos.cc/logos/wrapped-bitcoin-wbtc-logo.png', chains: ['ethereum', 'base'], minDeposit: 0.0001 },
-    { symbol: 'DAI', name: 'Dai', icon: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png', chains: ['ethereum', 'base'], minDeposit: 10 },
-];
-
-/**
- * Chain definitions
- */
-interface Chain {
-    id: DepositChain;
-    name: string;
-    icon: string;
-    color: string;
-}
-
-const CHAINS: Chain[] = [
-    { id: 'ethereum', name: 'Ethereum', icon: '/images/coin/ethereum.png', color: '#627EEA' },
-    { id: 'base', name: 'Base', icon: '/images/coin/base.jpeg', color: '#0052FF' },
-    { id: 'solana', name: 'Solana', icon: '/images/coin/solana.png', color: '#14F195' },
-    { id: 'sui', name: 'Sui', icon: '/images/coin/sui.png', color: '#6FBCF0' },
-];
+import { TOKENS, CHAINS, type Token, type Chain } from '../../constants/tokens';
 
 interface DepositModalProps {
     isOpen: boolean;
@@ -114,6 +78,21 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
         }
     }, [selectedToken, selectedChain.id]);
 
+    // Sync with context selected chain
+    const { selectedChain: contextChain } = useDeposit();
+
+    useEffect(() => {
+        if (isOpen && contextChain) {
+            const chain = CHAINS.find(c => c.id === contextChain);
+            if (chain) {
+                setSelectedChain(chain);
+                // Also update token if needed
+                const token = TOKENS.find(t => t.chains.includes(chain.id));
+                if (token) setSelectedToken(token);
+            }
+        }
+    }, [isOpen, contextChain]);
+
     // Fetch real wallet address from backend when chain changes
     useEffect(() => {
         if (!isOpen || !user?.id) return;
@@ -133,9 +112,8 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 setDepositAddress(wallet.address);
             } catch (err) {
                 console.error('Failed to get deposit address:', err);
-                setError('Failed to get deposit address');
-                // Fallback to demo address if API fails
-                setDepositAddress(getFallbackAddress(selectedChain.id));
+                setError('Unable to generate deposit address. Please try again later.');
+                setDepositAddress('');
             } finally {
                 setIsLoading(false);
             }
@@ -165,20 +143,20 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-[420px] bg-[#1a1b23] rounded-2xl shadow-2xl overflow-hidden border border-gray-800">
+            <div className="relative w-full max-w-[420px] bg-card rounded-2xl shadow-2xl overflow-hidden border border-border animate-in slide-in-from-bottom-5 duration-300">
                 {/* Header */}
-                <div className="relative px-6 py-4 border-b border-gray-800">
-                    <button onClick={onClose} className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-800 transition-colors text-gray-400">
+                <div className="relative px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
+                    <button onClick={onClose} className="absolute left-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
                         <Icons.Back />
                     </button>
                     <div className="text-center">
-                        <h2 className="text-lg font-semibold text-white">Transfer Crypto</h2>
-                        <p className="text-sm text-gray-500">Balance: ${balance?.availableBalance || '0.00'}</p>
+                        <h2 className="text-lg font-semibold text-foreground">Transfer Crypto</h2>
+                        <p className="text-sm text-muted-foreground">Balance: ${balance?.availableBalance || '0.00'}</p>
                     </div>
-                    <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-800 transition-colors text-gray-400">
+                    <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
                         <Icons.X />
                     </button>
                 </div>
@@ -187,7 +165,7 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 <div className="p-6 space-y-5">
                     {/* Error Alert */}
                     {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
+                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-500">
                             {error}
                         </div>
                     )}
@@ -197,33 +175,33 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         {/* Token Selector */}
                         <div className="flex-1 relative">
                             <div className="flex items-center justify-between h-6 mb-1.5">
-                                <label className="block text-xs text-gray-500">Supported token</label>
+                                <label className="block text-xs text-muted-foreground font-medium uppercase tracking-wider">Supported token</label>
                             </div>
                             <button
                                 onClick={() => { setShowTokenDropdown(!showTokenDropdown); setShowChainDropdown(false); }}
-                                className="w-full flex items-center justify-between p-2.5 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
+                                className="w-full flex items-center justify-between p-2.5 bg-secondary/50 rounded-xl border border-border hover:border-primary/50 transition-colors group"
                             >
                                 <div className="flex items-center gap-2">
                                     <img src={selectedToken.icon} alt={selectedToken.symbol} className="w-6 h-6 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = '/images/coin/ethereum.png'; }} />
-                                    <span className="font-medium text-white">{selectedToken.symbol}</span>
+                                    <span className="font-medium text-foreground">{selectedToken.symbol}</span>
                                 </div>
-                                <Icons.ChevronDown />
+                                <div className="text-muted-foreground group-hover:text-foreground transition-colors"><Icons.ChevronDown /></div>
                             </button>
 
                             {showTokenDropdown && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#252631] rounded-xl border border-gray-700 shadow-xl z-20 max-h-60 overflow-y-auto">
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-popover rounded-xl border border-border shadow-xl z-20 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                                     {TOKENS.map((token) => (
                                         <button
                                             key={token.symbol}
                                             onClick={() => { setSelectedToken(token); setShowTokenDropdown(false); }}
-                                            className={`w-full flex items-center gap-3 p-3 hover:bg-[#2d2e3a] transition-colors ${selectedToken.symbol === token.symbol ? 'bg-[#2d2e3a]' : ''}`}
+                                            className={`w-full flex items-center gap-3 p-3 hover:bg-accent transition-colors ${selectedToken.symbol === token.symbol ? 'bg-primary/10' : ''}`}
                                         >
                                             <img src={token.icon} alt={token.symbol} className="w-6 h-6 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = '/images/coin/ethereum.png'; }} />
                                             <div className="text-left">
-                                                <p className="font-medium text-white">{token.symbol}</p>
-                                                <p className="text-xs text-gray-500">{token.name}</p>
+                                                <p className={`font-medium ${selectedToken.symbol === token.symbol ? 'text-primary' : 'text-foreground'}`}>{token.symbol}</p>
+                                                <p className="text-xs text-muted-foreground">{token.name}</p>
                                             </div>
-                                            {selectedToken.symbol === token.symbol && <div className="ml-auto text-green-500"><Icons.Check /></div>}
+                                            {selectedToken.symbol === token.symbol && <div className="ml-auto text-primary"><Icons.Check /></div>}
                                         </button>
                                     ))}
                                 </div>
@@ -233,34 +211,34 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         {/* Chain Selector */}
                         <div className="flex-1 relative">
                             <div className="flex items-center justify-between h-6 mb-1.5">
-                                <label className="text-xs text-gray-500">Supported chain</label>
-                                <div className="flex items-center gap-1.5 bg-gray-800/50 px-2 py-0.5 rounded-full border border-gray-700/50">
-                                    <span className="text-[10px] text-gray-400">Min ${selectedToken.minDeposit}</span>
-                                    <Icons.Info />
+                                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Supported chain</label>
+                                <div className="flex items-center gap-1.5 bg-secondary/50 px-2 py-0.5 rounded-full border border-border">
+                                    <span className="text-[10px] text-muted-foreground font-medium">Min ${selectedToken.minDeposit}</span>
+                                    <div className="text-muted-foreground"><Icons.Info /></div>
                                 </div>
                             </div>
                             <button
                                 onClick={() => { setShowChainDropdown(!showChainDropdown); setShowTokenDropdown(false); }}
-                                className="w-full flex items-center justify-between p-2.5 bg-[#252631] rounded-xl border border-gray-700 hover:border-gray-600 transition-colors"
+                                className="w-full flex items-center justify-between p-2.5 bg-secondary/50 rounded-xl border border-border hover:border-primary/50 transition-colors group"
                             >
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <img src={selectedChain.icon} alt={selectedChain.name} className="w-6 h-6 rounded-full flex-shrink-0" />
-                                    <span className="font-medium text-white truncate">{selectedChain.name}</span>
+                                    <span className="font-medium text-foreground truncate">{selectedChain.name}</span>
                                 </div>
-                                <Icons.ChevronDown />
+                                <div className="text-muted-foreground group-hover:text-foreground transition-colors"><Icons.ChevronDown /></div>
                             </button>
 
                             {showChainDropdown && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#252631] rounded-xl border border-gray-700 shadow-xl z-20">
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-popover rounded-xl border border-border shadow-xl z-20 animate-in fade-in zoom-in-95 duration-200">
                                     {availableChains.map((chain) => (
                                         <button
                                             key={chain.id}
                                             onClick={() => { setSelectedChain(chain); setShowChainDropdown(false); }}
-                                            className={`w-full flex items-center gap-3 p-3 hover:bg-[#2d2e3a] transition-colors ${selectedChain.id === chain.id ? 'bg-[#2d2e3a]' : ''}`}
+                                            className={`w-full flex items-center gap-3 p-3 hover:bg-accent transition-colors ${selectedChain.id === chain.id ? 'bg-primary/10' : ''}`}
                                         >
                                             <img src={chain.icon} alt={chain.name} className="w-6 h-6 rounded-full" />
-                                            <span className="font-medium text-white">{chain.name}</span>
-                                            {selectedChain.id === chain.id && <div className="ml-auto text-green-500"><Icons.Check /></div>}
+                                            <span className={`font-medium ${selectedChain.id === chain.id ? 'text-primary' : 'text-foreground'}`}>{chain.name}</span>
+                                            {selectedChain.id === chain.id && <div className="ml-auto text-primary"><Icons.Check /></div>}
                                         </button>
                                     ))}
                                 </div>
@@ -271,18 +249,18 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     {/* QR Code */}
                     <div className="flex justify-center py-4">
                         {isLoading ? (
-                            <div className="w-[212px] h-[212px] bg-white/10 rounded-2xl flex items-center justify-center">
-                                <Icons.Loader />
+                            <div className="w-[212px] h-[212px] bg-secondary/50 rounded-2xl flex items-center justify-center border border-border">
+                                <div className="text-primary"><Icons.Loader /></div>
                             </div>
                         ) : (
-                            <div className="relative bg-white p-4 rounded-2xl">
+                            <div className="relative bg-white p-4 rounded-2xl border border-border shadow-sm">
                                 <QRCodeSVG
                                     value={depositAddress || 'loading...'}
                                     size={180}
                                     level="H"
                                     includeMargin={false}
                                     bgColor="#FFFFFF"
-                                    fgColor="#1a1b23"
+                                    fgColor="#000000"
                                 />
                                 <div
                                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white p-1 shadow-lg"
@@ -297,34 +275,34 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     {/* Deposit Address */}
                     <div className="space-y-2">
                         <div className="flex items-center gap-1">
-                            <span className="text-sm text-gray-400">Your deposit address</span>
-                            <Icons.Info />
+                            <span className="text-sm font-medium text-muted-foreground">Your deposit address</span>
+                            <div className="text-muted-foreground"><Icons.Info /></div>
                         </div>
-                        <div className="bg-[#252631] rounded-xl border border-gray-700 overflow-hidden">
+                        <div className="bg-secondary/50 rounded-xl border border-border overflow-hidden">
                             <div className="p-3">
-                                <code className="text-sm text-gray-300 break-all">
+                                <code className="text-sm text-foreground break-all font-mono">
                                     {isLoading ? 'Loading...' : depositAddress}
                                 </code>
                             </div>
                             <button
                                 onClick={copyAddress}
                                 disabled={isLoading || !depositAddress}
-                                className="w-full px-4 py-2.5 bg-[#2d2e3a] hover:bg-[#363745] transition-colors flex items-center justify-center gap-2 border-t border-gray-700 disabled:opacity-50"
+                                className="w-full px-4 py-2.5 bg-card hover:bg-accent transition-colors flex items-center justify-center gap-2 border-t border-border disabled:opacity-50"
                             >
                                 {copied ? (
                                     <><div className="text-green-500"><Icons.Check /></div><span className="text-green-500 font-medium">Copied!</span></>
                                 ) : (
-                                    <><div className="text-gray-400"><Icons.Copy /></div><span className="text-gray-300 font-medium">Copy address</span></>
+                                    <><div className="text-muted-foreground"><Icons.Copy /></div><span className="text-foreground font-medium">Copy address</span></>
                                 )}
                             </button>
                         </div>
                     </div>
 
                     {/* Info Banner */}
-                    <div className="bg-[#252631] rounded-xl p-3 flex items-center gap-2 border border-gray-700">
-                        <div className="text-blue-400"><Icons.Info /></div>
-                        <p className="text-xs text-gray-400">
-                            Send only <span className="text-white font-medium">{selectedToken.symbol}</span> on <span className="text-white font-medium">{selectedChain.name}</span> network. Other assets will be lost.
+                    <div className="bg-primary/5 rounded-xl p-3 flex items-center gap-2 border border-primary/10">
+                        <div className="text-primary"><Icons.Info /></div>
+                        <p className="text-xs text-muted-foreground">
+                            Send only <span className="text-foreground font-bold">{selectedToken.symbol}</span> on <span className="text-foreground font-bold">{selectedChain.name}</span> network. Other assets will be lost.
                         </p>
                     </div>
                 </div>
@@ -332,15 +310,3 @@ export function DepositModal({ isOpen, onClose }: DepositModalProps) {
         </div>
     );
 }
-
-// Fallback addresses for demo/development
-function getFallbackAddress(chain: DepositChain): string {
-    const addresses: Record<DepositChain, string> = {
-        ethereum: '0xCc3d3f27620d8a1c4AF98Ce96B47939fb6594bd0',
-        base: '0xCc3d3f27620d8a1c4AF98Ce96B47939fb6594bd0',
-        solana: 'DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1',
-        sui: '0x02a212de6a9dfa3a69e22387acfbafbb1a9e591c5d4a123456789abcdef12345',
-    };
-    return addresses[chain];
-}
-

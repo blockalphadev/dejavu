@@ -59,7 +59,14 @@ async function bootstrap() {
         origin: corsOrigins.split(',').map(origin => origin.trim()),
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID'],
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'X-Requested-With',
+            'X-Request-ID',
+            'Cache-Control',  // Required for frontend cache bypass
+            'Pragma',         // Required for frontend cache bypass
+        ],
         exposedHeaders: ['X-Total-Count', 'X-Request-ID'],
         maxAge: 86400, // 24 hours
     });

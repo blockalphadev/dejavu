@@ -70,6 +70,9 @@ export const envSchema = z.object({
     PRIVY_APP_ID: z.string().optional(),
     PRIVY_APP_SECRET: z.string().optional(),
     PRIVY_JWKS_URL: z.string().url().optional(),
+
+    // Sui Network Configuration (optional, defaults to mainnet)
+    SUI_NETWORK: z.enum(['mainnet', 'testnet', 'devnet']).default('mainnet'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

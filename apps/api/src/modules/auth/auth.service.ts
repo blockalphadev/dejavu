@@ -5,6 +5,8 @@ import {
     ConflictException,
     ForbiddenException,
     Logger,
+    Inject,
+    forwardRef,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +15,7 @@ import { SupabaseService } from '../../database/supabase.service.js';
 import { UsersService } from '../users/users.service.js';
 import { WalletStrategy } from './strategies/wallet.strategy.js';
 import { PasswordValidator } from './validators/index.js';
+import { DepositService } from '../deposits/deposit.service.js';
 import {
     SignupDto,
     LoginDto,
@@ -71,6 +74,8 @@ export class AuthService {
         private readonly usersService: UsersService,
         private readonly walletStrategy: WalletStrategy,
         private readonly passwordValidator: PasswordValidator,
+        @Inject(forwardRef(() => DepositService))
+        private readonly depositService: DepositService,
     ) { }
 
     /**
@@ -120,6 +125,9 @@ export class AuthService {
             avatar_url: null,
             wallet_addresses: [],
         });
+
+        // Ensure Privy wallets exist (generate if not exists)
+        await this.ensurePrivyWalletsExist(authData.user.id);
 
         // Generate tokens
         const tokens = await this.generateTokens({ sub: authData.user.id, email });
@@ -180,6 +188,9 @@ export class AuthService {
 
         // Get user profile
         const profile = await this.usersService.findById(data.user.id);
+
+        // Ensure Privy wallets exist (generate if not exists)
+        await this.ensurePrivyWalletsExist(data.user.id);
 
         // Generate tokens
         const tokens = await this.generateTokens({ sub: data.user.id, email });
@@ -334,13 +345,19 @@ export class AuthService {
                 wallet_addresses: [{ address, chain, isPrimary: true }],
             });
 
-            // Add wallet address
-            await this.usersService.addWalletAddress(authData.user.id, address, chain);
+        // Add wallet address as EXTERNAL wallet (WAJIB disimpan)
+        await this.usersService.addWalletAddress(authData.user.id, address, chain, false, 'external');
 
             user = await this.usersService.findById(authData.user.id);
 
             this.logger.log(`Wallet user created: ${address} (${chain})`);
+        } else {
+            // User exists, ensure external wallet is saved
+            await this.usersService.addWalletAddress(user.id, address, chain, false, 'external');
         }
+
+        // Ensure Privy wallet exists for all chains (generate if not exists)
+        await this.ensurePrivyWalletsExist(user!.id);
 
         // Log successful wallet auth
         await this.logLoginAttempt({
@@ -369,6 +386,35 @@ export class AuthService {
             },
             tokens,
         };
+    }
+
+    /**
+     * Ensure Privy wallets exist for user (generate if not exists)
+     * Called after successful login (email or wallet)
+     */
+    private async ensurePrivyWalletsExist(userId: string): Promise<void> {
+        try {
+            const chains: Array<'ethereum' | 'base' | 'solana' | 'sui'> = ['ethereum', 'base', 'solana', 'sui'];
+            
+            for (const chain of chains) {
+                try {
+                    // Try to get existing Privy wallet
+                    const existing = await this.depositService.getPrivyWallet(userId, chain);
+                    if (!existing) {
+                        // Generate Privy wallet for this chain
+                        // Use user ID as privyUserId (will be mapped by DepositService)
+                        this.logger.log(`Generating Privy wallet for user ${userId} on ${chain}`);
+                        await this.depositService.getOrCreateDepositWallet(userId, chain);
+                    }
+                } catch (error) {
+                    // Log but don't fail - wallet generation can be retried later
+                    this.logger.warn(`Failed to ensure Privy wallet for ${chain}: ${error}`);
+                }
+            }
+        } catch (error) {
+            // Log but don't fail login process
+            this.logger.error(`Failed to ensure Privy wallets: ${error}`);
+        }
     }
 
     /**

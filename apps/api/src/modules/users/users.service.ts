@@ -164,6 +164,8 @@ export class UsersService {
      * Update user profile
      */
     async updateProfile(id: string, update: ProfileUpdate): Promise<Profile> {
+        this.logger.log(`Updating profile ${id} with data: ${JSON.stringify(update)}`);
+
         const supabase = this.supabaseService.getAdminClient();
         const { data, error } = await supabase
             .from('profiles')
@@ -173,10 +175,12 @@ export class UsersService {
             .single();
 
         if (error) {
-            this.logger.error(`Failed to update profile: ${error.message}`);
+            this.logger.error(`Failed to update profile ${id}: ${error.message}`);
+            this.logger.error(`Error details: ${JSON.stringify(error)}`);
             throw new NotFoundException('Profile not found');
         }
 
+        this.logger.log(`Profile ${id} updated successfully: ${JSON.stringify(data)}`);
         return data as Profile;
     }
 
@@ -188,8 +192,27 @@ export class UsersService {
         address: string,
         chain: 'ethereum' | 'solana' | 'sui' | 'base',
         isPrimary = false,
+        walletType: 'external' | 'privy' = 'external',
     ): Promise<void> {
         const supabase = this.supabaseService.getAdminClient();
+
+        // Check if wallet already exists
+        const { data: existing } = await supabase
+            .from('wallet_addresses')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('address', address.toLowerCase())
+            .eq('chain', chain)
+            .single();
+
+        if (existing) {
+            // Wallet already exists, update wallet_type if needed
+            await supabase
+                .from('wallet_addresses')
+                .update({ wallet_type: walletType })
+                .eq('id', existing.id);
+            return;
+        }
 
         // Check if this is the first wallet (make it primary)
         const { data: existingWallets } = await supabase
@@ -213,6 +236,7 @@ export class UsersService {
             address: address.toLowerCase(),
             chain,
             is_primary: shouldBePrimary,
+            wallet_type: walletType,
         });
 
         if (error) {
@@ -235,6 +259,25 @@ export class UsersService {
                 await this.updateProfile(userId, { wallet_addresses: wallets });
             }
         }
+    }
+
+    /**
+     * Get external wallets for user (non-Privy wallets)
+     */
+    async getExternalWallets(userId: string): Promise<Array<{ address: string; chain: string }>> {
+        const supabase = this.supabaseService.getAdminClient();
+        const { data, error } = await supabase
+            .from('wallet_addresses')
+            .select('address, chain')
+            .eq('user_id', userId)
+            .eq('wallet_type', 'external');
+
+        if (error) {
+            this.logger.error(`Failed to get external wallets: ${error.message}`);
+            return [];
+        }
+
+        return (data || []).map(w => ({ address: w.address, chain: w.chain }));
     }
 
     /**

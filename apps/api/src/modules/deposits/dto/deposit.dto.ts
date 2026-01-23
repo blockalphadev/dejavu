@@ -7,11 +7,59 @@ import {
     Min,
     Max,
     MaxLength,
+    MinLength,
     Matches,
     IsInt,
+    IsUUID,
+    ValidatorConstraint,
+    ValidatorConstraintInterface,
+    ValidationArguments,
+    Validate,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import {
+    isValidEvmAddress,
+    isValidSolanaAddress,
+    isValidSuiAddress,
+} from '../utils/address-validator.util.js';
+
+/**
+ * Custom validator for blockchain addresses
+ * Validates address format based on the chain specified in the same DTO
+ */
+@ValidatorConstraint({ name: 'isValidBlockchainAddress', async: false })
+export class IsValidBlockchainAddressConstraint implements ValidatorConstraintInterface {
+    validate(address: string, args: ValidationArguments): boolean {
+        const object = args.object as any;
+        const chain = object.chain;
+
+        if (!address || !chain) {
+            return false;
+        }
+
+        switch (chain) {
+            case 'ethereum':
+            case 'base':
+            case DepositChain.ETHEREUM:
+            case DepositChain.BASE:
+                return isValidEvmAddress(address);
+            case 'solana':
+            case DepositChain.SOLANA:
+                return isValidSolanaAddress(address);
+            case 'sui':
+            case DepositChain.SUI:
+                return isValidSuiAddress(address);
+            default:
+                return false;
+        }
+    }
+
+    defaultMessage(args: ValidationArguments): string {
+        const object = args.object as any;
+        return `Invalid ${object.chain || 'blockchain'} address format`;
+    }
+}
 
 /**
  * Supported blockchain networks for deposits
@@ -64,12 +112,13 @@ export class InitiateDepositDto {
  */
 export class VerifyDepositDto {
     @ApiProperty({
-        description: 'Unique nonce from initiation',
-        example: 'dep_abc123xyz',
+        description: 'Unique nonce from initiation (HMAC-signed)',
+        example: 'dep_abc123xyz.signature',
     })
     @IsString()
-    @MaxLength(64)
-    @Matches(/^dep_[a-zA-Z0-9]+$/, { message: 'Invalid nonce format' })
+    @MinLength(20, { message: 'Nonce too short' })
+    @MaxLength(128, { message: 'Nonce too long' })
+    @Matches(/^dep_[a-fA-F0-9]{32,64}(\.[a-fA-F0-9]{64})?$/, { message: 'Invalid nonce format' })
     nonce: string;
 
     @ApiProperty({
@@ -152,6 +201,18 @@ export class BalanceResponseDto {
 
     @ApiProperty({ example: 'USDC' })
     currency: string;
+
+    @ApiPropertyOptional({
+        description: 'List of assets held on different chains',
+        example: [{ symbol: 'SUI', balance: '0.12', chain: 'sui', valueUsd: '0.24' }]
+    })
+    assets?: Array<{
+        symbol: string;
+        balance: string;
+        chain: string;
+        valueUsd?: string;
+        address?: string;
+    }>;
 }
 
 /**
@@ -205,16 +266,21 @@ export class DepositTransactionDto {
 
 /**
  * DTO for initiating a withdrawal
+ * 
+ * OWASP A03:2021 - Injection Prevention
+ * Uses custom validator for chain-specific address validation
  */
 export class InitiateWithdrawalDto {
     @ApiProperty({
         description: 'Amount to withdraw in USD',
         example: 50.00,
         minimum: 1,
+        maximum: 100000,
     })
-    @IsNumber({ maxDecimalPlaces: 8 })
-    @IsPositive()
+    @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Amount can have at most 2 decimal places' })
+    @IsPositive({ message: 'Amount must be positive' })
     @Min(1, { message: 'Minimum withdrawal amount is $1' })
+    @Max(100000, { message: 'Maximum withdrawal amount is $100,000' })
     @Type(() => Number)
     amount: number;
 
@@ -223,36 +289,50 @@ export class InitiateWithdrawalDto {
         enum: DepositChain,
         example: DepositChain.BASE,
     })
-    @IsEnum(DepositChain, { message: 'Invalid chain' })
+    @IsEnum(DepositChain, { message: 'Invalid chain. Supported: ethereum, solana, sui, base' })
     chain: DepositChain;
 
     @ApiProperty({
-        description: 'Destination wallet address',
-        example: '0x1234567890abcdef...',
+        description: 'Destination wallet address (chain-specific format)',
+        examples: {
+            ethereum: { value: '0x742d35Cc6634C0532925a3b844Bc9e7595f3bD1d' },
+            solana: { value: 'DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1' },
+            sui: { value: '0x02a212de6a9dfa3a69e22387acfbafbb1a9e591c5d4a123456789abcdef12345' },
+        },
     })
     @IsString()
-    @Matches(/^(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})$/, {
-        message: 'Invalid wallet address format',
-    })
+    @MinLength(32, { message: 'Address too short' })
+    @MaxLength(66, { message: 'Address too long' })
+    @Validate(IsValidBlockchainAddressConstraint)
     toAddress: string;
 }
 
 /**
  * DTO for confirming a withdrawal
+ * 
+ * OWASP A03:2021 - Injection Prevention
+ * Strict validation on withdrawal confirmation
  */
 export class ConfirmWithdrawalDto {
     @ApiProperty({
         description: 'Withdrawal ID (UUID)',
-        example: 'uuid-here',
+        example: '550e8400-e29b-41d4-a716-446655440000',
     })
     @IsString()
+    @IsUUID('4', { message: 'Invalid withdrawal ID format' })
     withdrawalId: string;
 
     @ApiProperty({
-        description: 'Transaction hash from blockchain',
-        example: '0x123...',
+        description: 'Transaction hash from blockchain (chain-specific format)',
+        example: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
     })
     @IsString()
+    @MinLength(64, { message: 'Transaction hash too short' })
+    @MaxLength(128, { message: 'Transaction hash too long' })
+    @Matches(
+        /^(0x[a-fA-F0-9]{64}|[1-9A-HJ-NP-Za-km-z]{43,88}|[a-fA-F0-9]{64})$/,
+        { message: 'Invalid transaction hash format' },
+    )
     txHash: string;
 }
 

@@ -21,7 +21,7 @@ import {
     BarChart,
     Bar
 } from 'recharts';
-import { motion } from 'framer-motion';
+
 
 
 // Mock chart data

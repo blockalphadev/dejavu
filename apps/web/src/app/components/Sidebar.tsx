@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TrendingUp, Star, ChevronRight, X, LogIn, UserPlus, LogOut, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "./auth/AuthContext";
 import { useAdmin } from "../contexts/AdminContext";
-import { useDeposit } from "./DepositContext";
+import { useDeposit } from "../contexts/DepositContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,11 +14,19 @@ interface SidebarProps {
   onNavigate?: (tab: string) => void;
 }
 
-export function Sidebar({ isOpen, onClose, onOpenAuth, onNavigate }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
+  const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
   const { isAdmin } = useAdmin();
   const { openDepositModal } = useDeposit();
   const [imgError, setImgError] = useState(false);
+
+  // Safe navigation helper - prevents throttling by closing sidebar first
+  const handleNavigate = (path: string) => {
+    onClose();
+    // Small delay to allow sidebar animation to start before navigation
+    requestAnimationFrame(() => navigate(path));
+  };
 
   useEffect(() => {
     if (user?.avatarUrl) {
@@ -121,7 +130,7 @@ export function Sidebar({ isOpen, onClose, onOpenAuth, onNavigate }: SidebarProp
                   Deposit some cash to start betting
                 </p>
                 <Button
-                  onClick={openDepositModal}
+                  onClick={() => openDepositModal()}
                   className="w-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]">
                   Deposit
                   <ChevronRight className="w-4 h-4 ml-2" />
@@ -132,12 +141,7 @@ export function Sidebar({ isOpen, onClose, onOpenAuth, onNavigate }: SidebarProp
                 <Button
                   variant="ghost"
                   className="w-full border border-yellow-500/20 bg-yellow-500/5 text-yellow-500 hover:bg-yellow-500/10 hover:border-yellow-500/40 transition-all duration-300 group"
-                  onClick={() => {
-                    if (onNavigate) {
-                      onNavigate('admin');
-                      onClose();
-                    }
-                  }}
+                  onClick={() => handleNavigate('/admin')}
                 >
                   <Shield className="w-4 h-4 mr-2" />
                   Admin Dashboard

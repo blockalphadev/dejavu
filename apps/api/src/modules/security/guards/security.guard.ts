@@ -46,7 +46,8 @@ export class RateLimitGuard implements CanActivate {
         // Determine identifier (user ID or IP)
         const userId = request.user?.sub;
         const ipAddress = request.ip || request.headers['x-forwarded-for'] || 'unknown';
-        const identifier = userId || `ip:${ipAddress}`;
+        const identifier = userId || ipAddress;
+        const identifierType: 'user' | 'ip' = userId ? 'user' : 'ip';
 
         // Get endpoint path
         const endpoint = `${request.method}:${request.route?.path || request.path}`;
@@ -59,6 +60,7 @@ export class RateLimitGuard implements CanActivate {
             endpoint,
             limit,
             windowSeconds,
+            identifierType,
         );
 
         // Set rate limit headers

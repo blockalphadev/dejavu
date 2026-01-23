@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/index.js';
 import { CurrentUser } from '../auth/decorators/index.js';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { UpdateProfileDto } from './dto/index.js';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -29,17 +30,34 @@ export class UsersController {
     @Patch('profile')
     async updateProfile(
         @CurrentUser('id') userId: string,
-        @Body() body: {
-            fullName?: string;
-            bio?: string;
-            preferences?: Record<string, any>;
-        },
+        @Body() body: UpdateProfileDto,
     ) {
-        return this.usersService.updateProfile(userId, {
-            full_name: body.fullName,
-            bio: body.bio,
-            preferences: body.preferences,
-        });
+        console.log(`[UsersController] Received profile update request for user ${userId}`);
+        console.log(`[UsersController] Request body:`, JSON.stringify(body));
+
+        // Build update object, filtering out undefined values
+        const updateData: Record<string, any> = {};
+
+        if (body.fullName !== undefined) {
+            updateData.full_name = body.fullName;
+        }
+        if (body.bio !== undefined) {
+            updateData.bio = body.bio;
+        }
+        if (body.preferences !== undefined) {
+            updateData.preferences = body.preferences;
+        }
+
+        console.log(`[UsersController] Prepared update data:`, JSON.stringify(updateData));
+
+        if (Object.keys(updateData).length === 0) {
+            console.log(`[UsersController] No fields to update, returning current profile`);
+            return this.usersService.findById(userId);
+        }
+
+        const result = await this.usersService.updateProfile(userId, updateData);
+        console.log(`[UsersController] Update successful, returning:`, JSON.stringify(result));
+        return result;
     }
 
     @Post('avatar')
@@ -84,5 +102,11 @@ export class UsersController {
         // I will trust the frontend to send the chain.
 
         return this.usersService.removeWalletAddress(userId, address, body.chain);
+    }
+
+    @Get('wallets/external')
+    async getExternalWallets(@CurrentUser('id') userId: string) {
+        const wallets = await this.usersService.getExternalWallets(userId);
+        return { wallets };
     }
 }

@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
@@ -15,6 +16,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module.j
 import { SportsModule } from './modules/sports/sports.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthController } from './health.controller.js';
+import { RootController } from './root.controller.js';
 import { envSchema } from './config/env.validation.js';
 import {
     LoggerMiddleware,
@@ -55,8 +57,11 @@ import { AuditLogInterceptor } from './common/interceptors/index.js';
         ReferralsModule,
         TransactionsModule,
         SportsModule,
+
+        // Scheduling
+        ScheduleModule.forRoot(),
     ],
-    controllers: [HealthController],
+    controllers: [RootController, HealthController],
     providers: [
         AuditLogInterceptor,
     ],

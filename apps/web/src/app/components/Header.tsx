@@ -1,5 +1,6 @@
+import React, { useState, useEffect } from "react";
 import { Search, Bell, Sun, Moon, Laptop, Menu, ShieldCheck } from "lucide-react";
-import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "./ThemeProvider";
 import { Button } from "./ui/button";
 import { Logo3D } from "./Logo3D";
@@ -16,18 +17,50 @@ import { useAdmin } from "../contexts/AdminContext";
 import { ProfileButton } from "./ProfileButton";
 import { motion } from "motion/react";
 import { useNotifications } from "../hooks/useNotifications";
+import { SearchModal } from "./SearchModal";
 
 interface HeaderProps {
-  currentTab?: string;
-  onNavigate?: (tab: string) => void;
   onOpenAuth: (mode?: 'login' | 'signup') => void;
   onToggleMenu?: () => void;
+  // currentTab and onNavigate are deprecated but keeping optional to avoid breakage if passed
+  currentTab?: string;
+  onNavigate?: any;
 }
 
-export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggleMenu }: HeaderProps) {
+export function Header({ onOpenAuth, onToggleMenu }: HeaderProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Helper to determine current tab based on URL path
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.startsWith('/markets') || path === '/') return 'markets';
+    if (path.startsWith('/portfolio')) return 'dashboards'; // maps to 'dashboards' for NavIcons compatibility
+    if (path.startsWith('/ranks')) return 'ranks';
+    if (path.startsWith('/activity')) return 'activity';
+    if (path.startsWith('/rewards')) return 'rewards';
+    if (path.startsWith('/admin')) return 'admin';
+    return '';
+  };
+
+  const currentTab = getCurrentTab();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, isLoading } = useAuth();
   const { isAdmin } = useAdmin();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Global keyboard shortcut for search (/ key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Open search with / key (when not focused on an input)
+      if (e.key === "/" && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
@@ -48,7 +81,7 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
 
             <div
               className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => onNavigate?.('markets')}
+              onClick={() => navigate('/markets')}
             >
               <div className="w-9 h-9 relative">
                 <Logo3D className="w-full h-full" />
@@ -59,12 +92,11 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
               </span>
             </div>
 
-            {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-2">
               <NavLink
                 icon={<NavIcons.Markets active={currentTab === 'markets'} />}
                 active={currentTab === 'markets'}
-                onClick={() => onNavigate?.('markets')}
+                onClick={() => navigate('/markets')}
               >
                 Markets
               </NavLink>
@@ -72,7 +104,7 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
               <NavLink
                 icon={<NavIcons.Ranks active={currentTab === 'ranks'} />}
                 active={currentTab === 'ranks'}
-                onClick={() => onNavigate?.('ranks')}
+                onClick={() => navigate('/ranks')}
               >
                 Ranks
               </NavLink>
@@ -80,7 +112,7 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
               <NavLink
                 icon={<NavIcons.Activity active={currentTab === 'activity'} />}
                 active={currentTab === 'activity'}
-                onClick={() => onNavigate?.('activity')}
+                onClick={() => navigate('/activity')}
               >
                 Activity
               </NavLink>
@@ -88,7 +120,7 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
               <NavLink
                 icon={<NavIcons.Rewards active={currentTab === 'rewards'} />}
                 active={currentTab === 'rewards'}
-                onClick={() => onNavigate?.('rewards')}
+                onClick={() => navigate('/rewards')}
               >
                 Rewards
               </NavLink>
@@ -97,7 +129,7 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
                 <NavLink
                   icon={<ShieldCheck className={`w-4 h-4 ${currentTab === 'admin' ? 'text-primary' : ''}`} />}
                   active={currentTab === 'admin'}
-                  onClick={() => onNavigate?.('admin')}
+                  onClick={() => navigate('/admin')}
                 >
                   Admin
                 </NavLink>
@@ -107,16 +139,18 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
 
           {/* Search and Actions */}
           <div className="flex items-center gap-3">
-            {/* Search Bar */}
-            <div className="hidden md:flex items-center gap-2 bg-secondary/50 border border-transparent focus-within:border-primary/20 focus-within:bg-secondary rounded-full px-4 py-2 w-64 transition-all">
+            {/* Search Bar - Click to open modal */}
+            <div
+              onClick={() => setIsSearchOpen(true)}
+              className="hidden md:flex items-center gap-2 bg-secondary/50 border border-transparent hover:border-primary/20 hover:bg-secondary rounded-full px-4 py-2 w-64 transition-all cursor-pointer group"
+            >
               <Search className="w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search everything..."
-                className="bg-transparent border-none outline-none w-full text-sm placeholder:text-muted-foreground/70"
-              />
-              <span className="text-xs text-muted-foreground opacity-50">/</span>
+              <span className="text-sm text-muted-foreground/70 flex-1">Search everything...</span>
+              <kbd className="text-xs text-muted-foreground/50 px-1.5 py-0.5 bg-background/50 rounded border border-border/50">/</kbd>
             </div>
+
+            {/* Search Modal */}
+            <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
             {/* Theme Toggle Dropdown */}
             <DropdownMenu>
@@ -150,7 +184,7 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
                 if (!isAuthenticated) {
                   onOpenAuth('login');
                 } else {
-                  onNavigate?.('notifications');
+                  navigate('/notifications');
                 }
               }}
               className="relative p-2 hover:bg-accent/50 rounded-full transition-colors w-9 h-9 flex items-center justify-center"
@@ -162,7 +196,7 @@ export function Header({ currentTab = 'markets', onNavigate, onOpenAuth, onToggl
             {/* Auth Buttons / Profile */}
             {isAuthenticated && user ? (
               <div className="hidden sm:block">
-                <ProfileButton user={user} onNavigate={onNavigate} />
+                <ProfileButton user={user} />
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
