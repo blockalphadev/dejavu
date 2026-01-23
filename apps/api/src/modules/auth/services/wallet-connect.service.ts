@@ -70,42 +70,49 @@ export class WalletConnectService {
             throw new BadRequestException(`Invalid ${chain} address format`);
         }
 
-        // Call Supabase RPC to generate nonce and message securely
-        // This handles:
-        // 1. Rate limiting (implicitly via RPC if added, but we double check here)
-        // 2. Cryptographically secure nonce generation
-        // 3. SIWE message formatting consistent with backend validation
-        // 4. Storing the nonce with expiration
-        const supabase = this.supabaseService.getAdminClient();
+        // Check rate limiting
+        await this.checkRateLimit(address, ip);
 
-        const { data, error } = await supabase.rpc('generate_wallet_nonce', {
-            p_wallet_address: address.toLowerCase(),
-            p_chain: chain,
-            p_ip_address: ip,
-            p_user_agent: userAgent
-        });
+        // Generate nonce in TypeScript (more reliable than database function)
+        const nonce = this.generateCryptoNonce();
+        const issuedAt = new Date();
+        const expiresAt = new Date(issuedAt.getTime() + 5 * 60 * 1000); // 5 minutes
+        const domain = 'dejavu.app';
+        const uri = 'https://dejavu.app';
+
+        // Generate SIWE-compatible message
+        const message = this.generateSIWEMessage(address, chain, nonce, issuedAt, expiresAt, domain, uri);
+
+        // Store nonce in database
+        const supabase = this.supabaseService.getAdminClient();
+        const { error } = await supabase
+            .from('wallet_auth_nonces')
+            .insert({
+                nonce,
+                wallet_address: address.toLowerCase(),
+                chain,
+                message,
+                domain,
+                issued_at: issuedAt.toISOString(),
+                expires_at: expiresAt.toISOString(),
+                ip_address: ip,
+                user_agent: userAgent,
+                status: 'pending',
+            });
 
         if (error) {
-            this.logger.error(`Failed to generate challenge via RPC: ${error.message}`);
-
-            // Fallback logic could go here, but for high security we fail closed
+            this.logger.error(`Failed to store nonce: ${error.message}`);
             throw new BadRequestException('Failed to generate authentication challenge');
         }
 
-        const result = data?.[0]; // RPC returns a table/set
-
-        if (!result) {
-            throw new BadRequestException('Failed to generate challenge');
-        }
-
-        this.logger.debug(`Generated challenge for ${address.slice(0, 10)}... on ${chain} (Nonce: ${result.nonce})`);
+        this.logger.debug(`Generated challenge for ${address.slice(0, 10)}... on ${chain}`);
 
         return {
-            message: result.message,
-            nonce: result.nonce,
-            issuedAt: result.issued_at,
-            expiresAt: result.expires_at,
-            domain: 'dejavu.app', // Should match what's in the RPC
+            message,
+            nonce,
+            issuedAt: issuedAt.toISOString(),
+            expiresAt: expiresAt.toISOString(),
+            domain,
         };
     }
 
@@ -700,6 +707,87 @@ export class WalletConnectService {
     }
 
     /**
+     * Generate cryptographic nonce (32 bytes hex)
+     */
+    private generateCryptoNonce(): string {
+        return crypto.randomBytes(32).toString('hex');
+    }
+
+    /**
+     * Generate SIWE-compatible message for wallet signing
+     */
+    private generateSIWEMessage(
+        address: string,
+        chain: string,
+        nonce: string,
+        issuedAt: Date,
+        expiresAt: Date,
+        domain: string,
+        uri: string,
+    ): string {
+        const formatDate = (date: Date) => date.toISOString();
+
+        // Get chain ID for EVM chains
+        const chainId = this.getChainId(chain);
+
+        // EVM chains use SIWE format (EIP-4361)
+        if (['ethereum', 'base', 'polygon', 'arbitrum', 'optimism'].includes(chain)) {
+            return `${domain} wants you to sign in with your Ethereum account:
+${address}
+
+Welcome to DeJaVu! Sign this message to verify your wallet ownership.
+
+This request will NOT trigger a blockchain transaction or cost any gas fees.
+
+URI: ${uri}
+Version: 1
+Chain ID: ${chainId}
+Nonce: ${nonce}
+Issued At: ${formatDate(issuedAt)}
+Expiration Time: ${formatDate(expiresAt)}`;
+        }
+
+        // Solana message format
+        if (chain === 'solana') {
+            return `${domain} wants you to sign in with your Solana account:
+${address}
+
+Domain: ${domain}
+Chain: Solana
+Nonce: ${nonce}
+Issued: ${formatDate(issuedAt)}
+Expires: ${formatDate(expiresAt)}
+
+Sign to verify ownership.`;
+        }
+
+        // SUI message format
+        if (chain === 'sui') {
+            return `${domain} wants you to sign in with your SUI account:
+${address}
+
+Domain: ${domain}
+Chain: SUI
+Nonce: ${nonce}
+Issued: ${formatDate(issuedAt)}
+Expires: ${formatDate(expiresAt)}
+
+Sign to verify ownership.`;
+        }
+
+        // Generic format for other chains
+        return `DeJaVu Login Request
+
+Wallet: ${address}
+Chain: ${chain}
+Nonce: ${nonce}
+Issued: ${formatDate(issuedAt)}
+Expires: ${formatDate(expiresAt)}
+
+Sign to verify ownership.`;
+    }
+
+    /**
      * Get chain ID for EVM chains
      */
     private getChainId(chain: string): number {
@@ -713,4 +801,3 @@ export class WalletConnectService {
         return chainIds[chain] || 1;
     }
 }
-
