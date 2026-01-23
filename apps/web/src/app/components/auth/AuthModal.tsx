@@ -49,6 +49,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     const [walletState, setWalletState] = useState<WalletState | null>(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
 
+    // Check mobile device once
+    const isMobile = isMobileDevice();
+
     // SUI SDK Hooks
     const { mutateAsync: connectSui } = useConnectWallet();
     const { mutateAsync: signSuiMessage } = useSignPersonalMessage();
@@ -450,30 +453,30 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                         <WalletOption
                             icon={<AuthIcons.Metamask />}
                             name="Metamask"
-                            recommended
+                            recommended={isMobile || MetaMaskAdapter.isInstalled()}
                             installed={MetaMaskAdapter.isInstalled()}
-                            isMobile={isMobileDevice()}
+                            isMobile={isMobile}
                             onClick={() => handleWalletConnect('Metamask')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Phantom />}
                             name="Phantom"
                             installed={PhantomAdapter.isInstalled()}
-                            isMobile={isMobileDevice()}
+                            isMobile={isMobile}
                             onClick={() => handleWalletConnect('Phantom')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Coinbase />}
                             name="Coinbase"
                             installed={CoinbaseAdapter.isInstalled()}
-                            isMobile={isMobileDevice()}
+                            isMobile={isMobile}
                             onClick={() => handleWalletConnect('Coinbase')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Slush />}
                             name="Slush"
                             installed={true}
-                            isMobile={isMobileDevice()}
+                            isMobile={isMobile}
                             onClick={() => handleWalletConnect('Slush')}
                         />
                         <WalletOption
@@ -481,7 +484,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             name="WalletConnect"
                             className="col-span-2"
                             installed={true}
-                            isMobile={isMobileDevice()}
+                            isMobile={isMobile}
                             onClick={() => handleWalletConnect('WalletConnect')}
                         />
                     </div>
