@@ -12,6 +12,7 @@ const PortfolioPage = lazy(() => import("./pages/portfolio").then(module => ({ d
 const SearchPage = lazy(() => import("./pages/search").then(module => ({ default: module.SearchPage })));
 const NotificationsPage = lazy(() => import("./pages/notifications").then(module => ({ default: module.NotificationsPage })));
 const SettingsPage = lazy(() => import("./pages/settings").then(module => ({ default: module.SettingsPage })));
+const MarketDetailPage = lazy(() => import("./pages/markets/MarketDetailPage").then(module => ({ default: module.MarketDetailPage })));
 
 // Auth Pages (Lazy Loaded)
 const AuthCallbackPage = lazy(() => import("./pages/auth/AuthCallbackPage").then(module => ({ default: module.AuthCallbackPage })));
@@ -75,6 +76,12 @@ function App() {
           <Route path="search" element={
             <Suspense fallback={<PageLoader />}>
               <SearchPage />
+            </Suspense>
+          } />
+
+          <Route path="market/:id" element={
+            <Suspense fallback={<PageLoader />}>
+              <MarketDetailPage />
             </Suspense>
           } />
 
