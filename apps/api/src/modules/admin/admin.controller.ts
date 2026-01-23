@@ -38,6 +38,11 @@ import {
     AdminAuditLogDto,
     AdminAuditLogQueryDto,
     AlertStatus,
+    TrafficStatsDto,
+    SecurityConfigDto,
+    UpdateSecurityConfigDto,
+    RequestLogDto, // Added RequestLogDto
+    RequestLogQueryDto, // Added RequestLogQueryDto
 } from './dto/index.js';
 
 // Extend Express Request to include user and adminUser

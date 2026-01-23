@@ -4,6 +4,7 @@ import {
     NotFoundException,
     BadRequestException,
     ConflictException,
+    OnModuleInit,
 } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service.js';
 import {
@@ -21,6 +22,11 @@ import {
     AdminAuditLogDto,
     AdminAuditLogQueryDto,
     UserStatus,
+    TrafficStatsDto,
+    SecurityConfigDto,
+    UpdateSecurityConfigDto,
+    RequestLogDto,
+    RequestLogQueryDto,
 } from './dto/index.js';
 
 /**
@@ -257,8 +263,7 @@ export class AdminService {
                 requires_second_approval,
                 status,
                 created_at,
-                expires_at,
-                user:profiles!user_id (email)
+                expires_at
             `)
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
@@ -268,11 +273,33 @@ export class AdminService {
             throw new BadRequestException('Failed to fetch pending withdrawals');
         }
 
-        return (data || []).map(w => ({
+        if (!data || data.length === 0) {
+            return [];
+        }
+
+        // Manual join to avoid relationship error
+        const userIds = [...new Set(data.map(w => w.user_id))];
+        let emailMap = new Map<string, string>();
+
+        if (userIds.length > 0) {
+            const { data: profiles, error: profilesError } = await this.supabaseService
+                .getAdminClient()
+                .from('profiles')
+                .select('id, email')
+                .in('id', userIds);
+
+            if (profilesError) {
+                this.logger.error(`Failed to fetch profiles for withdrawals: ${profilesError.message}`);
+            } else if (profiles) {
+                emailMap = new Map((profiles).map(p => [p.id, p.email]));
+            }
+        }
+
+        return data.map(w => ({
             id: w.id,
             withdrawalId: w.withdrawal_id,
             userId: w.user_id,
-            userEmail: (w.user as any)?.email || 'Unknown',
+            userEmail: emailMap.get(w.user_id) || 'Unknown',
             amount: parseFloat(w.amount),
             currency: w.currency,
             chain: w.chain,

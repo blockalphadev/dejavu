@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/index.js';
 import { CurrentUser } from '../auth/decorators/index.js';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
-import { UpdateProfileDto } from './dto/index.js';
+import { UpdateProfileDto, RequestEmailVerificationDto, VerifyEmailDto } from './dto/index.js';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -102,5 +102,21 @@ export class UsersController {
         // I will trust the frontend to send the chain.
 
         return this.usersService.removeWalletAddress(userId, address, body.chain);
+    }
+
+    @Post('email/request-verification')
+    async requestEmailVerification(
+        @CurrentUser('id') userId: string,
+        @Body() body: RequestEmailVerificationDto,
+    ) {
+        return this.usersService.requestEmailVerification(userId, body.email);
+    }
+
+    @Post('email/verify')
+    async verifyEmail(
+        @CurrentUser('id') userId: string,
+        @Body() body: VerifyEmailDto,
+    ) {
+        return this.usersService.verifyEmailUpdate(userId, body.email, body.code);
     }
 }

@@ -412,3 +412,123 @@ export class AdminAuditLogDto {
     @ApiProperty()
     createdAt: string;
 }
+
+// ============================================================================
+// SECURITY DTOs
+// ============================================================================
+
+export class SecurityConfigDto {
+    @ApiProperty()
+    key: string;
+
+    @ApiProperty({ type: 'object' })
+    value: any;
+
+    @ApiProperty()
+    description: string;
+
+    @ApiProperty()
+    isEditable: boolean;
+
+    @ApiProperty()
+    updatedAt: string;
+
+    @ApiProperty({ required: false })
+    updatedBy?: string;
+}
+
+export class UpdateSecurityConfigDto {
+    @ApiProperty({ type: 'object', description: 'New JSON value for the config key' })
+    @IsOptional() // Value can be anything, validation depends on key type logic in service
+    value: any;
+}
+
+export class TrafficStatsDto {
+    @ApiProperty()
+    sampleTime: string;
+
+    @ApiProperty()
+    requestsPerSecond: number;
+
+    @ApiProperty()
+    avgLatencyMs: number;
+
+    @ApiProperty()
+    p95LatencyMs: number;
+
+    @ApiProperty()
+    errorRate: number; // calculated as (client_error + server_error) / total
+
+    @ApiProperty()
+    totalRequests: number;
+
+    @ApiProperty()
+    uniqueIps: number;
+}
+
+export class RequestLogDto {
+    @ApiProperty()
+    id: string;
+
+    @ApiProperty()
+    method: string;
+
+    @ApiProperty()
+    path: string;
+
+    @ApiProperty()
+    statusCode: number;
+
+    @ApiProperty()
+    latencyMs: number;
+
+    @ApiProperty()
+    ipAddress: string;
+
+    @ApiProperty({ required: false })
+    userAgent?: string;
+
+    @ApiProperty({ required: false })
+    userId?: string;
+
+    @ApiProperty()
+    isSuspicious: boolean;
+
+    @ApiProperty()
+    riskScore: number;
+
+    @ApiProperty()
+    createdAt: string;
+}
+
+export class RequestLogQueryDto {
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    ip?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    userId?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsInt()
+    minStatus?: number;
+
+    @ApiPropertyOptional({ default: 1 })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    page?: number = 1;
+
+    @ApiPropertyOptional({ default: 50 })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(100)
+    limit?: number = 50;
+}

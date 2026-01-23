@@ -241,15 +241,17 @@ export function SettingsPage() {
                                 <div className="text-center sm:text-left space-y-3 flex-1">
                                     <div>
                                         <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">{username || 'User'}</h2>
-                                        <p className="text-muted-foreground font-medium">{user?.email}</p>
+                                        <p className="text-muted-foreground font-medium">{user?.email || 'No email connected'}</p>
                                     </div>
                                     <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
                                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-500 border border-green-500/20 shadow-sm shadow-green-500/5">
                                             Active Account
                                         </span>
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-sm shadow-blue-500/5">
-                                            Verified User
-                                        </span>
+                                        {user?.email && (
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-sm shadow-blue-500/5">
+                                                Verified User
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className="pt-3">
@@ -285,12 +287,49 @@ export function SettingsPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2.5">
-                                    <label className="text-sm font-semibold text-foreground/80 ml-1">Email Address</label>
-                                    <Input
-                                        value={email}
-                                        readOnly
-                                        className="bg-muted/30 border-border/30 text-muted-foreground/80 cursor-not-allowed h-12 rounded-xl"
-                                    />
+                                    <label className="text-sm font-semibold text-foreground/80 ml-1">
+                                        Email Address
+                                        {!user?.email && <span className="ml-2 text-xs font-normal text-amber-500">(Recommended)</span>}
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            readOnly={!!user?.email}
+                                            className={cn(
+                                                "h-12 rounded-xl transition-all",
+                                                user?.email
+                                                    ? "bg-muted/30 border-border/30 text-muted-foreground/80 cursor-not-allowed"
+                                                    : "bg-secondary/30 border-border/50 focus:bg-background focus:border-primary/50"
+                                            )}
+                                            placeholder="Connect an email..."
+                                        />
+                                        {!user?.email && email && (
+                                            <Button
+                                                onClick={async () => {
+                                                    if (!email) return;
+                                                    setIsLoading(true);
+                                                    try {
+                                                        await userApi.requestEmailVerification(email);
+                                                        const code = window.prompt(`Verification code sent to ${email}. Please enter it below:`);
+                                                        if (code) {
+                                                            await userApi.verifyEmail(email, code);
+                                                            await refreshUser();
+                                                            showToast('Email verified successfully!', 'success');
+                                                        }
+                                                    } catch (err: any) {
+                                                        showToast(err.message || 'Verification failed', 'error');
+                                                    } finally {
+                                                        setIsLoading(false);
+                                                    }
+                                                }}
+                                                disabled={isLoading || !email.includes('@')}
+                                                className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90"
+                                            >
+                                                Verify
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 

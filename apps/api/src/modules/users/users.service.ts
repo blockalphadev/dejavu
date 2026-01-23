@@ -327,4 +327,91 @@ export class UsersService {
 
         return data.publicUrl;
     }
+
+    /**
+     * Request email verification
+     * Generates a code and stores it in user preferences
+     */
+    async requestEmailVerification(userId: string, email: string): Promise<{ message: string }> {
+        // Generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+        // Get current preferences
+        const user = await this.findById(userId);
+        if (!user) throw new NotFoundException('User not found');
+
+        const preferences = user.preferences || {};
+        const verificationData = {
+            email,
+            code,
+            expiresAt,
+            attempts: 0
+        };
+
+        // Update preferences with verification data
+        await this.updateProfile(userId, {
+            preferences: {
+                ...preferences,
+                email_verification: verificationData
+            }
+        });
+
+        // In a real app, send email here. For now, log it.
+        this.logger.log(`[Email Verification] Code for ${email}: ${code}`);
+
+        return { message: 'Verification code sent' };
+    }
+
+    /**
+     * Verify email with code
+     */
+    async verifyEmailUpdate(userId: string, email: string, code: string): Promise<Profile> {
+        const user = await this.findById(userId);
+        if (!user) throw new NotFoundException('User not found');
+
+        const verificationData = user.preferences?.email_verification;
+
+        if (!verificationData) {
+            throw new Error('No verification pending');
+        }
+
+        if (verificationData.email !== email) {
+            throw new Error('Email mismatch');
+        }
+
+        if (Date.now() > verificationData.expiresAt) {
+            throw new Error('Verification code expired');
+        }
+
+        if (verificationData.code !== code) {
+            // Increment attempts
+            const attempts = (verificationData.attempts || 0) + 1;
+            if (attempts >= 5) {
+                // Clear verification if too many attempts
+                const { email_verification, ...restPreferences } = user.preferences;
+                await this.updateProfile(userId, { preferences: restPreferences });
+                throw new Error('Too many failed attempts. Please request a new code.');
+            }
+
+            await this.updateProfile(userId, {
+                preferences: {
+                    ...user.preferences,
+                    email_verification: { ...verificationData, attempts }
+                }
+            });
+            throw new Error('Invalid verification code');
+        }
+
+        // Code is valid! Update email and clear verification data
+        const { email_verification, ...restPreferences } = user.preferences;
+
+        // Also verify the user if not already verified? 
+        // For now just update email.
+
+        return this.updateProfile(userId, {
+            email: email,
+            preferences: restPreferences
+        });
+    }
 }

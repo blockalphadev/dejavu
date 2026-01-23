@@ -4,11 +4,13 @@
  */
 
 import { API_URL } from '../config';
+export { API_URL };
 
 interface ApiOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     body?: unknown;
     headers?: Record<string, string>;
+    signal?: AbortSignal;
 }
 
 interface AuthTokens {
@@ -112,8 +114,11 @@ export function isAuthenticated(): boolean {
 /**
  * Make API request
  */
+/**
+ * Make API request with enhanced security and error handling
+ */
 export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-    const { method = 'GET', body, headers = {} } = options;
+    const { method = 'GET', body, headers = {}, signal } = options;
 
     const token = getAccessToken();
     const requestHeaders: Record<string, string> = {
@@ -125,42 +130,61 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
         requestHeaders['Authorization'] = `Bearer ${token}`;
     }
 
-    // Debug logging
-    if (endpoint.includes('/admin/')) {
-        console.log(`[API DEBUG] ${method} ${endpoint} - Token present: ${!!token}, Token length: ${token?.length || 0}`);
+    // Security: Add CSRF token if available (cookie or meta)
+    // In a real implementation, we would extract this from a cookie like 'XSRF-TOKEN'
+    // const csrfToken = getCookie('XSRF-TOKEN');
+    // if (csrfToken) requestHeaders['X-XSRF-TOKEN'] = csrfToken;
+
+    // Debug logging (dev only)
+    if (import.meta.env.DEV && endpoint.includes('/admin/')) {
+        console.log(`[API] ${method} ${endpoint}`, body ? { body } : '');
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        method,
-        headers: requestHeaders,
-        body: body ? JSON.stringify(body) : undefined,
-        credentials: 'include', // For cookies
-    });
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method,
+            headers: requestHeaders,
+            body: body ? JSON.stringify(body) : undefined,
+            credentials: 'include', // Important for httpOnly cookies
+            signal, // Support request cancellation
+        });
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Request failed' }));
-
-        // Debug logging for errors
-        if (endpoint.includes('/admin/')) {
-            console.log(`[API DEBUG] ${method} ${endpoint} - FAILED ${response.status}: ${error.message}`);
+        // Security: Rate Limit Handling
+        if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After');
+            throw new Error(`Rate limit exceeded. Please try again in ${retryAfter || '60'} seconds.`);
         }
 
-        // Handle token expiration
-        if (response.status === 401) {
-            const refreshed = await refreshToken();
-            if (refreshed) {
-                // Retry request with new token
-                console.log(`[API DEBUG] Token refreshed, retrying ${endpoint}`);
-                return apiRequest(endpoint, options);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
+
+            // Handle token expiration
+            if (response.status === 401) {
+                // Prevent infinite loops if refresh fails
+                if (!endpoint.includes('/auth/refresh')) {
+                    const refreshed = await refreshToken();
+                    if (refreshed) {
+                        return apiRequest(endpoint, options);
+                    }
+                }
+                clearTokens();
+                // Optional: Dispatch event or redirect
+                // window.dispatchEvent(new CustomEvent('auth:expired'));
+                throw new Error('Session expired. Please log in again.');
             }
-            clearTokens();
-            throw new Error('Session expired. Please log in again.');
+
+            throw new Error(errorData.message || `Request failed with status ${response.status}`);
         }
 
-        throw new Error(error.message || 'Request failed');
+        return response.json();
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            // Request was cancelled, rethrow or handle silently
+            throw error;
+        }
+        console.error(`[API Error] ${method} ${endpoint}:`, error);
+        throw error;
     }
-
-    return response.json();
 }
 
 /**
@@ -546,6 +570,20 @@ export const userApi = {
         return apiRequest(`/users/wallets/${address}`, {
             method: 'DELETE',
             body: { chain },
+        });
+    },
+
+    async requestEmailVerification(email: string) {
+        return apiRequest<{ message: string }>('/users/email/request-verification', {
+            method: 'POST',
+            body: { email }
+        });
+    },
+
+    async verifyEmail(email: string, code: string) {
+        return apiRequest<any>('/users/email/verify', {
+            method: 'POST',
+            body: { email, code }
         });
     },
 };

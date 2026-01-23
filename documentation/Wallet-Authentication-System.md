@@ -179,3 +179,25 @@ Audits every authentication attempt (success or failure) with a risk score based
 3. **Rate Limiting (Updated)**:
    Authentication endpoints have been upgraded to allow **50 requests/min** (up from 5) to accommodate the multi-step handshake process (Connect -> Challenge -> Verify) without false positives during heavy use.
 
+---
+
+## 7. Email Verification (Account Elevation)
+
+Wallet-only users can optionally link and verify an email address to enhance account recovery options and receive notifications.
+
+### 7.1 Flow
+1.  **Request**: User enters email in **Settings -> Profile**.
+2.  **API Call**: `POST /users/email/request-verification`
+    *   Generates a 6-digit random code.
+    *   Stores code in `profiles.preferences.email_verification` (JSONB).
+    *   Sets expiration to 15 minutes.
+3.  **Verification**: User enters code in UI prompt.
+4.  **API Call**: `POST /users/email/verify`
+    *   Validates code and expiration.
+    *   Updates `profiles.email` column.
+    *   Clears verification data.
+
+### 7.2 Security Controls
+- **Rate Limiting**: Max 5 failed attempts before the code is invalidated.
+- **Isolation**: The `email` column is **only** updated after successful code verification.
+
