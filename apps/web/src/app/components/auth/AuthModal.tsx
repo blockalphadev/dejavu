@@ -15,6 +15,7 @@ import {
     PhantomAdapter,
     CoinbaseAdapter,
     isMessageSafe,
+    isMobileDevice,
 } from '../../../services/walletAdapters';
 import { walletAuthApi } from '../../../services/api';
 import { useConnectWallet, useWallets, useSignPersonalMessage, useCurrentAccount } from '@mysten/dapp-kit';
@@ -166,13 +167,26 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     throw new Error(`Unknown wallet: ${provider}`);
                 }
 
-                // Check if installed
-                if (!adapter.isInstalled()) {
+                // Check if installed (Desktop only)
+                // On mobile, we might proceed to redirect via deep link even if "not installed" (not injected)
+                const isMobile = isMobileDevice();
+
+                if (!isMobile && !adapter.isInstalled()) {
                     throw new Error(`${adapter.displayName} is not installed. Please install the extension.`);
                 }
 
                 // Connect to wallet
-                address = await adapter.connect();
+                try {
+                    address = await adapter.connect();
+                } catch (err: any) {
+                    // If the adapter threw a "Redirecting..." error (from walletAdapters.ts), we should just stop here
+                    // safely without showing an error state, as the user is being navigated away.
+                    if (err.message && err.message.includes('Redirecting')) {
+                        return;
+                    }
+                    throw err;
+                }
+
                 chain = await adapter.getChain() || (provider === 'phantom' ? 'solana' : 'ethereum');
             }
 
@@ -438,24 +452,28 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             name="Metamask"
                             recommended
                             installed={MetaMaskAdapter.isInstalled()}
+                            isMobile={isMobileDevice()}
                             onClick={() => handleWalletConnect('Metamask')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Phantom />}
                             name="Phantom"
                             installed={PhantomAdapter.isInstalled()}
+                            isMobile={isMobileDevice()}
                             onClick={() => handleWalletConnect('Phantom')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Coinbase />}
                             name="Coinbase"
                             installed={CoinbaseAdapter.isInstalled()}
+                            isMobile={isMobileDevice()}
                             onClick={() => handleWalletConnect('Coinbase')}
                         />
                         <WalletOption
                             icon={<AuthIcons.Slush />}
                             name="Slush"
                             installed={true}
+                            isMobile={isMobileDevice()}
                             onClick={() => handleWalletConnect('Slush')}
                         />
                         <WalletOption
@@ -463,6 +481,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             name="WalletConnect"
                             className="col-span-2"
                             installed={true}
+                            isMobile={isMobileDevice()}
                             onClick={() => handleWalletConnect('WalletConnect')}
                         />
                     </div>
