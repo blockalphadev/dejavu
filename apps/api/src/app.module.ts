@@ -14,6 +14,7 @@ import { SettingsModule } from './modules/settings/settings.module.js';
 import { ReferralsModule } from './modules/referrals/referrals.module.js';
 import { TransactionsModule } from './modules/transactions/transactions.module.js';
 import { SportsModule } from './modules/sports/sports.module.js';
+import { EmailModule } from './modules/email/email.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthController } from './health.controller.js';
 import { RootController } from './root.controller.js';
@@ -57,6 +58,7 @@ import { AuditLogInterceptor } from './common/interceptors/index.js';
         ReferralsModule,
         TransactionsModule,
         SportsModule,
+        EmailModule,
 
         // Scheduling
         ScheduleModule.forRoot(),

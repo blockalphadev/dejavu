@@ -1,5 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { SupabaseService } from '../../database/supabase.service';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
+import { SupabaseService } from '../../database/supabase.service.js';
+import { EmailService } from '../email/email.service.js';
 
 export interface WalletAddress {
     address: string;
@@ -25,6 +28,8 @@ export interface Profile {
     auth_provider?: string | null;
     agreed_to_terms_at?: string | null;
     agreed_to_privacy_at?: string | null;
+    // Email verification
+    email_verified?: boolean;
 }
 
 export interface ProfileInsert {
@@ -44,6 +49,7 @@ export interface ProfileUpdate {
     bio?: string | null;
     preferences?: Record<string, any>;
     wallet_addresses?: WalletAddress[];
+    email_verified?: boolean;
 }
 
 export interface MulterFile {
@@ -62,8 +68,18 @@ export interface MulterFile {
 @Injectable()
 export class UsersService {
     private readonly logger = new Logger(UsersService.name);
+    private readonly VERIFICATION_TOKEN_EXPIRY_MINUTES = 30;
+    private readonly VERIFICATION_SECRET_KEY: string;
 
-    constructor(private readonly supabaseService: SupabaseService) { }
+    constructor(
+        private readonly supabaseService: SupabaseService,
+        private readonly configService: ConfigService,
+        private readonly emailService: EmailService,
+    ) {
+        this.VERIFICATION_SECRET_KEY = this.configService.get('VERIFICATION_TOKEN_SECRET')
+            || this.configService.get('JWT_SECRET')
+            || 'fallback-secret-change-in-production';
+    }
 
     /**
      * Find user by ID
@@ -170,17 +186,44 @@ export class UsersService {
 
     /**
      * Update user profile
+     * Handles missing email_verified column gracefully
      */
     async updateProfile(id: string, update: ProfileUpdate): Promise<Profile> {
         this.logger.log(`Updating profile ${id} with data: ${JSON.stringify(update)}`);
 
         const supabase = this.supabaseService.getAdminClient();
-        const { data, error } = await supabase
+
+        // First attempt with all fields
+        let { data, error } = await supabase
             .from('profiles')
             .update({ ...update, updated_at: new Date().toISOString() })
             .eq('id', id)
             .select()
             .single();
+
+        // If error mentions email_verified column, retry without it
+        if (error && (error.message?.includes('email_verified') || error.code === '42703')) {
+            this.logger.warn(`email_verified column not found, retrying without it`);
+            const { email_verified, ...updateWithoutEmailVerified } = update;
+
+            // Store email_verified status in preferences as fallback
+            if (email_verified !== undefined) {
+                updateWithoutEmailVerified.preferences = {
+                    ...updateWithoutEmailVerified.preferences,
+                    email_verified_flag: email_verified,
+                };
+            }
+
+            const retryResult = await supabase
+                .from('profiles')
+                .update({ ...updateWithoutEmailVerified, updated_at: new Date().toISOString() })
+                .eq('id', id)
+                .select()
+                .single();
+
+            data = retryResult.data;
+            error = retryResult.error;
+        }
 
         if (error) {
             this.logger.error(`Failed to update profile ${id}: ${error.message}`);
@@ -329,69 +372,199 @@ export class UsersService {
     }
 
     /**
-     * Request email verification
-     * Generates a code and stores it in user preferences
+     * Request email verification for wallet users
+     * Uses secure HMAC-SHA256 token system with fallback storage
+     * OWASP: Rate limiting, secure tokens, anti-replay
      */
     async requestEmailVerification(userId: string, email: string): Promise<{ message: string }> {
-        // Generate 6-digit code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+        const normalizedEmail = email.toLowerCase().trim();
 
-        // Get current preferences
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(normalizedEmail)) {
+            throw new BadRequestException('Invalid email format');
+        }
+
+        // Check if email is already in use by another user
+        const existingUser = await this.findByEmail(normalizedEmail);
+        if (existingUser && existingUser.id !== userId) {
+            throw new BadRequestException('This email is already in use');
+        }
+
+        // Get current user
         const user = await this.findById(userId);
         if (!user) throw new NotFoundException('User not found');
 
-        const preferences = user.preferences || {};
+        // Rate limiting: Max 3 verification emails per hour
+        const pendingData = user.preferences?.email_verification;
+        if (pendingData?.requests_count >= 3) {
+            const lastRequest = new Date(pendingData.last_request_at);
+            const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            if (lastRequest > hourAgo) {
+                throw new BadRequestException('Too many verification attempts. Please wait an hour.');
+            }
+        }
+
+        // Generate secure token (64 hex chars)
+        const rawToken = crypto.randomBytes(32).toString('hex');
+
+        // Create HMAC-SHA256 hash of the token for secure storage
+        const tokenHash = crypto
+            .createHmac('sha256', this.VERIFICATION_SECRET_KEY)
+            .update(rawToken)
+            .digest('hex');
+
+        // Token expiry: 30 minutes
+        const expiresAt = Date.now() + this.VERIFICATION_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+
+        // Store token in user preferences (fallback storage)
+        // This works without database migration
         const verificationData = {
-            email,
-            code,
-            expiresAt,
-            attempts: 0
+            email: normalizedEmail,
+            token_hash: tokenHash,
+            expires_at: expiresAt,
+            created_at: Date.now(),
+            requests_count: (pendingData?.requests_count || 0) + 1,
+            last_request_at: new Date().toISOString(),
         };
 
-        // Update preferences with verification data
         await this.updateProfile(userId, {
             preferences: {
-                ...preferences,
-                email_verification: verificationData
+                ...user.preferences,
+                email_verification: verificationData,
+                pending_email: normalizedEmail,
             }
         });
 
-        // In a real app, send email here. For now, log it.
-        this.logger.log(`[Email Verification] Code for ${email}: ${code}`);
+        // Send verification email
+        const frontendUrl = this.configService.get('CORS_ORIGINS', 'http://localhost:5173').split(',')[0];
+        const verificationLink = `${frontendUrl}/auth/verify?token=${rawToken}&type=email_change&email=${encodeURIComponent(normalizedEmail)}&uid=${userId}`;
 
-        return { message: 'Verification code sent' };
+        try {
+            await this.emailService.sendVerificationEmail(normalizedEmail, verificationLink, user.full_name || undefined);
+            this.logger.log(`Verification email sent to ${normalizedEmail} for user ${userId}`);
+        } catch (emailError: any) {
+            this.logger.error(`Failed to send verification email: ${emailError.message}`);
+            throw new BadRequestException('Failed to send verification email');
+        }
+
+        return { message: 'Verification link sent to your email' };
     }
 
     /**
-     * Verify email with code
+     * Verify email with secure token (for link-based verification)
+     * OWASP: Anti-replay, timing-safe comparison, single-use tokens
+     */
+    async verifyEmailWithToken(email: string, rawToken: string, userId?: string): Promise<Profile> {
+        const normalizedEmail = email.toLowerCase().trim();
+
+        // Recreate the HMAC hash from the raw token
+        const tokenHash = crypto
+            .createHmac('sha256', this.VERIFICATION_SECRET_KEY)
+            .update(rawToken)
+            .digest('hex');
+
+        // If userId is provided, use it directly (from URL param)
+        let user: Profile | null = null;
+
+        if (userId) {
+            user = await this.findById(userId);
+        } else {
+            // Try to find user by pending email in preferences
+            const supabase = this.supabaseService.getAdminClient();
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('*')
+                .ilike('preferences->>pending_email', normalizedEmail);
+
+            if (profiles && profiles.length > 0) {
+                user = profiles[0] as Profile;
+            }
+        }
+
+        if (!user) {
+            this.logger.warn(`No user found for email verification: ${normalizedEmail}`);
+            throw new BadRequestException('Invalid verification link');
+        }
+
+        // Get stored verification data
+        const verificationData = user.preferences?.email_verification;
+
+        if (!verificationData) {
+            throw new BadRequestException('No verification pending for this email');
+        }
+
+        // Check email matches
+        if (verificationData.email !== normalizedEmail) {
+            throw new BadRequestException('Email mismatch');
+        }
+
+        // Check expiry
+        if (Date.now() > verificationData.expires_at) {
+            // Clear expired verification data
+            const { email_verification, pending_email, ...restPreferences } = user.preferences || {};
+            await this.updateProfile(user.id, { preferences: restPreferences });
+            throw new BadRequestException('This verification link has expired. Please request a new one.');
+        }
+
+        // Timing-safe token comparison using HMAC
+        const storedHash = verificationData.token_hash;
+        const isValidToken = crypto.timingSafeEqual(
+            Buffer.from(storedHash, 'hex'),
+            Buffer.from(tokenHash, 'hex')
+        );
+
+        if (!isValidToken) {
+            throw new BadRequestException('Invalid verification token');
+        }
+
+        // Token is valid! Update email and set as verified
+        // Clear verification data (single-use token)
+        const { email_verification, pending_email, ...restPreferences } = user.preferences || {};
+
+        const updatedProfile = await this.updateProfile(user.id, {
+            email: normalizedEmail,
+            email_verified: true,
+            preferences: restPreferences,
+        });
+
+        this.logger.log(`Email verified for user ${user.id}: ${normalizedEmail}`);
+        return updatedProfile;
+    }
+
+    /**
+     * Verify email with code (legacy method - kept for backward compatibility)
      */
     async verifyEmailUpdate(userId: string, email: string, code: string): Promise<Profile> {
+        // If code looks like a token (64 hex chars), use token verification
+        if (code.length === 64 && /^[a-f0-9]+$/.test(code)) {
+            return this.verifyEmailWithToken(email, code);
+        }
+
+        // Legacy code-based verification
         const user = await this.findById(userId);
         if (!user) throw new NotFoundException('User not found');
 
         const verificationData = user.preferences?.email_verification;
 
         if (!verificationData) {
-            throw new Error('No verification pending');
+            throw new BadRequestException('No verification pending');
         }
 
         if (verificationData.email !== email) {
-            throw new Error('Email mismatch');
+            throw new BadRequestException('Email mismatch');
         }
 
         if (Date.now() > verificationData.expiresAt) {
-            throw new Error('Verification code expired');
+            throw new BadRequestException('Verification code expired');
         }
 
         if (verificationData.code !== code) {
-            // Increment attempts
             const attempts = (verificationData.attempts || 0) + 1;
             if (attempts >= 5) {
-                // Clear verification if too many attempts
                 const { email_verification, ...restPreferences } = user.preferences;
                 await this.updateProfile(userId, { preferences: restPreferences });
-                throw new Error('Too many failed attempts. Please request a new code.');
+                throw new BadRequestException('Too many failed attempts. Please request a new code.');
             }
 
             await this.updateProfile(userId, {
@@ -400,17 +573,15 @@ export class UsersService {
                     email_verification: { ...verificationData, attempts }
                 }
             });
-            throw new Error('Invalid verification code');
+            throw new BadRequestException('Invalid verification code');
         }
 
-        // Code is valid! Update email and clear verification data
+        // Code is valid! Update email and set as verified
         const { email_verification, ...restPreferences } = user.preferences;
-
-        // Also verify the user if not already verified? 
-        // For now just update email.
 
         return this.updateProfile(userId, {
             email: email,
+            email_verified: true,
             preferences: restPreferences
         });
     }

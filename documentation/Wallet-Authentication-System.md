@@ -185,19 +185,33 @@ Audits every authentication attempt (success or failure) with a risk score based
 
 Wallet-only users can optionally link and verify an email address to enhance account recovery options and receive notifications.
 
+> **Detailed Guide**: [Email-Verification-System.md](./Email-Verification-System.md)
+
 ### 7.1 Flow
-1.  **Request**: User enters email in **Settings -> Profile**.
-2.  **API Call**: `POST /users/email/request-verification`
-    *   Generates a 6-digit random code.
-    *   Stores code in `profiles.preferences.email_verification` (JSONB).
-    *   Sets expiration to 15 minutes.
-3.  **Verification**: User enters code in UI prompt.
-4.  **API Call**: `POST /users/email/verify`
-    *   Validates code and expiration.
-    *   Updates `profiles.email` column.
-    *   Clears verification data.
+1. **Request**: User enters email in **Settings → Profile**, clicks "Send Link"
+2. **API Call**: `POST /users/email/request-verification`
+    - Generates HMAC-SHA256 secure token (64 hex chars)
+    - Stores token hash in `profiles.preferences.email_verification`
+    - Sets expiration to 30 minutes
+3. **Email Sent**: User receives email with verification link
+4. **Verification**: User clicks link → directed to `/verify-email?token=...&email=...&uid=...`
+5. **API Call**: `POST /users/email/verify-link` (public endpoint)
+    - Validates token using timing-safe comparison
+    - Updates `profiles.email_verified = true`
+    - Clears verification data
 
 ### 7.2 Security Controls
-- **Rate Limiting**: Max 5 failed attempts before the code is invalidated.
-- **Isolation**: The `email` column is **only** updated after successful code verification.
+| Feature | Implementation |
+|---------|---------------|
+| **Token Hashing** | HMAC-SHA256 with secret key |
+| **Timing-Safe** | `crypto.timingSafeEqual()` prevents timing attacks |
+| **Rate Limiting** | Max 3 verification emails per hour |
+| **Token Expiry** | 30 minutes |
+| **Single Use** | Token cleared on verification |
 
+### 7.3 UI States
+| State | Badge Display |
+|-------|---------------|
+| Email added, not verified | 🟡 **Unverified** + "Resend Link" button |
+| Email verified | 🟢 **✓ Verified** |
+| No email | Empty + "Send Link" button |

@@ -10,6 +10,7 @@ import { UsersModule } from '../users/users.module.js';
 import { PasswordValidator } from './validators/index.js';
 import { TokenBlacklistService, SecurityEventService } from './services/index.js';
 import { WalletConnectService } from './services/wallet-connect.service.js';
+import { OtpService } from './services/otp.service.js';
 
 @Module({
     imports: [
@@ -30,6 +31,7 @@ import { WalletConnectService } from './services/wallet-connect.service.js';
     providers: [
         AuthService,
         WalletConnectService,
+        OtpService,
         JwtStrategy,
         GoogleStrategy,
         WalletStrategy,
@@ -42,6 +44,7 @@ import { WalletConnectService } from './services/wallet-connect.service.js';
     exports: [
         AuthService,
         WalletConnectService,
+        OtpService,
         JwtAuthGuard,
         CsrfGuard,
         PasswordValidator,
@@ -50,4 +53,3 @@ import { WalletConnectService } from './services/wallet-connect.service.js';
     ],
 })
 export class AuthModule { }
-

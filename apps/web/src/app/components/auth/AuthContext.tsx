@@ -5,6 +5,7 @@ import { authApi, getAccessToken } from '../../../services/api';
 export interface User {
     id: string;
     email?: string;
+    emailVerified?: boolean;
     fullName?: string;
     avatarUrl?: string;
     bio?: string;

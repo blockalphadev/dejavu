@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { ThemeProvider } from "../components/ThemeProvider";
@@ -66,6 +66,24 @@ function RootLayoutContent() {
         setAuthMode(mode || 'login');
         setIsAuthModalOpen(true);
     };
+
+    // Check for auth query params
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const loginParam = params.get('login');
+        const signupParam = params.get('signup');
+
+        if (loginParam === 'true') {
+            handleOpenAuth('login');
+            // Remove param without refresh
+            const newUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, '', newUrl);
+        } else if (signupParam === 'true') {
+            handleOpenAuth('signup');
+            const newUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, '', newUrl);
+        }
+    }, [location.search]);
 
     return (
         <div className="min-h-screen bg-background text-foreground">

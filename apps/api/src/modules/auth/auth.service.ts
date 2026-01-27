@@ -506,13 +506,20 @@ export class AuthService {
             throw new UnauthorizedException('User not found');
         }
 
+        // Check email_verified from database or preferences fallback
+        const emailVerified = user.email_verified ??
+            user.preferences?.email_verified_flag ??
+            false;
+
         return {
             id: user.id,
             email: user.email,
+            email_verified: emailVerified,
             fullName: user.full_name,
             avatarUrl: user.avatar_url,
             bio: user.bio,
             walletAddresses: user.wallet_addresses,
+            preferences: user.preferences,
             createdAt: user.created_at,
         };
     }
@@ -589,8 +596,9 @@ export class AuthService {
 
     /**
      * Generate JWT access and refresh tokens
+     * Public method to allow use by OTP service
      */
-    private async generateTokens(payload: TokenPayload): Promise<AuthTokens> {
+    async generateTokens(payload: TokenPayload): Promise<AuthTokens> {
         const expiresIn = this.configService.get('JWT_EXPIRES_IN', '15m');
         const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
 

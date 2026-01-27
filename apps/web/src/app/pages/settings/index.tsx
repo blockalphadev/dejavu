@@ -287,9 +287,19 @@ export function SettingsPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2.5">
-                                    <label className="text-sm font-semibold text-foreground/80 ml-1">
+                                    <label className="text-sm font-semibold text-foreground/80 ml-1 flex items-center gap-2">
                                         Email Address
-                                        {!user?.email && <span className="ml-2 text-xs font-normal text-amber-500">(Recommended)</span>}
+                                        {!user?.email && <span className="text-xs font-normal text-amber-500">(Recommended)</span>}
+                                        {user?.email && user?.emailVerified && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/10 text-green-500 border border-green-500/20">
+                                                <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
+                                            </span>
+                                        )}
+                                        {user?.email && !user?.emailVerified && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                                Unverified
+                                            </span>
+                                        )}
                                     </label>
                                     <div className="flex gap-2">
                                         <Input
@@ -297,13 +307,14 @@ export function SettingsPage() {
                                             onChange={(e) => setEmail(e.target.value)}
                                             readOnly={!!user?.email}
                                             className={cn(
-                                                "h-12 rounded-xl transition-all",
+                                                "h-12 rounded-xl transition-all flex-1",
                                                 user?.email
                                                     ? "bg-muted/30 border-border/30 text-muted-foreground/80 cursor-not-allowed"
                                                     : "bg-secondary/30 border-border/50 focus:bg-background focus:border-primary/50"
                                             )}
                                             placeholder="Connect an email..."
                                         />
+                                        {/* Add new email - Send verification link */}
                                         {!user?.email && email && (
                                             <Button
                                                 onClick={async () => {
@@ -311,22 +322,38 @@ export function SettingsPage() {
                                                     setIsLoading(true);
                                                     try {
                                                         await userApi.requestEmailVerification(email);
-                                                        const code = window.prompt(`Verification code sent to ${email}. Please enter it below:`);
-                                                        if (code) {
-                                                            await userApi.verifyEmail(email, code);
-                                                            await refreshUser();
-                                                            showToast('Email verified successfully!', 'success');
-                                                        }
+                                                        showToast('Verification link sent! Please check your email.', 'success');
                                                     } catch (err: any) {
-                                                        showToast(err.message || 'Verification failed', 'error');
+                                                        showToast(err.message || 'Failed to send verification link', 'error');
                                                     } finally {
                                                         setIsLoading(false);
                                                     }
                                                 }}
                                                 disabled={isLoading || !email.includes('@')}
-                                                className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90"
+                                                className="h-12 px-5 rounded-xl bg-primary hover:bg-primary/90 whitespace-nowrap"
                                             >
-                                                Verify
+                                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Link'}
+                                            </Button>
+                                        )}
+                                        {/* Resend verification link for unverified email */}
+                                        {user?.email && !user?.emailVerified && (
+                                            <Button
+                                                onClick={async () => {
+                                                    setIsLoading(true);
+                                                    try {
+                                                        await userApi.requestEmailVerification(user.email!);
+                                                        showToast('Verification link sent! Please check your email.', 'success');
+                                                    } catch (err: any) {
+                                                        showToast(err.message || 'Failed to send verification link', 'error');
+                                                    } finally {
+                                                        setIsLoading(false);
+                                                    }
+                                                }}
+                                                disabled={isLoading}
+                                                variant="outline"
+                                                className="h-12 px-5 rounded-xl border-amber-500/30 text-amber-600 hover:bg-amber-500/10 whitespace-nowrap"
+                                            >
+                                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Resend Link'}
                                             </Button>
                                         )}
                                     </div>

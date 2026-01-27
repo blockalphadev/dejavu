@@ -17,6 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { WalletConnectService } from './services/wallet-connect.service.js';
+import { OtpService } from './services/otp.service.js';
 import { JwtAuthGuard, GoogleAuthGuard } from './guards/index.js';
 import { Public, CurrentUser } from './decorators/index.js';
 import {
@@ -34,6 +35,12 @@ import {
     WalletConnectCompleteProfileDto,
     LinkWalletDto,
 } from './dto/wallet-connect.dto.js';
+import {
+    OtpSignupRequestDto,
+    OtpLoginRequestDto,
+    OtpVerifyDto,
+    OtpResendDto,
+} from './dto/otp.dto.js';
 
 /**
  * Authentication Controller
@@ -47,6 +54,7 @@ export class AuthController {
     constructor(
         private readonly authService: AuthService,
         private readonly walletConnectService: WalletConnectService,
+        private readonly otpService: OtpService,
         private readonly configService: ConfigService,
     ) { }
 
@@ -109,6 +117,115 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     async magicLink(@Body() dto: MagicLinkDto) {
         return this.authService.sendMagicLink(dto);
+    }
+
+    // ================================================================
+    // OTP EMAIL AUTHENTICATION ENDPOINTS
+    // Signup: Email verification link | Login: OTP verification
+    // ================================================================
+
+    /**
+     * POST /auth/otp/signup/request
+     * Create user and send email verification link
+     * User must click link in email to verify account
+     */
+    @Public()
+    @Post('otp/signup/request')
+    @HttpCode(HttpStatus.OK)
+    async requestSignup(
+        @Body() dto: OtpSignupRequestDto,
+        @Req() req: Request,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const userAgent = req.headers['user-agent'];
+        return this.otpService.requestSignupWithLink(
+            dto.email,
+            dto.password,
+            dto.fullName,
+            ipAddress,
+            userAgent,
+        );
+    }
+
+    /**
+     * POST /auth/otp/login/request
+     * Validate credentials and send OTP for login
+     */
+    @Public()
+    @Post('otp/login/request')
+    @HttpCode(HttpStatus.OK)
+    async requestLoginOtp(
+        @Body() dto: OtpLoginRequestDto,
+        @Req() req: Request,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const userAgent = req.headers['user-agent'];
+        return this.otpService.requestLoginOtp(
+            dto.email,
+            dto.password,
+            ipAddress,
+            userAgent,
+        );
+    }
+
+    /**
+     * POST /auth/otp/verify
+     * Verify OTP and complete login (login flow only)
+     * Returns JWT tokens on success
+     */
+    @Public()
+    @Post('otp/verify')
+    @HttpCode(HttpStatus.OK)
+    async verifyLoginOtp(
+        @Body() dto: OtpVerifyDto,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const userAgent = req.headers['user-agent'];
+
+        const result = await this.otpService.verifyLoginOtp(
+            dto.email,
+            dto.token,
+            ipAddress,
+            userAgent,
+            // Pass token generation function from AuthService
+            (payload) => this.authService.generateTokens(payload),
+            dto.type,
+        );
+
+        this.setTokenCookies(res, result.tokens.refreshToken);
+        return result;
+    }
+
+    /**
+     * POST /auth/otp/resend
+     * Resend OTP for login or verification email for signup
+     * Respects 60-second minimum interval
+     */
+    @Public()
+    @Post('otp/resend')
+    @HttpCode(HttpStatus.OK)
+    async resendOtp(
+        @Body() dto: OtpResendDto,
+        @Req() req: Request,
+    ) {
+        const ipAddress = this.getClientIp(req);
+        const userAgent = req.headers['user-agent'];
+
+        if (dto.type === 'signup') {
+            return this.otpService.resendSignupVerification(
+                dto.email,
+                ipAddress,
+                userAgent,
+            );
+        }
+
+        return this.otpService.resendLoginOtp(
+            dto.email,
+            ipAddress,
+            userAgent,
+        );
     }
 
     /**
@@ -386,15 +503,17 @@ export class AuthController {
      * Set refresh token in HTTP-only cookie
      */
     private setTokenCookies(res: Response, refreshToken: string) {
-        const secure = this.configService.get('COOKIE_SECURE') === 'true';
-        const domain = this.configService.get('COOKIE_DOMAIN', 'localhost');
-        const sameSite = this.configService.get('COOKIE_SAME_SITE', 'lax') as 'strict' | 'lax' | 'none';
+        const isProduction = this.configService.get('NODE_ENV') === 'production';
+        // Enforce secure cookies in production, or if explicitly enabled
+        const secure = this.configService.get('COOKIE_SECURE') === 'true' || isProduction;
+        const sameSite = (this.configService.get('COOKIE_SAME_SITE') as 'strict' | 'lax' | 'none') || 'strict';
+        const domain = this.configService.get('COOKIE_DOMAIN');
 
         res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure,
-            domain,
-            sameSite,
+            httpOnly: true, // Prevent XSS access
+            secure,         // Send only over HTTPS
+            sameSite,       // Prevent CSRF
+            domain: domain || undefined, // Default to current domain if not set
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             path: '/',
         });

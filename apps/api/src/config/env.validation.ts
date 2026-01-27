@@ -70,6 +70,13 @@ export const envSchema = z.object({
     PRIVY_APP_ID: z.string().optional(),
     PRIVY_APP_SECRET: z.string().optional(),
     PRIVY_JWKS_URL: z.string().url().optional(),
+
+    // SMTP Email
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.string().transform(Number).pipe(z.number()).default('587'),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    SMTP_FROM: z.string().email().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

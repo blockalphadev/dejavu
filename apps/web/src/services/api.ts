@@ -291,14 +291,26 @@ export const authApi = {
 
     /**
      * Get current user
+     * Maps backend snake_case to frontend camelCase
      */
     async me() {
-        return apiRequest('/auth/me', {
+        const data = await apiRequest<any>('/auth/me', {
             headers: {
                 'Cache-Control': 'no-cache',
                 'Pragma': 'no-cache'
             }
         });
+
+        // Map snake_case to camelCase for frontend User interface
+        return {
+            id: data.id,
+            email: data.email,
+            emailVerified: data.email_verified || data.emailVerified || data.preferences?.email_verified_flag || false,
+            fullName: data.full_name || data.fullName,
+            avatarUrl: data.avatar_url || data.avatarUrl,
+            bio: data.bio,
+            walletAddresses: data.wallet_addresses || data.walletAddresses,
+        };
     },
 
     /**
@@ -348,6 +360,86 @@ export const authApi = {
         message?: string;
     }> {
         return apiRequest(`/auth/check-username/${encodeURIComponent(username)}`);
+    },
+};
+
+// ============================================
+// OTP Authentication API
+// Secure email OTP-based signup and login
+// ============================================
+
+export interface OtpRequestResponse {
+    message: string;
+    expiresIn: number;
+    retryAfter?: number;
+}
+
+export interface OtpVerifyResponse {
+    user: {
+        id: string;
+        email?: string;
+        fullName?: string;
+        avatarUrl?: string;
+        bio?: string;
+        walletAddresses?: Array<{ address: string; chain: string }>;
+    };
+    tokens: AuthTokens;
+}
+
+export const otpAuthApi = {
+    /**
+     * Request OTP for signup
+     * Validates password and sends OTP to email
+     */
+    async requestSignupOtp(
+        email: string,
+        password: string,
+        fullName?: string,
+    ): Promise<OtpRequestResponse> {
+        return apiRequest('/auth/otp/signup/request', {
+            method: 'POST',
+            body: { email, password, fullName },
+        });
+    },
+
+    /**
+     * Request OTP for login
+     * Validates credentials and sends OTP to email
+     */
+    async requestLoginOtp(email: string, password: string): Promise<OtpRequestResponse> {
+        return apiRequest('/auth/otp/login/request', {
+            method: 'POST',
+            body: { email, password },
+        });
+    },
+
+    /**
+     * Verify OTP and complete authentication
+     * Returns JWT tokens on success
+     */
+    async verifyOtp(
+        email: string,
+        token: string,
+        type: 'signup' | 'login' | 'magiclink' | 'recovery',
+    ): Promise<OtpVerifyResponse> {
+        const response = await apiRequest<OtpVerifyResponse>('/auth/otp/verify', {
+            method: 'POST',
+            body: { email, token, type },
+        });
+        setAccessToken(response.tokens.accessToken, response.tokens.expiresIn);
+        setRefreshToken(response.tokens.refreshToken);
+        return response;
+    },
+
+    /**
+     * Resend OTP code
+     * Rate limited: 60 seconds between requests
+     */
+    async resendOtp(email: string, type: 'signup' | 'login'): Promise<OtpRequestResponse> {
+        return apiRequest('/auth/otp/resend', {
+            method: 'POST',
+            body: { email, type },
+        });
     },
 };
 
@@ -584,6 +676,16 @@ export const userApi = {
         return apiRequest<any>('/users/email/verify', {
             method: 'POST',
             body: { email, code }
+        });
+    },
+
+    /**
+     * Verify email via link token (public - no auth required)
+     */
+    async verifyEmailLink(email: string, token: string, uid?: string) {
+        return apiRequest<{ message: string; email: string; userId: string; emailVerified: boolean }>('/users/email/verify-link', {
+            method: 'POST',
+            body: { email, token, uid }
         });
     },
 };

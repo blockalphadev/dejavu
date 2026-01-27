@@ -16,6 +16,7 @@ const MarketDetailPage = lazy(() => import("./pages/markets/MarketDetailPage").t
 
 // Auth Pages (Lazy Loaded)
 const AuthCallbackPage = lazy(() => import("./pages/auth/AuthCallbackPage").then(module => ({ default: module.AuthCallbackPage })));
+const VerifyEmailPage = lazy(() => import("./pages/auth/VerifyEmailPage").then(module => ({ default: module.VerifyEmailPage })));
 const AuthErrorPage = lazy(() => import("./pages/auth/AuthErrorPage").then(module => ({ default: module.AuthErrorPage })));
 
 // Admin Pages (Lazy Loaded)
@@ -112,6 +113,11 @@ function App() {
               <AuthCallbackPage />
             </Suspense>
           } />
+          <Route path="auth/verify" element={
+            <Suspense fallback={<PageLoader />}>
+              <VerifyEmailPage />
+            </Suspense>
+          } />
           <Route path="auth/error" element={
             <Suspense fallback={<PageLoader />}>
               <AuthErrorPage />
@@ -122,7 +128,7 @@ function App() {
           <Route path="admin" element={
             <AdminRoute>
               <Suspense fallback={<PageLoader />}>
-                <AdminLayout activePage="overview" onNavigate={() => { }} onLogout={() => { }}>
+                <AdminLayout onLogout={() => { window.location.href = '/'; }}>
                   {/* The AdminLayout likely needs refactoring to support Outlet too, but for now we might need to render sub-components manually or adjust AdminLayout to use Routes if we want deep linking there too. 
                         For this step, let's keep it simple or assume AdminLayout handles its own sub-rendering via props or we refactor it.
                         Actually, looking at previous App.tsx, AdminLayout took children.

@@ -467,8 +467,11 @@ colors: {
 | 008 | Non-Custodial | 5 tables | 6 funcs | 20KB |
 | 009 | Admin | 6 tables, 3 views | 7 funcs | 29KB |
 | 024 | **Google OAuth** | oauth_state_tokens | 6 funcs | 18KB |
+| 033 | **Email OTP Auth** | otp_codes | OTP funcs | 8KB |
+| 034 | **Fallback OTP** | fallback_otp_codes | Backup codes | 4KB |
+| 036 | **Email Verified** | profiles.email_verified | Column add | 1KB |
 
-**Total: ~180KB of SQL, 35+ tables, 50+ functions**
+**Total: ~200KB of SQL, 40+ tables, 55+ functions**
 
 ### 7.2 Core Tables
 

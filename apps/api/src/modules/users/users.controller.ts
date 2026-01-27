@@ -120,3 +120,27 @@ export class UsersController {
         return this.usersService.verifyEmailUpdate(userId, body.email, body.code);
     }
 }
+
+/**
+ * Public controller for email verification (no auth required)
+ * User clicks verification link from email before logging in
+ */
+@Controller('users')
+export class UsersPublicController {
+    constructor(private readonly usersService: UsersService) { }
+
+    @Post('email/verify-link')
+    @HttpCode(HttpStatus.OK)
+    async verifyEmailLink(
+        @Body() body: { email: string; token: string; uid?: string },
+    ) {
+        const profile = await this.usersService.verifyEmailWithToken(body.email, body.token, body.uid);
+        return {
+            message: 'Email verified successfully',
+            email: profile.email,
+            emailVerified: profile.email_verified,
+            userId: profile.id,
+        };
+    }
+}
+
