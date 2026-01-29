@@ -1,7 +1,9 @@
-import { MessageCircle, Share2, Bookmark, TrendingUp } from "lucide-react";
+import { MessageCircle, Share2, TrendingUp, BarChart2 } from "lucide-react";
 import { memo } from "react";
+import { motion } from "framer-motion";
 
 interface MarketCardProps {
+  id?: string;
   title: string;
   image?: string;
   emoji?: string;
@@ -13,67 +15,109 @@ interface MarketCardProps {
   volume?: string;
   comments?: number;
   badge?: string;
+  onSelectOutcome?: (outcome: 'yes' | 'no', choiceItem: any) => void;
 }
 
-export const MarketCard = memo(function MarketCard({ title, emoji, questions, volume, comments = 0, badge }: MarketCardProps) {
+export const MarketCard = memo(function MarketCard({
+  id,
+  title,
+  image,
+  emoji,
+  questions,
+  volume,
+  comments = 0,
+  badge,
+  onSelectOutcome
+}: MarketCardProps) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 hover:border-primary/50 transition-all duration-300 hover:shadow-lg group">
-      {/* Header */}
-      <div className="flex items-start gap-3 mb-4">
-        {emoji && (
-          <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-110 transition-transform">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="group relative flex flex-col h-full bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl overflow-hidden hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
+    >
+      {/* Header Area */}
+      <div className="p-4 flex gap-4">
+        {image ? (
+          <div className="w-12 h-12 rounded-lg bg-accent/10 overflow-hidden shadow-inner flex-shrink-0 group-hover:ring-2 group-hover:ring-primary/20 transition-all duration-300">
+            <img
+              src={image}
+              alt={title}
+              className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement?.classList.add('hidden');
+              }}
+            />
+          </div>
+        ) : emoji ? (
+          <div className="w-12 h-12 rounded-lg bg-accent/50 flex items-center justify-center text-2xl shadow-inner group-hover:scale-105 transition-transform duration-300">
             {emoji}
           </div>
+        ) : (
+          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center shadow-inner">
+            <BarChart2 className="w-6 h-6 text-primary/60" />
+          </div>
         )}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-card-foreground mb-1 line-clamp-2">
+
+        <div className="flex-1 min-w-0 py-0.5">
+          <div className="flex items-center gap-2 mb-1">
+            {badge && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                {badge}
+              </span>
+            )}
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Prediction Market</span>
+          </div>
+          <h3 className="text-base font-semibold leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
             {title}
           </h3>
-          {badge && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded text-xs">
-              {badge}
-            </span>
-          )}
         </div>
       </div>
 
-      {/* Questions */}
-      <div className="space-y-3 mb-4">
+      {/* Action Area (Order Book Buttons) */}
+      <div className="px-4 pb-4 flex-1 flex flex-col justify-end space-y-3">
         {questions.map((question, idx) => (
-          <div key={idx} className="space-y-2">
-            <p className="text-sm text-muted-foreground">{question.text}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {/* Yes Button */}
-              <button className="group/btn relative overflow-hidden rounded-lg border border-green-500/30 bg-green-500/5 hover:bg-green-500/15 p-3 transition-all">
-                <div className="flex items-center justify-between">
-                  <span className="text-green-600 dark:text-green-400 font-medium">Yes</span>
-                  <span className="text-green-600 dark:text-green-400 font-bold">
-                    {question.yesPercent}%
-                  </span>
-                </div>
-                <div className="mt-1 text-xs text-green-600/70 dark:text-green-400/70">
-                  {question.yesPercent}¢
-                </div>
+          <div key={idx} className="space-y-1.5">
+            {questions.length > 1 && (
+              <p className="text-xs font-medium text-muted-foreground pl-1">{question.text}</p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* YES Order Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectOutcome?.('yes', { marketId: id, title, question: question.text, price: question.yesPercent / 100 });
+                }}
+                className="relative flex flex-col items-center justify-center py-2 rounded-lg bg-green-500/5 hover:bg-green-500/15 border border-green-500/30 transition-all active:scale-[0.98] group/btn"
+              >
+                <span className="text-xs font-bold text-green-600 dark:text-green-400 mb-0.5">YES</span>
+                <span className="text-lg font-bold text-green-700 dark:text-green-300 tracking-tight">{question.yesPercent}%</span>
+                <span className="text-[10px] text-green-600/60 dark:text-green-400/60">Limit Buy</span>
+
+                {/* Progress Bar Background */}
                 <div
-                  className="absolute bottom-0 left-0 h-1 bg-green-500 transition-all group-hover/btn:h-full group-hover/btn:opacity-10"
-                  style={{ width: `${question.yesPercent}%` }}
+                  className="absolute bottom-0 left-0 h-1 bg-green-500/50 transition-all duration-500"
+                  style={{ width: `${question.yesPercent}%`, opacity: 0.3 }}
                 />
               </button>
 
-              {/* No Button */}
-              <button className="group/btn relative overflow-hidden rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/15 p-3 transition-all">
-                <div className="flex items-center justify-between">
-                  <span className="text-red-600 dark:text-red-400 font-medium">No</span>
-                  <span className="text-red-600 dark:text-red-400 font-bold">
-                    {question.noPercent}%
-                  </span>
-                </div>
-                <div className="mt-1 text-xs text-red-600/70 dark:text-red-400/70">
-                  {question.noPercent}¢
-                </div>
+              {/* NO Order Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectOutcome?.('no', { marketId: id, title, question: question.text, price: question.noPercent / 100 });
+                }}
+                className="relative flex flex-col items-center justify-center py-2 rounded-lg bg-red-500/5 hover:bg-red-500/15 border border-red-500/30 transition-all active:scale-[0.98] group/btn"
+              >
+                <span className="text-xs font-bold text-red-600 dark:text-red-400 mb-0.5">NO</span>
+                <span className="text-lg font-bold text-red-700 dark:text-red-300 tracking-tight">{question.noPercent}%</span>
+                <span className="text-[10px] text-red-600/60 dark:text-red-400/60">Limit Sell</span>
+
                 <div
-                  className="absolute bottom-0 left-0 h-1 bg-red-500 transition-all group-hover/btn:h-full group-hover/btn:opacity-10"
-                  style={{ width: `${question.noPercent}%` }}
+                  className="absolute bottom-0 left-0 h-1 bg-red-500/50 transition-all duration-500"
+                  style={{ width: `${question.noPercent}%`, opacity: 0.3 }}
                 />
               </button>
             </div>
@@ -81,29 +125,24 @@ export const MarketCard = memo(function MarketCard({ title, emoji, questions, vo
         ))}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-border/50">
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      {/* Footer Metadata */}
+      <div className="px-4 py-3 bg-secondary/30 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center gap-3">
           {volume && (
-            <div className="flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              <span>{volume}</span>
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span className="font-medium text-foreground/80">{volume} Vol</span>
             </div>
           )}
-          <button className="flex items-center gap-1 hover:text-foreground transition-colors">
-            <MessageCircle className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
+            <MessageCircle className="w-3.5 h-3.5" />
             <span>{comments}</span>
-          </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="p-1.5 hover:bg-accent rounded transition-colors">
-            <Share2 className="w-3.5 h-3.5" />
-          </button>
-          <button className="p-1.5 hover:bg-accent rounded transition-colors">
-            <Bookmark className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <button className="p-1.5 hover:bg-background rounded-full transition-colors text-muted-foreground hover:text-primary">
+          <Share2 className="w-3.5 h-3.5" />
+        </button>
       </div>
-    </div>
+    </motion.div>
   );
 });

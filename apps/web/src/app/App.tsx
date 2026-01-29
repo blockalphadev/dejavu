@@ -28,132 +28,116 @@ const AdminSecurity = lazy(() => import("./admin/AdminSecurity").then(module => 
 import { AdminRoute } from "./components/auth/AdminGuard";
 import { AuthGuard } from "./components/auth/AuthGuard";
 
+import { MarketDataProvider } from "../providers/MarketDataProvider";
+
 function App() {
   return (
     <BrowserRouter>
-      {/* 
-          Providers are now wrapped inside RootLayout or here depending on scope.
-          Since RootLayout uses Providers (e.g. for Header/Sidebar), we might need to keep them here 
-          OR move them entirely into a wrapper. RootLayout in our previous step wraps Providers *inside* it, 
-          which would mean the Router needs to be OUTSIDE the Providers if the Router depends on them?
-          
-          Actually, RootLayout *is* a component that renders the Providers. 
-          But wait, RootLayout uses 'useLocation' which requires Router context.
-          
-          So structure:
-          <BrowserRouter>
-            <RootLayout> -> Renders Providers & UI
-               <Routes> ... </Routes>
-            </RootLayout>
-          </BrowserRouter>
-          
-          Let's adjust. RootLayout was written to include providers. 
-          Ideally, we should likely move Providers UP in the tree, or ensure Router is outside.
-      */}
+      <MarketDataProvider>
+        <Routes>
+          <Route element={<RootLayout />}>
+            {/* Root path shows Top Markets directly (no URL change) */}
+            {/* Root path redirects to Markets (Top Markets) */}
+            {/* Root path shows Top Markets directly */}
+            <Route path="/" element={<MarketsLayout />}>
+              <Route index element={<MarketsIndex />} />
+              <Route path="*" element={<MarketsIndex />} />
+            </Route>
 
-      <Routes>
-        <Route element={<RootLayout />}>
-          {/* Root path shows Top Markets directly (no URL change) */}
-          {/* Root path redirects to Markets (Top Markets) */}
-          {/* Root path shows Top Markets directly */}
-          <Route path="/" element={<MarketsLayout />}>
-            <Route index element={<MarketsIndex />} />
-            <Route path="*" element={<MarketsIndex />} />
-          </Route>
+            {/* Redirect /markets to / for legacy compatibility */}
+            <Route path="markets" element={<Navigate to="/" replace />} />
 
-          {/* Redirect /markets to / for legacy compatibility */}
-          <Route path="markets" element={<Navigate to="/" replace />} />
+            {/* Other Top Level Routes */}
 
-          {/* Other Top Level Routes */}
+            <Route path="portfolio" element={
+              <AuthGuard>
+                <Suspense fallback={<PageLoader />}>
+                  <PortfolioPage />
+                </Suspense>
+              </AuthGuard>
+            } />
 
-          <Route path="portfolio" element={
-            <AuthGuard>
+            <Route path="search" element={
               <Suspense fallback={<PageLoader />}>
-                <PortfolioPage />
+                <SearchPage />
               </Suspense>
-            </AuthGuard>
-          } />
+            } />
 
-          <Route path="search" element={
-            <Suspense fallback={<PageLoader />}>
-              <SearchPage />
-            </Suspense>
-          } />
-
-          <Route path="market/:id" element={
-            <Suspense fallback={<PageLoader />}>
-              <MarketDetailPage />
-            </Suspense>
-          } />
-
-          <Route path="notifications" element={
-            <AuthGuard>
+            <Route path="market/:id" element={
               <Suspense fallback={<PageLoader />}>
-                <NotificationsPage />
+                <MarketDetailPage />
               </Suspense>
-            </AuthGuard>
-          } />
+            } />
 
-          <Route path="settings" element={
-            <AuthGuard>
+            <Route path="notifications" element={
+              <AuthGuard>
+                <Suspense fallback={<PageLoader />}>
+                  <NotificationsPage />
+                </Suspense>
+              </AuthGuard>
+            } />
+
+            <Route path="settings" element={
+              <AuthGuard>
+                <Suspense fallback={<PageLoader />}>
+                  <SettingsPage />
+                </Suspense>
+              </AuthGuard>
+            } />
+
+            {/* Placeholders for future routes */}
+            <Route path="ranks" element={<div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>} />
+            <Route path="activity" element={<div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>} />
+            <Route path="rewards" element={<div className="p-8 text-center text-muted-foreground">Rewards & Airdrops Coming Soon</div>} />
+
+            {/* Auth Routes - OAuth Callback */}
+            <Route path="auth/callback" element={
               <Suspense fallback={<PageLoader />}>
-                <SettingsPage />
+                <AuthCallbackPage />
               </Suspense>
-            </AuthGuard>
-          } />
-
-          {/* Placeholders for future routes */}
-          <Route path="ranks" element={<div className="p-8 text-center text-muted-foreground">Global Ranks Coming Soon</div>} />
-          <Route path="activity" element={<div className="p-8 text-center text-muted-foreground">Activity Feed Coming Soon</div>} />
-          <Route path="rewards" element={<div className="p-8 text-center text-muted-foreground">Rewards & Airdrops Coming Soon</div>} />
-
-          {/* Auth Routes - OAuth Callback */}
-          <Route path="auth/callback" element={
-            <Suspense fallback={<PageLoader />}>
-              <AuthCallbackPage />
-            </Suspense>
-          } />
-          <Route path="auth/verify" element={
-            <Suspense fallback={<PageLoader />}>
-              <VerifyEmailPage />
-            </Suspense>
-          } />
-          <Route path="auth/error" element={
-            <Suspense fallback={<PageLoader />}>
-              <AuthErrorPage />
-            </Suspense>
-          } />
-
-          {/* Admin Routes */}
-          <Route path="admin" element={
-            <AdminRoute>
+            } />
+            <Route path="auth/verify" element={
               <Suspense fallback={<PageLoader />}>
-                <AdminLayout onLogout={() => { window.location.href = '/'; }}>
-                  {/* The AdminLayout likely needs refactoring to support Outlet too, but for now we might need to render sub-components manually or adjust AdminLayout to use Routes if we want deep linking there too. 
+                <VerifyEmailPage />
+              </Suspense>
+            } />
+            <Route path="auth/error" element={
+              <Suspense fallback={<PageLoader />}>
+                <AuthErrorPage />
+              </Suspense>
+            } />
+
+            {/* Admin Routes */}
+            <Route path="admin" element={
+              <AdminRoute>
+                <Suspense fallback={<PageLoader />}>
+                  <AdminLayout onLogout={() => { window.location.href = '/'; }}>
+                    {/* The AdminLayout likely needs refactoring to support Outlet too, but for now we might need to render sub-components manually or adjust AdminLayout to use Routes if we want deep linking there too. 
                         For this step, let's keep it simple or assume AdminLayout handles its own sub-rendering via props or we refactor it.
                         Actually, looking at previous App.tsx, AdminLayout took children.
                     */}
-                  <Routes>
-                    <Route index element={<Navigate to="overview" replace />} />
-                    <Route path="overview" element={<AdminOverview />} />
-                    <Route path="users" element={<AdminUsers />} />
-                    <Route path="finance" element={<AdminFinance />} />
-                    <Route path="security" element={<AdminSecurity />} />
-                  </Routes>
-                </AdminLayout>
-              </Suspense>
-            </AdminRoute>
-          } >
-            {/* Nested admin routes if AdminLayout renders Outlet */}
-            <Route index element={<Navigate to="overview" replace />} />
-            <Route path="overview" element={<AdminOverview />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="finance" element={<AdminFinance />} />
-            <Route path="security" element={<AdminSecurity />} />
-          </Route>
+                    <Routes>
+                      <Route index element={<Navigate to="overview" replace />} />
+                      <Route path="overview" element={<AdminOverview />} />
+                      <Route path="users" element={<AdminUsers />} />
+                      <Route path="finance" element={<AdminFinance />} />
+                      <Route path="security" element={<AdminSecurity />} />
+                    </Routes>
+                  </AdminLayout>
+                </Suspense>
+              </AdminRoute>
+            } >
+              {/* Nested admin routes if AdminLayout renders Outlet */}
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="finance" element={<AdminFinance />} />
+              <Route path="security" element={<AdminSecurity />} />
+            </Route>
 
-        </Route>
-      </Routes>
+          </Route>
+        </Routes>
+      </MarketDataProvider>
     </BrowserRouter>
   );
 }

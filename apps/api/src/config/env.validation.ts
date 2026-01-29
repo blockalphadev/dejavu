@@ -77,6 +77,32 @@ export const envSchema = z.object({
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
     SMTP_FROM: z.string().email().optional(),
+    SMTP_KEY: z.string().optional(),
+
+    // Market Data API Keys (all optional - graceful degradation)
+    NEWSAPI_KEY: z.string().optional(),
+    ALPHA_VANTAGE_API_KEY: z.string().optional(),
+    COINMARKETCAP_API_KEY: z.string().optional(),
+    CRYPTOPANIC_API_KEY: z.string().optional(),
+    FRED_API_KEY: z.string().optional(),
+
+    // Sports API Keys
+    APIFOOTBALL_API_KEY: z.string().optional(),
+    THESPORTSDB_API_KEY: z.string().optional(),
+
+    // RabbitMQ Messaging
+    RABBITMQ_URL: z.string().optional(),
+    RABBITMQ_HOST: z.string().optional(),
+    RABBITMQ_PORT: z.string().transform(Number).pipe(z.number()).optional(),
+    RABBITMQ_USER: z.string().optional(),
+    RABBITMQ_PASSWORD: z.string().optional(),
+    RABBITMQ_VHOST: z.string().optional(),
+    MARKET_MESSAGING_ENABLED: z.string().transform(val => val === 'true').default('false'),
+
+    // WebSocket
+    WS_RATE_LIMIT: z.string().transform(Number).pipe(z.number()).optional(),
+    WS_BATCH_INTERVAL: z.string().transform(Number).pipe(z.number()).optional(),
+    WS_MAX_SUBSCRIPTIONS: z.string().transform(Number).pipe(z.number()).optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

@@ -9,7 +9,7 @@ export interface MarketCategory {
 }
 
 export const MO_MARKET_CATEGORIES: MarketCategory[] = [
-    { id: "top_pics", path: "", label: "Top Markets", icon: TrendingUp, description: "Curated top picks for you" },
+    { id: "top_markets", path: "", label: "Top Markets", icon: TrendingUp, description: "Curated top picks for you" },
     { id: "for_you", path: "for-you", label: "For You", icon: Activity, description: "Personalized recommendations" },
     { id: "signals", path: "signals", label: "Signals", icon: Newspaper, description: "Market signals and news" },
     { id: "latest", path: "latest", label: "Latest", icon: Zap, description: "Newest markets" },

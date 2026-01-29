@@ -43,10 +43,10 @@ export class CreateMarketDto {
     @ApiProperty({
         description: 'Market category',
         example: 'crypto',
-        enum: ['crypto', 'sports', 'politics', 'entertainment', 'science', 'other'],
+        enum: ['crypto', 'sports', 'politics', 'entertainment', 'science', 'tech', 'finance', 'economy', 'other'],
     })
-    @IsIn(['crypto', 'sports', 'politics', 'entertainment', 'science', 'other'])
-    category: 'crypto' | 'sports' | 'politics' | 'entertainment' | 'science' | 'other';
+    @IsIn(['crypto', 'sports', 'politics', 'entertainment', 'science', 'tech', 'finance', 'economy', 'other'])
+    category: 'crypto' | 'sports' | 'politics' | 'entertainment' | 'science' | 'tech' | 'finance' | 'economy' | 'other';
 
     @ApiProperty({
         description: 'Market end time (ISO string)',
@@ -100,7 +100,7 @@ export class MarketQueryDto {
         example: 'crypto',
     })
     @IsOptional()
-    @IsIn(['crypto', 'sports', 'politics', 'entertainment', 'science', 'other'])
+    @IsIn(['crypto', 'sports', 'politics', 'entertainment', 'science', 'tech', 'finance', 'economy', 'other'])
     category?: string;
 
     @ApiPropertyOptional({
@@ -161,6 +161,17 @@ export class MarketQueryDto {
     @Max(100)
     @Type(() => Number)
     limit?: number;
+
+    @ApiPropertyOptional({
+        description: 'Offset for pagination (alternative to page)',
+        example: 0,
+        minimum: 0,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Type(() => Number)
+    offset?: number;
 
     @ApiPropertyOptional({
         description: 'Search query',

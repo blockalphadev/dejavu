@@ -11,7 +11,7 @@ export const MarketOutcomeSchema = z.object({
 export const MarketSchema = z.object({
     id: z.string(),
     question: z.string(),
-    outcomes: z.array(MarketOutcomeSchema),
+    outcomes: z.array(z.union([z.string(), MarketOutcomeSchema])),
     category: z.string().optional(),
     subCategory: z.string().optional(),
     endDate: z.string().datetime().optional().or(z.string()), // Accept ISO or generic string, or undefined

@@ -7,7 +7,7 @@ export function MarketsLayout() {
     const location = useLocation();
 
     // Determine active category based on URL path
-    // / -> top_pics (path "")
+    // / -> top_markets (path "")
     // /sports -> sports (path "sports/*")
     const currentPath = location.pathname === "/" ? "" : location.pathname.substring(1);
 

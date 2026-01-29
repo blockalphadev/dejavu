@@ -22,16 +22,17 @@
 1. [Executive Summary](#1-executive-summary)
 2. [System Architecture](#2-system-architecture)
 3. [Technology Stack](#3-technology-stack)
-4. [Project Structure](#4-project-structure)
-5. [Frontend Architecture](#5-frontend-architecture)
-6. [Backend Architecture](#6-backend-architecture)
-7. [Database Architecture](#7-database-architecture)
-8. [Security Architecture](#8-security-architecture)
-9. [Smart Contracts](#9-smart-contracts)
-10. [Shared Packages](#10-shared-packages)
-11. [API Reference](#11-api-reference)
-12. [Deployment Architecture](#12-deployment-architecture)
-13. [Appendix](#13-appendix)
+4. [Real-Time Data Architecture](#4-real-time-data-architecture)
+5. [Project Structure](#5-project-structure)
+6. [Frontend Architecture](#6-frontend-architecture)
+7. [Backend Architecture](#7-backend-architecture)
+8. [Database Architecture](#8-database-architecture)
+9. [Security Architecture](#9-security-architecture)
+10. [Smart Contracts](#10-smart-contracts)
+11. [Shared Packages](#11-shared-packages)
+12. [API Reference](#12-api-reference)
+13. [Deployment Architecture](#13-deployment-architecture)
+14. [Appendix](#14-appendix)
 
 ---
 
@@ -200,7 +201,20 @@ sequenceDiagram
 
 ---
 
-## 4. Project Structure
+## 4. Real-Time Data Architecture
+
+> **Detailed Guide:** [Real-Time-Data-Architecture.md](./Real-Time-Data-Architecture.md)
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **ETL Pipeline** | NestJS + Cron | Aggregates data from 8 categories |
+| **Streaming** | RabbitMQ | Topic-based event distribution |
+| **Gateway** | Socket.io | WebSocket broadcasting to clients |
+| **Intelligence** | Recommendations | Real-time "Top Markets" ranking |
+
+---
+
+## 5. Project Structure
 
 ### 4.1 Repository Layout
 

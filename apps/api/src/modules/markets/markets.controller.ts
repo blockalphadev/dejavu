@@ -46,7 +46,39 @@ export class MarketsController {
     @ApiOperation({ summary: 'Get all markets with filters and pagination' })
     @ApiResponse({ status: 200, description: 'Markets retrieved successfully' })
     async findAll(@Query() query: MarketQueryDto) {
+        // Compatibility: Convert offset to page if page is missing
+        if (query.offset !== undefined && query.page === undefined) {
+            const limit = query.limit || 10;
+            query.page = Math.floor(query.offset / limit) + 1;
+        }
         return this.marketsService.findAll(query);
+    }
+
+    /**
+     * Get category feed data from ETL-populated market_data_items
+     * This endpoint serves data for category pages (Politics, Finance, Tech, etc.)
+     * @security Public with anti-throttling measures
+     */
+    @Get('feed')
+    @Public()
+    @ApiOperation({ summary: 'Get market feed items by category (ETL data)' })
+    @ApiResponse({ status: 200, description: 'Feed items retrieved successfully' })
+    async getCategoryFeed(
+        @Query('category') category?: string,
+        @Query('limit') limit?: number,
+        @Query('offset') offset?: number,
+        @Query('search') search?: string
+    ) {
+        // Anti-throttling: Enforce limits at controller level
+        const safeLimit = Math.min(Number(limit) || 20, 100);
+        const safeOffset = Math.max(Number(offset) || 0, 0);
+
+        return this.marketsService.findCategoryFeed(
+            category || 'latest',
+            safeLimit,
+            safeOffset,
+            search
+        );
     }
 
     /**
@@ -82,6 +114,8 @@ export class MarketsController {
     async findByCreator(@Param('userId') userId: string) {
         return this.marketsService.findByCreator(userId);
     }
+
+
 
     /**
      * Resolve a market

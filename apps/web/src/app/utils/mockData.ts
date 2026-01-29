@@ -27,13 +27,19 @@ export interface Signal {
     source: string;
     timeAgo: string;
     image?: string;
+    sourceIcon?: string;
+    url?: string;
     impact: "HIGH" | "MEDIUM" | "LOW";
     sentiment: "BULLISH" | "BEARISH" | "NEUTRAL";
     tags: string[];
+    // Backend compat fields
+    source_icon?: string;
+    source_type?: string;
+    published_at?: string;
 }
 
 export const CATEGORIES = [
-    { id: "top_pics", label: "Top Markets", icon: TrendingUp },
+    { id: "top_markets", label: "Top Markets", icon: TrendingUp },
     { id: "for_you", label: "For You", icon: Activity },
     { id: "signals", label: "Signals", icon: Newspaper },
     { id: "latest", label: "Latest", icon: Zap },

@@ -22,6 +22,11 @@ The DeJaVu frontend is a high-performance, enterprise-grade generic prediction m
 | **TailwindCSS 4** | Styling | Utility-first, Dark Mode, Animations |
 | **Framer Motion** | Animation | Layout Transitions, Micro-interactions |
 | **Socket.io Client** | Real-time | Live Odds & Score Streaming |
+| **K-Means Client** | AI Engine | "For You" Personalization Logic |
+
+### 1.1 New Capabilities (AI & Recommendations)
+*   **Top Markets**: A unified interface blending high-volume betting markets with critical global news.
+*   **For You**: Personalized content feed driven by client-side interest vectors and backend clustering.
 
 ---
 
@@ -139,6 +144,8 @@ if (!validation.success) {
 
 ### 5.2 Key Components
 - **SportsMarketCard**: The core unit. Displays match info, live score (pulsing dot), and outcome probabilities.
+- **LiveMarketCard**: A versatile card for News, Econ Data, and mixed Betting/Signal content.
+- **MarketFeed**: A scrolling ticker component for "Latest" updates.
 - **BetSlip**:
   - **Desktop**: Sticky sidebar.
   - **Mobile**: Swipeable bottom sheet (FAB).
@@ -180,6 +187,7 @@ All global state contexts are consolidated in `src/app/contexts/` for maintainab
 | Hook | Location | Purpose |
 |------|----------|---------|
 | `useSportsMarkets` | `app/hooks/useSportsMarkets.ts` | **TanStack Query + Zod** for fetching markets |
+| `useMarketData` | `app/hooks/useMarketData.ts` | **Unified Data Hook** for Betting, News, and AI Feeds |
 | `useSettings` | `app/pages/settings/index.tsx` | Local state for tab navigation and responsive layout |
 | `useSportsSocket` | `app/hooks/useSportsSocket.ts` | WebSocket connection with strict payload types |
 | `useDebounce` | `app/hooks/useDebounce.ts` | Anti-throttling for search inputs |
@@ -187,6 +195,8 @@ All global state contexts are consolidated in `src/app/contexts/` for maintainab
 | `useSportsData` | `app/hooks/useSportsData.ts` | General sports events fetching |
 | `useNotifications` | `app/hooks/useNotifications.ts` | User notification management |
 | `useWallet` | `app/hooks/useWallet.ts` | Multi-chain wallet interactions |
+| `useAdvancedMarketRanking` | `app/hooks/useAdvancedMarketRanking.ts` | **Top Markets & For You** aggregation with real-time updates |
+| `useMarketSocket` | `app/hooks/useMarketSocket.ts` | Universal socket listener for global market events |
 
 ---
 
@@ -202,6 +212,7 @@ All global state contexts are consolidated in `src/app/contexts/` for maintainab
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.3.0 | Jan 29, 2026 | Real-time "Top Markets" & "For You", Image Support in MarketCard |
 | 2.2.0 | Jan 21, 2026 | Dedicated Settings Page, Premium Mobile UI, X Branding |
 | 2.1.1 | Jan 21, 2026 | Context consolidation, Type Safety improvements, 0 TS errors |
 | 2.1.0 | Jan 21, 2026 | React Query + Zod integration, Lazy Loading |

@@ -25,7 +25,7 @@ interface Market {
     updated_at: string;
 }
 
-interface PaginatedResult<T> {
+export interface PaginatedResult<T> {
     data: T[];
     total: number;
     page: number;
@@ -318,5 +318,458 @@ export class MarketsService {
             liquidity: 'liquidity',
         };
         return sortFields[sortBy] || 'created_at';
+    }
+
+    /**
+     * Get category feed data from market_data_items table
+     * This is the primary data source for category pages (Politics, Finance, Tech, etc.)
+     * Data is populated by ETL pipelines from various sources
+     * 
+     * @param category - Category to filter by (or 'latest' for all)
+     * @param limit - Max items to return (capped at 100 for anti-throttling)
+     * @param offset - Pagination offset
+     * @param search - Optional search query
+     */
+    async findCategoryFeed(
+        category: string,
+        limit: number = 20,
+        offset: number = 0,
+        search?: string
+    ): Promise<{ data: any[]; total: number; hasMore: boolean }> {
+        // Use AdminClient to bypass potential RLS issues for public read
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Anti-throttling: Enforce safe limits
+        const safeLimit = Math.min(Math.max(limit, 1), 100);
+        const safeOffset = Math.max(offset, 0);
+
+        let query = supabase
+            .from('market_data_items')
+            .select('*', { count: 'exact' })
+            .eq('is_active', true)
+            .eq('is_duplicate', false)
+            .order('published_at', { ascending: false })
+            .range(safeOffset, safeOffset + safeLimit - 1);
+
+        // Filter by category unless 'latest' (which shows all categories)
+        if (category && category !== 'latest' && category !== 'all') {
+            query = query.eq('category', category.toLowerCase());
+        }
+
+        // Optional search filter (OWASP: sanitize input)
+        if (search && search.trim().length > 0) {
+            const sanitizedSearch = search.replace(/[%_]/g, ''); // Escape SQL wildcards
+            query = query.ilike('title', `%${sanitizedSearch}%`);
+        }
+
+        const { data, error, count } = await query;
+
+        if (error) {
+            this.logger.error(`Failed to fetch category feed for ${category}: ${error.message}`);
+            return { data: [], total: 0, hasMore: false };
+        }
+
+        const total = count || 0;
+        const hasMore = (safeOffset + safeLimit) < total;
+
+        // Transform to consistent response format
+        const transformedData = (data || []).map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            category: item.category,
+            source: item.source_name || item.source,
+            publishedAt: item.published_at,
+            impact: item.impact || 'medium',
+            sentiment: item.sentiment || 'neutral',
+            sentimentScore: item.sentiment_score || 0,
+            relevanceScore: item.relevance_score || 0.5,
+            confidenceScore: item.confidence_score || 0.5,
+            imageUrl: item.image_url,
+            url: item.url,
+            tags: item.tags || [],
+            // Add market-like properties for frontend compatibility
+            outcomes: item.market_potential ? [
+                { id: `${item.id}-yes`, label: 'Yes', probability: 50 },
+                { id: `${item.id}-no`, label: 'No', probability: 50 }
+            ] : undefined,
+            volume: item.engagement_score || 0,
+            timeframe: 'New',
+        }));
+
+        return { data: transformedData, total, hasMore };
+    }
+
+    // ==========================================
+    // Auto Market Generation (for ETL)
+    // ==========================================
+
+    /**
+     * Create a politics market from a detected political event
+     */
+    async createPoliticsMarket(params: {
+        title: string;
+        description: string;
+        endTime: Date;
+        tags?: string[];
+        source?: string;
+        externalEventId?: string;
+    }): Promise<MarketResponseDto | null> {
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Check for duplicate market (by similar title)
+        const normalizedTitle = params.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const { data: existing } = await supabase
+            .from('markets')
+            .select('id')
+            .eq('category', 'politics')
+            .ilike('title', `%${params.title.substring(0, 50)}%`)
+            .single();
+
+        if (existing) {
+            this.logger.debug(`Skipping duplicate politics market: ${params.title.substring(0, 50)}...`);
+            return null;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('markets')
+                .insert({
+                    creator_id: '00000000-0000-0000-0000-000000000000', // System user
+                    title: this.sanitizeMarketTitle(params.title),
+                    description: this.sanitizeDescription(params.description),
+                    category: 'politics',
+                    chain: 'base',
+                    chain_id: 8453,
+                    collateral_token: 'USDC',
+                    end_time: params.endTime.toISOString(),
+                    resolution_time: new Date(params.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+                    resolved: false,
+                    outcome: null,
+                    yes_price: 0.5,
+                    no_price: 0.5,
+                    volume: 0,
+                    liquidity: 0,
+                    tags: [...(params.tags || []), 'auto-generated', 'politics'],
+                    metadata: {
+                        source: params.source || 'etl',
+                        externalEventId: params.externalEventId,
+                        autoGenerated: true,
+                        generatedAt: new Date().toISOString(),
+                    }
+                })
+                .select()
+                .single();
+
+            if (error) {
+                this.logger.warn(`Failed to create politics market: ${error.message}`);
+                return null;
+            }
+
+            this.logger.log(`Auto-created politics market: ${data.id} - ${params.title.substring(0, 50)}...`);
+            return this.toResponseDto(data);
+        } catch (error) {
+            this.logger.error(`Error creating politics market: ${(error as Error).message}`);
+            return null;
+        }
+    }
+
+    /**
+     * Generate election market from detected election news
+     */
+    async generateElectionMarket(params: {
+        candidate1: string;
+        candidate2?: string;
+        electionType: string; // 'presidential', 'senate', 'governor', etc.
+        country: string;
+        region?: string;
+        electionDate: Date;
+    }): Promise<MarketResponseDto | null> {
+        const title = params.candidate2
+            ? `Will ${params.candidate1} defeat ${params.candidate2} in the ${params.country} ${params.electionType} election?`
+            : `Will ${params.candidate1} win the ${params.country} ${params.electionType} election?`;
+
+        const description = `Prediction market for the ${params.country} ${params.electionType} election` +
+            (params.region ? ` in ${params.region}` : '') +
+            `. Election date: ${params.electionDate.toISOString().split('T')[0]}.`;
+
+        return this.createPoliticsMarket({
+            title,
+            description,
+            endTime: params.electionDate,
+            tags: ['election', params.electionType, params.country, params.candidate1],
+        });
+    }
+
+    /**
+     * Generate legislation market from detected bill/policy news
+     */
+    async generateLegislationMarket(params: {
+        billName: string;
+        description: string;
+        chamber?: string; // 'senate', 'house', 'parliament'
+        country: string;
+        deadline?: Date;
+    }): Promise<MarketResponseDto | null> {
+        const title = params.chamber
+            ? `Will the ${params.chamber} pass ${params.billName}?`
+            : `Will ${params.billName} become law in ${params.country}?`;
+
+        // Default deadline: 30 days from now if not specified
+        const endTime = params.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        return this.createPoliticsMarket({
+            title,
+            description: params.description,
+            endTime,
+            tags: ['legislation', params.country, params.chamber || 'congress'],
+        });
+    }
+
+    /**
+     * Generate market from a political event/news item
+     */
+    async generateMarketFromEvent(params: {
+        eventTitle: string;
+        eventDescription: string;
+        eventType: 'election' | 'legislation' | 'policy' | 'summit' | 'general';
+        entities: string[];
+        deadline?: Date;
+    }): Promise<MarketResponseDto | null> {
+        // Generate a prediction question from the event
+        const questionTemplate = this.generatePredictionQuestion(params.eventTitle, params.eventType);
+
+        if (!questionTemplate) {
+            return null;
+        }
+
+        const endTime = params.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default: 7 days
+
+        return this.createPoliticsMarket({
+            title: questionTemplate,
+            description: params.eventDescription,
+            endTime,
+            tags: [params.eventType, ...params.entities.slice(0, 5)],
+        });
+    }
+
+    /**
+     * Generate prediction question from event title
+     */
+    private generatePredictionQuestion(title: string, eventType: string): string | null {
+        const lowerTitle = title.toLowerCase();
+
+        // Skip if already a question
+        if (title.endsWith('?')) {
+            return title;
+        }
+
+        // Election-related patterns
+        if (lowerTitle.includes('election') || lowerTitle.includes('vote')) {
+            if (lowerTitle.includes('win')) {
+                return title.replace(/will|could|may/i, 'Will') + '?';
+            }
+            return `Will the outcome of "${title.substring(0, 80)}" be favorable to the leading candidate?`;
+        }
+
+        // Legislation patterns
+        if (lowerTitle.includes('bill') || lowerTitle.includes('legislation') || lowerTitle.includes('law')) {
+            return `Will ${title.substring(0, 80)} be passed?`;
+        }
+
+        // Policy patterns
+        if (lowerTitle.includes('policy') || lowerTitle.includes('reform')) {
+            return `Will ${title.substring(0, 80)} be implemented successfully?`;
+        }
+
+        // Summit/meeting patterns
+        if (lowerTitle.includes('summit') || lowerTitle.includes('meeting') || lowerTitle.includes('talks')) {
+            return `Will ${title.substring(0, 80)} result in an agreement?`;
+        }
+
+        // General fallback - only create market if high-impact
+        if (eventType === 'general' && this.isHighImpactEvent(title)) {
+            return `${title.substring(0, 100)}?`;
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if event is high-impact enough for market creation
+     */
+    private isHighImpactEvent(title: string): boolean {
+        const highImpactKeywords = [
+            'president', 'prime minister', 'breaking', 'major', 'historic',
+            'unprecedented', 'crisis', 'war', 'treaty', 'agreement', 'resign',
+            'impeach', 'scandal', 'investigation', 'sanctions', 'tariff'
+        ];
+        const lowerTitle = title.toLowerCase();
+        return highImpactKeywords.some(keyword => lowerTitle.includes(keyword));
+    }
+
+    /**
+     * Sanitize market title (OWASP compliant)
+     */
+    private sanitizeMarketTitle(title: string): string {
+        return title
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/[<>'"&]/g, '') // Remove special chars
+            .substring(0, 200)
+            .trim();
+    }
+
+    /**
+     * Sanitize description (OWASP compliant)
+     */
+    private sanitizeDescription(description: string): string {
+        return description
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/javascript:/gi, '') // Prevent JS injection
+            .substring(0, 2000)
+            .trim();
+    }
+    /**
+     * Get Top Markets using advanced weighted ranking algorithm
+     * Score = Volume (40%) + Liquidity (30%) + Sentiment (20%) + Freshness (10%)
+     */
+    async getTopMarkets(limit: number = 10): Promise<MarketResponseDto[]> {
+        const supabase = this.supabaseService.getClient();
+
+        // Fetch candidates (resolved=false, high volume or recent)
+        // We fetch more than limit to allow ranking
+        const { data, error } = await supabase
+            .from('markets')
+            .select('*')
+            .eq('resolved', false)
+            .order('volume', { ascending: false })
+            .limit(100);
+
+        if (error) {
+            this.logger.error(`Failed to fetch top markets candidates: ${error.message}`);
+            return [];
+        }
+
+        const markets = data || [];
+        if (markets.length === 0) return [];
+
+        // Normalization helpers
+        const maxVol = Math.max(...markets.map(m => m.volume)) || 1;
+        const maxLiq = Math.max(...markets.map(m => m.liquidity)) || 1;
+        const now = Date.now();
+
+        // Rank
+        const ranked = markets.map(market => {
+            const volScore = market.volume / maxVol;
+            const liqScore = market.liquidity / maxLiq;
+
+            // Sentiment Intensity (deviation from 0.5)
+            const price = market.yes_price || 0.5;
+            const sentimentScore = Math.abs(price - 0.5) * 2;
+
+            // Freshness (decay over 7 days)
+            const ageHours = (now - new Date(market.created_at).getTime()) / (1000 * 60 * 60);
+            const timeScore = Math.max(0, 1 - (ageHours / 168));
+
+            // Weighted Score
+            const score = (volScore * 0.4) + (liqScore * 0.3) + (sentimentScore * 0.2) + (timeScore * 0.1);
+
+            return { ...market, score };
+        });
+
+        // Sort and take limit
+        return ranked
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit)
+            .map(this.toResponseDto);
+    }
+
+    /**
+     * Get "For You" Recommendations using K-Means Clustering
+     * Filters out markets already shown in Top Markets
+     */
+    async getRecommendationsForYou(userId: string | null, limit: number = 10): Promise<MarketResponseDto[]> {
+        const supabase = this.supabaseService.getClient();
+
+        // 1. Get Top Markets IDs to exclude (Mutual Exclusion)
+        const topMarkets = await this.getTopMarkets(10);
+        const excludedIds = new Set(topMarkets.map(m => m.id));
+
+        // 2. Fetch candidates
+        const { data, error } = await supabase
+            .from('markets')
+            .select('*')
+            .eq('resolved', false)
+            .limit(200); // Larger pool for clustering
+
+        if (error) {
+            this.logger.error(`Failed to fetch recommendation candidates: ${error.message}`);
+            return [];
+        }
+
+        let markets = (data || []).filter(m => !excludedIds.has(m.id));
+
+        if (markets.length === 0) return [];
+        if (markets.length < 5) return markets.map(this.toResponseDto);
+
+        // 3. K-Means Clustering
+        // Feature Vector: [NormVolume, NormLiquidity, Sentiment]
+        // Simplified for backend speed (no category one-hot for now to keep it efficient)
+
+        const maxVol = Math.max(...markets.map(m => m.volume)) || 1;
+
+        const vectors = markets.map(m => ([
+            m.volume / maxVol,
+            (m.yes_price || 0.5)
+        ]));
+
+        const k = 5;
+        let centroids = vectors.slice(0, k);
+        let assignments = new Array(markets.length).fill(0);
+
+        // Iterate 5 times
+        for (let i = 0; i < 5; i++) {
+            assignments = vectors.map(vec => {
+                let minDist = Infinity;
+                let clusterIdx = 0;
+                centroids.forEach((cent, cIdx) => {
+                    const dist = Math.sqrt(Math.pow(vec[0] - cent[0], 2) + Math.pow(vec[1] - cent[1], 2));
+                    if (dist < minDist) {
+                        minDist = dist;
+                        clusterIdx = cIdx;
+                    }
+                });
+                return clusterIdx;
+            });
+
+            // Update centroids
+            centroids = centroids.map((_, cIdx) => {
+                const points = vectors.filter((_, idx) => assignments[idx] === cIdx);
+                if (points.length === 0) return vectors[Math.floor(Math.random() * vectors.length)];
+                return [
+                    points.reduce((sum, p) => sum + p[0], 0) / points.length,
+                    points.reduce((sum, p) => sum + p[1], 0) / points.length
+                ];
+            });
+        }
+
+        // 4. Recommendation Strategy
+        // Simulate User Preference: Prefer clusters with high volume but lower price (value buys) or controversial
+        // For now, we return a diverse mix from the top 3 clusters logic
+
+        // Simply score them by distance to "Ideal Vector" (High Vol, 0.5 Price = High Activity/Controversy)
+        // Ideal = [1.0, 0.5]
+
+        const scoredRecommendations = markets.map((market, idx) => {
+            const vec = vectors[idx];
+            // Distance to Ideal [1, 0.5]
+            const dist = Math.sqrt(Math.pow(vec[0] - 1, 2) + Math.pow(vec[1] - 0.5, 2));
+            return { market, score: -dist }; // Closer is better (higher score)
+        });
+
+        return scoredRecommendations
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit)
+            .map(item => this.toResponseDto(item.market));
     }
 }

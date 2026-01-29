@@ -5,11 +5,14 @@ import { MO_MARKET_CATEGORIES } from "./marketsConfig";
 
 // Lazy Load Views for Anti-Throttling & Chunking
 // Lazy Load Views for Anti-Throttling & Chunking
-const GenericCategoryView = lazy(() => import("./categories/GenericCategoryView").then(m => ({ default: m.GenericCategoryView }))); // Keep generic for fallback
+const GenericCategoryView = lazy(() => import("./categories/GenericCategoryView").then(m => ({ default: m.GenericCategoryView })));
 const SportsIndex = lazy(() => import("./categories/sports/index"));
 const SignalsView = lazy(() => import("./categories/signals/index"));
-// We can lazily import others if we want to be explicit, but map uses Generic by default
-// To fully use the structure, we should map them below.
+const PoliticsPage = lazy(() => import("./categories/politics/index"));
+
+// New Algorithmic Layouts
+const TopMarketsLayout = lazy(() => import("./categories/TopMarketsLayout").then(m => ({ default: m.TopMarketsLayout })));
+const ForYouLayout = lazy(() => import("./categories/ForYouLayout").then(m => ({ default: m.ForYouLayout })));
 
 function MarketLoader() {
     return (
@@ -24,21 +27,22 @@ export function MarketsIndex() {
         <Suspense fallback={<MarketLoader />}>
             <Routes>
                 {MO_MARKET_CATEGORIES.map((category) => {
+                    // Specific overrides to avoid prop mismatch types
+                    if (category.id === "top_markets") {
+                        return <Route key={category.id} index element={<TopMarketsLayout />} />;
+                    }
+                    if (category.id === "for_you") {
+                        return <Route key={category.id} path={category.path} element={<ForYouLayout />} />;
+                    }
+
                     // Logic to select component based on category ID
                     let Element = GenericCategoryView;
-                    if (category.id === "sports") Element = SportsIndex; // Use SportsIndex for nested routes
+                    if (category.id === "sports") Element = SportsIndex;
                     if (category.id === "signals") Element = SignalsView;
+                    if (category.id === "politics") Element = PoliticsPage;
 
-                    // We could map others here if we imported them specifically, e.g.:
-                    // if (category.id === "politics") Element = PoliticsPage;
-                    // For now, GenericCategoryView is fine for simple ones unless user wants specific imports used.
-                    // Given the user wants "comprehensive", let's load them dynamically? 
-                    // React.lazy in a loop is tricky. 
-                    // Let's stick to the mapped overrides or fallback to Generic.
-
-                    // Root path handling
+                    // Root path handling (should be covered by top_pics above, but safe fallback)
                     if (category.path === "") {
-                        // Top Markets View at /markets/
                         return <Route key={category.id} index element={<Element category={category.id} />} />;
                     }
 
@@ -51,6 +55,8 @@ export function MarketsIndex() {
                         />
                     );
                 })}
+
+
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="" replace />} />
             </Routes>

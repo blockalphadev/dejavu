@@ -1,6 +1,6 @@
-import { Search, SlidersHorizontal, LayoutGrid, List } from "lucide-react";
+import { Search, SlidersHorizontal, LayoutGrid, List, Sparkles } from "lucide-react";
 import { useState, useCallback } from "react";
-
+import { motion } from "framer-motion";
 
 interface FilterSectionProps {
   searchQuery: string;
@@ -24,78 +24,79 @@ export function FilterSection({ searchQuery, onSearchChange }: FilterSectionProp
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Left Side - Search and Filters */}
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* Filter Button */}
-          <button className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent/80 rounded-lg transition-colors">
-            <SlidersHorizontal className="w-4 h-4" />
-            <span className="text-sm">Filters</span>
-          </button>
+    <div className="sticky top-0 z-30 pt-4 pb-2 bg-background/80 backdrop-blur-xl border-b border-white/5 supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
 
-          {/* Search Markets */}
-          <div className="flex items-center gap-2 bg-accent/50 rounded-lg px-3 py-2 flex-1 sm:w-64">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search markets"
-              className="bg-transparent border-none outline-none w-full text-sm"
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-          </div>
-
-          {/* Animations Toggle */}
-          <div className="hidden md:flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Animations</span>
-            <button
-              onClick={handleToggleAnimations}
-              className={`relative w-11 h-6 rounded-full transition-colors ${animationsEnabled ? "bg-cyan-500" : "bg-accent"
-                }`}
-            >
-              <div
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${animationsEnabled ? "translate-x-5" : "translate-x-0"
-                  }`}
+          {/* Left: Search & Filter */}
+          <div className="flex items-center gap-3 w-full sm:w-auto flex-1 max-w-2xl">
+            <div className="relative flex-1 group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-10 pr-3 py-2.5 bg-secondary/50 border border-transparent focus:border-primary/20 focus:bg-background rounded-xl text-sm placeholder:text-muted-foreground/70 transition-all duration-200 outline-none shadow-sm group-hover:bg-secondary/70"
+                placeholder="Search markets, events, or categories..."
+                value={searchQuery}
+                onChange={handleSearchChange}
               />
-            </button>
-          </div>
-        </div>
+              <div className="absolute inset-y-0 right-0 pr-2 flex items-center">
+                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </div>
+            </div>
 
-        {/* Right Side - View Mode and Sort */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 bg-accent rounded-lg p-1">
-            <button
-              onClick={() => handleViewModeChange("grid")}
-              className={`p-1.5 rounded transition-colors ${viewMode === "grid"
-                ? "bg-background shadow-sm"
-                : "hover:bg-background/50"
-                }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleViewModeChange("list")}
-              className={`p-1.5 rounded transition-colors ${viewMode === "list"
-                ? "bg-background shadow-sm"
-                : "hover:bg-background/50"
-                }`}
-            >
-              <List className="w-4 h-4" />
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary/50 hover:bg-secondary rounded-xl transition-all duration-200 border border-transparent hover:border-border/50 text-sm font-medium">
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="hidden sm:inline">Filters</span>
             </button>
           </div>
 
-          {/* Sort Dropdown */}
-          <select className="px-4 py-2 bg-accent hover:bg-accent/80 rounded-lg transition-colors text-sm cursor-pointer outline-none">
-            <option>Newest</option>
-            <option>Most Popular</option>
-            <option>Highest Volume</option>
-            <option>Ending Soon</option>
-          </select>
+          {/* Right: Controls */}
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            {/* Animations Toggle */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleToggleAnimations}
+              className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${animationsEnabled
+                  ? "bg-primary/10 border-primary/20 text-primary"
+                  : "bg-transparent border-transparent text-muted-foreground hover:bg-accent"
+                }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">FX {animationsEnabled ? 'On' : 'Off'}</span>
+            </motion.button>
+
+            <div className="h-6 w-px bg-border/50 hidden sm:block" />
+
+            {/* View Mode */}
+            <div className="flex p-1 bg-secondary/50 rounded-lg">
+              <button
+                onClick={() => handleViewModeChange("grid")}
+                className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleViewModeChange("list")}
+                className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Sort */}
+            <select className="bg-transparent text-sm font-medium outline-none cursor-pointer hover:text-primary transition-colors">
+              <option>Trending</option>
+              <option>Newest</option>
+              <option>Ending Soon</option>
+              <option>High Volume</option>
+            </select>
+          </div>
         </div>
       </div>
-
     </div>
   );
 }
