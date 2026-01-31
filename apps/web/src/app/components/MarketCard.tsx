@@ -42,11 +42,18 @@ export const MarketCard = memo(function MarketCard({
           <div className="w-12 h-12 rounded-lg bg-accent/10 overflow-hidden shadow-inner flex-shrink-0 group-hover:ring-2 group-hover:ring-primary/20 transition-all duration-300">
             <img
               src={image}
-              alt={title}
+              alt={title || "Market Image"}
               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement?.classList.add('hidden');
+                // Find parent container and inject fallback icon visually if needed, 
+                // or just hide the image container to let the layout collapse naturally
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  parent.style.display = 'none';
+                  // Optional: We could dynamically insert the emoji/icon fallback here
+                  // but hiding is safer to avoid UI jank
+                }
               }}
             />
           </div>

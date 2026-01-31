@@ -2,7 +2,7 @@ import { CategoryPage } from "../CategoryPage";
 import { useAdvancedMarketRanking } from "../../../hooks/useAdvancedMarketRanking";
 
 export function ForYouLayout() {
-    const { forYouMarkets, isLoading } = useAdvancedMarketRanking();
+    const { forYouMarkets, isLoading, loadMore, hasMore } = useAdvancedMarketRanking({ target: 'for_you' });
 
     return (
         <CategoryPage
@@ -10,6 +10,8 @@ export function ForYouLayout() {
             title="Recommended For You"
             overrideMarkets={forYouMarkets}
             isLoadingOverride={isLoading}
+            loadMoreOverride={loadMore}
+            hasMoreOverride={hasMore}
         />
     );
 }

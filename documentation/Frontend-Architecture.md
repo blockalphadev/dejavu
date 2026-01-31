@@ -70,15 +70,16 @@ To support massive scale, **every major route is a separate chunk**. We use `Rea
 - **Route-based Chunking**: Browsing `/markets` does not load Admin or Portfolio code.
 - **Sub-category Chunking**: Accessing `/markets/sports/nba` does *not* load the code for Football or Rugby. This keeps the initial bundle size minimal (<100KB critical path).
 
-**Implementation (`SportsIndex.tsx`):**
+**Implementation (`MarketsIndex.tsx`):**
 ```tsx
-const NbaPage = lazy(() => import('./nba'));
-const AflPage = lazy(() => import('./afl'));
+// Explicit named imports for optimal chunking
+const FinancePage = lazy(() => import('./categories/finance/Finance'));
+const TechPage = lazy(() => import('./categories/tech/Tech'));
 
-<Suspense fallback={<SportsLoader />}>
+<Suspense fallback={<MarketLoader />}>
   <Routes>
-    <Route path="nba" element={<NbaPage />} />
-    <Route path="afl" element={<AflPage />} />
+    <Route path="finance" element={<FinancePage />} />
+    <Route path="tech" element={<TechPage />} />
   </Routes>
 </Suspense>
 ```
@@ -195,7 +196,7 @@ All global state contexts are consolidated in `src/app/contexts/` for maintainab
 | `useSportsData` | `app/hooks/useSportsData.ts` | General sports events fetching |
 | `useNotifications` | `app/hooks/useNotifications.ts` | User notification management |
 | `useWallet` | `app/hooks/useWallet.ts` | Multi-chain wallet interactions |
-| `useAdvancedMarketRanking` | `app/hooks/useAdvancedMarketRanking.ts` | **Top Markets & For You** aggregation with real-time updates |
+| `useAdvancedMarketRanking` | `app/hooks/useAdvancedMarketRanking.ts` | **Top Markets & For You** aggregation with real-time updates and **Pagination (Load More)** |
 | `useMarketSocket` | `app/hooks/useMarketSocket.ts` | Universal socket listener for global market events |
 
 ---
@@ -212,6 +213,8 @@ All global state contexts are consolidated in `src/app/contexts/` for maintainab
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.5.0 | Jan 31, 2026 | Scalable Category Architecture (Named Components), Enhanced Image Fallbacks |
+| 2.4.0 | Jan 31, 2026 | "Load More" Pagination for Recommendations, Security Hardening |
 | 2.3.0 | Jan 29, 2026 | Real-time "Top Markets" & "For You", Image Support in MarketCard |
 | 2.2.0 | Jan 21, 2026 | Dedicated Settings Page, Premium Mobile UI, X Branding |
 | 2.1.1 | Jan 21, 2026 | Context consolidation, Type Safety improvements, 0 TS errors |

@@ -130,14 +130,14 @@ The system automatically groups content into 5 primary clusters (Archetypes):
 ## 4. API Reference
 
 ### Get Top Markets
-`GET /api/v1/recommendations/top-markets?limit=20`
+`GET /api/v1/recommendations/top-markets?limit=20&offset=0`
 
-Returns a mixed list of Markets, Signals, and News, sorted by Hotness Score.
+Returns a mixed list of Markets, Signals, and News, sorted by Hotness Score. Supports pagination.
 
 ### Get "For You"
-`GET /api/v1/recommendations/for-you?userId={id}&limit=20`
+`GET /api/v1/recommendations/for-you?userId={id}&limit=20&offset=0`
 
-Returns personalized recommendations based on the user's computed cluster.
+Returns personalized recommendations based on the user's computed cluster. Supports pagination.
 
 ---
 

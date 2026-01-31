@@ -46,10 +46,10 @@ export class LoggerMiddleware implements NestMiddleware {
         );
 
         if (process.env.LOG_LEVEL === 'debug' || process.env.LOG_LEVEL === 'verbose') {
-            if (Object.keys(maskedBody).length > 0) {
+            if (maskedBody && typeof maskedBody === 'object' && Object.keys(maskedBody).length > 0) {
                 this.logger.debug(`[${requestId}] Body: ${JSON.stringify(maskedBody)}`);
             }
-            if (Object.keys(maskedQuery).length > 0) {
+            if (maskedQuery && typeof maskedQuery === 'object' && Object.keys(maskedQuery).length > 0) {
                 this.logger.debug(`[${requestId}] Query: ${JSON.stringify(maskedQuery)}`);
             }
         }

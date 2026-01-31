@@ -5,6 +5,9 @@ import {
     MaxLength,
     IsOptional,
     Matches,
+    registerDecorator,
+    ValidationOptions,
+    ValidationArguments,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -16,13 +19,54 @@ export const SUPPORTED_CHAINS = ['ethereum', 'solana', 'sui', 'base'] as const;
 export type SupportedChain = (typeof SUPPORTED_CHAINS)[number];
 
 /**
+ * Chain-specific wallet address patterns
+ * OWASP A03:2021 - Input Validation
+ */
+const WALLET_PATTERNS: Record<SupportedChain, RegExp> = {
+    ethereum: /^0x[a-fA-F0-9]{40}$/,
+    base: /^0x[a-fA-F0-9]{40}$/,
+    solana: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+    sui: /^0x[a-fA-F0-9]{64}$/,
+};
+
+/**
+ * Custom validator for chain-specific wallet address validation
+ */
+function IsChainSpecificAddress(validationOptions?: ValidationOptions) {
+    return function (object: Object, propertyName: string) {
+        registerDecorator({
+            name: 'isChainSpecificAddress',
+            target: object.constructor,
+            propertyName: propertyName,
+            options: {
+                message: 'Invalid wallet address format for the specified chain',
+                ...validationOptions,
+            },
+            validator: {
+                validate(value: any, args: ValidationArguments) {
+                    if (typeof value !== 'string') return false;
+
+                    const obj = args.object as Record<string, unknown>;
+                    const chain = obj.chain as SupportedChain;
+
+                    if (!chain || !WALLET_PATTERNS[chain]) {
+                        return false;
+                    }
+
+                    return WALLET_PATTERNS[chain].test(value);
+                },
+            },
+        });
+    };
+}
+
+/**
  * Transform decorator to normalize wallet address
  */
 const NormalizeWalletAddress = () =>
     Transform(({ value }) => {
         if (typeof value !== 'string') return value;
-        // Ethereum/Base addresses are case-insensitive (checksum optional)
-        // Solana/Sui addresses are case-sensitive
+        // Trim whitespace
         return value.trim();
     });
 
@@ -40,6 +84,7 @@ export class WalletChallengeDto {
     @MinLength(20, { message: 'Invalid wallet address' })
     @MaxLength(100, { message: 'Wallet address is too long' })
     @NormalizeWalletAddress()
+    @IsChainSpecificAddress()
     address: string;
 
     @ApiProperty({
@@ -67,6 +112,7 @@ export class WalletVerifyDto {
     @MinLength(20, { message: 'Invalid wallet address' })
     @MaxLength(100, { message: 'Wallet address is too long' })
     @NormalizeWalletAddress()
+    @IsChainSpecificAddress()
     address: string;
 
     @ApiProperty({
@@ -121,6 +167,7 @@ export class LinkWalletDto {
     @MinLength(20, { message: 'Invalid wallet address' })
     @MaxLength(100, { message: 'Wallet address is too long' })
     @NormalizeWalletAddress()
+    @IsChainSpecificAddress()
     address: string;
 
     @ApiProperty({
@@ -151,3 +198,4 @@ export class LinkWalletDto {
     @MaxLength(2048, { message: 'Message is too long' })
     message: string;
 }
+

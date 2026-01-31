@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { SupabaseService } from '../../database/supabase.service.js';
 import { UsersService } from '../users/users.service.js';
@@ -26,6 +27,7 @@ interface TokenPayload {
     email?: string;
     walletAddress?: string;
     chain?: string;
+    fingerprint?: string; // Hashed fingerprint
 }
 
 export interface AuthTokens {
@@ -598,9 +600,16 @@ export class AuthService {
      * Generate JWT access and refresh tokens
      * Public method to allow use by OTP service
      */
-    async generateTokens(payload: TokenPayload): Promise<AuthTokens> {
+    async generateTokens(payload: TokenPayload, rawFingerprint?: string): Promise<AuthTokens> {
         const expiresIn = this.configService.get('JWT_EXPIRES_IN', '15m');
         const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+
+        // If raw fingerprint provided, hash it and add to payload
+        // OWASP A01:2021 - Broken Access Control (Session Binding)
+        if (rawFingerprint) {
+            const hash = crypto.createHash('sha256').update(rawFingerprint).digest('hex');
+            payload.fingerprint = hash;
+        }
 
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {

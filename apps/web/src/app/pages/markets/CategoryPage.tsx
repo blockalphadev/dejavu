@@ -15,15 +15,41 @@ interface CategoryPageProps {
     showFilter?: boolean;
     overrideMarkets?: any[]; // Allow injecting pre-ranked markets
     isLoadingOverride?: boolean;
+    loadMoreOverride?: () => void;
+    hasMoreOverride?: boolean;
 }
+
+// Category Fallback Images (High quality Unsplash/Placeholder)
+const CATEGORY_IMAGES: Record<string, string> = {
+    crypto: "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?auto=format&fit=crop&q=80&w=600",
+    politics: "https://images.unsplash.com/photo-1529101091760-61df52839f87?auto=format&fit=crop&q=80&w=600",
+    science: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=600",
+    tech: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=600",
+    finance: "https://images.unsplash.com/photo-1611974765270-ca12586343bb?auto=format&fit=crop&q=80&w=600",
+    economy: "https://images.unsplash.com/photo-1611974765270-ca12586343bb?auto=format&fit=crop&q=80&w=600",
+    sports: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=80&w=600",
+    default: "https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&q=80&w=600"
+};
+
+const getFallbackImage = (category: string = 'default') => {
+    return CATEGORY_IMAGES[category.toLowerCase()] || CATEGORY_IMAGES.default;
+};
 
 // Transform API market data to PolymarketCard format
 function transformToPolymarketFormat(market: any) {
+    const fallbackImage = getFallbackImage(market.category);
+
+    // Helper to ensure image is not just an empty string
+    const resolveImage = (img: string | null | undefined) => {
+        if (!img || img.trim() === '') return fallbackImage;
+        return img;
+    };
+
     if (market.outcomes && Array.isArray(market.outcomes)) {
         return {
             id: market.id,
             title: market.title,
-            image: market.image || market.imageUrl,
+            image: resolveImage(market.image || market.imageUrl),
             icon: market.emoji || market.icon,
             outcomes: market.outcomes.map((o: any, idx: number) => ({
                 id: o.id || `${market.id}-outcome-${idx}`,
@@ -41,7 +67,7 @@ function transformToPolymarketFormat(market: any) {
         return {
             id: market.id,
             title: market.title,
-            image: market.image,
+            image: resolveImage(market.image),
             icon: market.emoji,
             outcomes: market.questions.map((q: any, idx: number) => ({
                 id: `${market.id}-q-${idx}`,
@@ -58,7 +84,7 @@ function transformToPolymarketFormat(market: any) {
     return {
         id: market.id,
         title: market.title,
-        image: market.image || market.imageUrl,
+        image: resolveImage(market.image || market.imageUrl),
         icon: market.emoji || '📊',
         outcomes: [{
             id: `${market.id}-default`,
@@ -109,14 +135,24 @@ function transformNewsToMarket(item: any): any {
     };
 }
 
-export function CategoryPage({ category, title, showFilter = true, overrideMarkets, isLoadingOverride }: CategoryPageProps) {
+export function CategoryPage({
+    category,
+    title,
+    showFilter = true,
+    overrideMarkets,
+    isLoadingOverride,
+    loadMoreOverride,
+    hasMoreOverride
+}: CategoryPageProps) {
     const [searchQuery, setSearchQuery] = useState("");
-    const { markets: fetchedMarkets, feedItems, isLoading: fetchLoading, error, loadMore, hasMore } = useMarketData({ category, searchQuery });
+    const { markets: fetchedMarkets, feedItems, isLoading: fetchLoading, error, loadMore: fetchLoadMore, hasMore: fetchHasMore } = useMarketData({ category, searchQuery });
     const { addToBetSlip } = useBetSlip();
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const markets = overrideMarkets || fetchedMarkets;
     const isLoading = isLoadingOverride ?? fetchLoading;
+    const loadMore = loadMoreOverride || fetchLoadMore;
+    const hasMore = hasMoreOverride !== undefined ? hasMoreOverride : fetchHasMore;
 
     // Transform markets to Polymarket format
     // If no real markets, transform feed items into "simulated" markets
@@ -138,6 +174,7 @@ export function CategoryPage({ category, title, showFilter = true, overrideMarke
         if (!isLoading && !isLoadingMore && hasMore) {
             setIsLoadingMore(true);
             loadMore();
+            // Just for visual effect, simpler than adding state to hook
             setTimeout(() => setIsLoadingMore(false), 500);
         }
     };

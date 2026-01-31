@@ -52,6 +52,15 @@ async function bootstrap() {
     app.use(compression());
 
     // ===================
+    // Body Size Limits (DoS Prevention)
+    // ===================
+    // Limit request body sizes to prevent memory exhaustion attacks
+    // OWASP A04:2021 - Insecure Design
+    const express = await import('express');
+    app.use(express.json({ limit: '100kb' }));
+    app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+    // ===================
     // CORS Configuration
     // ===================
     const corsOrigins = configService.get<string>('CORS_ORIGINS', 'http://localhost:5173'); //add tunnell link for publish & safe from CORS

@@ -14,6 +14,7 @@ interface Order {
     total: number;
     status: 'pending' | 'filled' | 'cancelled' | 'failed';
     tx_hash?: string;
+    idempotency_key?: string;
     created_at: string;
 }
 
@@ -50,6 +51,13 @@ export class OrdersService {
     async buyShares(userId: string, dto: BuySharesDto): Promise<OrderResponseDto> {
         const supabase = this.supabaseService.getAdminClient();
 
+        // Check idempotency
+        const existingOrder = await this.findByIdempotencyKey(dto.idempotencyKey, userId);
+        if (existingOrder) {
+            this.logger.warn(`Duplicate order rejected (idempotency): ${dto.idempotencyKey}`);
+            return this.toOrderResponse(existingOrder);
+        }
+
         // Validate market exists and is active
         const market = await this.marketsService.findById(dto.marketId);
         if (market.resolved) {
@@ -83,11 +91,18 @@ export class OrdersService {
                 price: currentPrice,
                 total: totalCost,
                 status: 'filled', // Instant fill for now
+                idempotency_key: dto.idempotencyKey,
             })
             .select()
             .single();
 
         if (orderError) {
+            // Handle unique violation gracefully (race condition)
+            if (orderError.code === '23505' && orderError.message.includes('idempotency_key')) {
+                const retryOrder = await this.findByIdempotencyKey(dto.idempotencyKey, userId);
+                if (retryOrder) return this.toOrderResponse(retryOrder);
+            }
+
             this.logger.error(`Failed to create order: ${orderError.message}`);
             throw new Error(`Order failed: ${orderError.message}`);
         }
@@ -107,6 +122,13 @@ export class OrdersService {
      */
     async sellShares(userId: string, dto: SellSharesDto): Promise<OrderResponseDto> {
         const supabase = this.supabaseService.getAdminClient();
+
+        // Check idempotency
+        const existingOrder = await this.findByIdempotencyKey(dto.idempotencyKey, userId);
+        if (existingOrder) {
+            this.logger.warn(`Duplicate sell rejected (idempotency): ${dto.idempotencyKey}`);
+            return this.toOrderResponse(existingOrder);
+        }
 
         // Validate market
         const market = await this.marketsService.findById(dto.marketId);
@@ -143,11 +165,16 @@ export class OrdersService {
                 price: currentPrice,
                 total: totalReturn,
                 status: 'filled',
+                idempotency_key: dto.idempotencyKey,
             })
             .select()
             .single();
 
         if (orderError) {
+            if (orderError.code === '23505' && orderError.message.includes('idempotency_key')) {
+                const retryOrder = await this.findByIdempotencyKey(dto.idempotencyKey, userId);
+                if (retryOrder) return this.toOrderResponse(retryOrder);
+            }
             throw new Error(`Order failed: ${orderError.message}`);
         }
 
@@ -409,5 +436,20 @@ export class OrdersService {
             createdAt: position.created_at,
             updatedAt: position.updated_at,
         };
+    }
+    /**
+     * Find order by idempotency key
+     */
+    private async findByIdempotencyKey(key: string, userId: string): Promise<Order | null> {
+        if (!key) return null;
+
+        const { data } = await this.supabaseService.getClient()
+            .from('orders')
+            .select('*')
+            .eq('idempotency_key', key)
+            .eq('user_id', userId)
+            .single();
+
+        return data;
     }
 }

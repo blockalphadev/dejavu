@@ -153,10 +153,13 @@ import { UserDto } from './dto/index.js';
 ```
 components/
 └── UserProfile/
-    ├── UserProfile.tsx       # Main component
+    ├── UserProfile.tsx       # Main component (Matches folder name)
     ├── UserProfile.test.tsx  # Tests
     ├── UserProfile.module.css # Styles (if not Tailwind)
-    └── index.ts              # Barrel export
+    └── index.ts              # Barrel export ONLY (No implementation)
+    
+// ❌ Avoid:
+// components/UserProfile/index.tsx (Harder to debug in tabs)
 ```
 
 ### 3.2 Component Template
@@ -550,26 +553,24 @@ const query = `SELECT * FROM users WHERE id = '${userId}'`; // SQL Injection!
 ### 6.1 Input Validation
 
 ```typescript
-// ✅ Always validate all inputs
+// ✅ MANDATORY: Use validation decorators from src/common/decorators
 @Post()
-async create(@Body() dto: CreateUserDto) {
-  // dto is automatically validated by class-validator
+async create(@Body() dto: CreateTransactionDto) {
+  // dto is automatically validated
 }
 
-// ✅ Validate path parameters
-@Get(':id')
-async get(@Param('id', ParseUUIDPipe) id: string) {
-  // id is validated as UUID
-}
+export class CreateTransactionDto {
+  // ✅ Use @IsSafeNumber for financial values (prevents NaN/Infinity/Overflow)
+  @IsSafeNumber()
+  amount: number;
 
-// ✅ Validate query parameters
-@Get()
-async list(@Query() query: ListQueryDto) {
-  // query is validated
+  // ✅ Use strict UUID validation
+  @IsUUIDv4()
+  userId: string;
 }
 ```
 
-### 6.2 Authentication
+### 6.2 Authentication & Real-Time
 
 ```typescript
 // ✅ Use guards for authentication
@@ -579,30 +580,22 @@ async getMe(@Req() req: AuthenticatedRequest) {
   return req.user;
 }
 
-// ✅ Use proper auth decorators
-@Public() // Mark as public endpoint
-@Post('login')
-async login() {}
+// ✅ MANDATORY: Secure all WebSockets
+@WebSocketGateway()
+@UseGuards(WsAuthGuard) // <--- Critical for all gateways
+export class SportsGateway {}
 ```
 
-### 6.3 Authorization
+### 6.3 Authorization & Integrity
 
 ```typescript
-// ✅ Check resource ownership
-@Patch(':id')
-async updateUser(
-  @Param('id') id: string,
-  @Req() req: AuthenticatedRequest,
-) {
-  if (req.user.sub !== id) {
-    throw new ForbiddenException();
-  }
-}
+// ✅ MANDATORY: Idempotency for financial actions
+@Post('buy')
+@UseGuards(IdempotencyGuard) // Checks Idempotency-Key header
+async buyShares() {}
 
-// ✅ Use role guards
-@UseGuards(AdminGuard)
-@Get('admin/users')
-async listUsers() {}
+// ✅ Check resource ownership
+if (req.user.sub !== id) throw new ForbiddenException();
 ```
 
 ### 6.4 Sensitive Data
@@ -611,33 +604,16 @@ async listUsers() {}
 // ✅ Never log sensitive data
 this.logger.log(`Login attempt: ${maskEmail(email)}`);
 
-// ✅ Exclude sensitive fields from responses
-class UserDto {
-  id: string;
-  email: string;
-  // password: string; ❌ Never expose
-}
-
-// ✅ Use @Exclude() decorator
-import { Exclude } from 'class-transformer';
-
-class User {
-  @Exclude()
-  password: string;
-}
+// ✅ Use LoggerMiddleware (it automatically null-checks and masks bodies)
 ```
 
 ### 6.5 Rate Limiting
 
 ```typescript
-// ✅ Apply rate limits to sensitive endpoints
-@RateLimit(RateLimits.STRICT) // 5 req/min
+// ✅ Apply global and local limits
+@RateLimit(RateLimits.STRICT) // 10 req/min
 @Post('auth/login')
 async login() {}
-
-@RateLimit({ limit: 100, windowSeconds: 60 })
-@Get('data')
-async getData() {}
 ```
 
 ---

@@ -13,7 +13,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MarketDataService } from './market-data.service.js';
 
 // Unified item interface for all content types
-interface UnifiedItem {
+// Unified item interface for all content types
+export interface UnifiedItem {
     id: string;
     type: 'news' | 'market' | 'signal' | 'sports';
     title: string;
@@ -72,11 +73,11 @@ export class RecommendationsService {
      * Uses weighted multi-factor ranking algorithm:
      * Score = Volume(25%) + Impact(20%) + SignalStrength(20%) + TrendScore(15%) + Freshness(10%) + Engagement(10%)
      */
-    async getTopMarkets(limit: number = 20): Promise<UnifiedItem[]> {
+    async getTopMarkets(limit: number = 20, offset: number = 0): Promise<UnifiedItem[]> {
         // Check cache first (anti-throttling)
         if (this.topMarketsCache && Date.now() - this.topMarketsCache.timestamp < this.CACHE_TTL_MS) {
-            this.logger.debug('Returning cached Top Markets');
-            return this.topMarketsCache.data.slice(0, limit);
+            this.logger.debug(`Returning cached Top Markets (offset: ${offset}, limit: ${limit})`);
+            return this.topMarketsCache.data.slice(offset, offset + limit);
         }
 
         this.logger.debug('Computing fresh Top Markets ranking...');
@@ -84,10 +85,10 @@ export class RecommendationsService {
         try {
             // 1. Aggregate data from ALL sources
             const [contentItems, signals, sportsEvents, trendMap] = await Promise.all([
-                this.marketDataService.getAggregatedTopContent(100),
-                this.marketDataService.getHighImpactSignals(50),
-                this.marketDataService.getSportsWithMarketPotential(30),
-                this.marketDataService.getTrendingContent(20),
+                this.marketDataService.getAggregatedTopContent(150), // Increased source pool
+                this.marketDataService.getHighImpactSignals(70),
+                this.marketDataService.getSportsWithMarketPotential(50),
+                this.marketDataService.getTrendingContent(30),
             ]);
 
             // 2. Combine all items
@@ -160,20 +161,23 @@ export class RecommendationsService {
             const categoryCounts: Record<string, number> = {};
             const MAX_PER_CATEGORY = 5;
 
+            // Generate a larger set (e.g., 200 items) to support pagination
+            const MAX_GENERATED_ITEMS = 200;
+
             for (const item of scoredItems) {
                 const cat = item.category || 'unknown';
                 if ((categoryCounts[cat] || 0) < MAX_PER_CATEGORY) {
                     result.push(item);
                     categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
                 }
-                if (result.length >= limit * 2) break; // Get extra for buffer
+                if (result.length >= MAX_GENERATED_ITEMS) break;
             }
 
-            // 8. Cache and return
-            const finalResult = result.slice(0, limit);
-            this.topMarketsCache = { data: finalResult, timestamp: Date.now() };
+            // 8. Cache the FULL result
+            this.topMarketsCache = { data: result, timestamp: Date.now() };
 
-            this.logger.log(`Top Markets computed: ${finalResult.length} items from ${Object.keys(categoryCounts).length} categories`);
+            const finalResult = result.slice(offset, offset + limit);
+            this.logger.log(`Top Markets computed: ${result.length} items total, returning ${finalResult.length} (offset ${offset})`);
             return finalResult;
 
         } catch (error) {
@@ -186,21 +190,21 @@ export class RecommendationsService {
      * Get "For You" Recommendations (AI Clustering + Diversity)
      * Uses K-Means clustering with diversity constraints and mutual exclusion from Top Markets.
      */
-    async getForYou(userId?: string, limit: number = 20): Promise<UnifiedItem[]> {
+    async getForYou(userId: string | undefined, limit: number = 20, offset: number = 0): Promise<UnifiedItem[]> {
         const cacheKey = userId || 'anonymous';
 
         // Check cache (anti-throttling)
         const cached = this.forYouCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
-            this.logger.debug(`Returning cached For You for ${cacheKey}`);
-            return cached.data.slice(0, limit);
+            this.logger.debug(`Returning cached For You for ${cacheKey} (offset: ${offset}, limit: ${limit})`);
+            return cached.data.slice(offset, offset + limit);
         }
 
         this.logger.debug(`Computing fresh For You recommendations for ${cacheKey}...`);
 
         try {
             // 1. Get Top Markets IDs for mutual exclusion
-            const topMarkets = await this.getTopMarkets(20);
+            const topMarkets = await this.getTopMarkets(50, 0); // Increase to check exclusion against more top items
             const excludeIds = new Set(topMarkets.map(m => m.id));
 
             // 2. Aggregate data from ALL sources
@@ -221,7 +225,6 @@ export class RecommendationsService {
 
             // 4. Create feature vectors for K-Means clustering
             const now = Date.now();
-            const maxVolume = Math.max(...candidates.map(i => i.volume || 0), 1);
 
             candidates = candidates.map(item => {
                 const ageHours = (now - new Date(item.publishedAt).getTime()) / (1000 * 60 * 60);
@@ -245,6 +248,7 @@ export class RecommendationsService {
             const result: UnifiedItem[] = [];
             const categoryCounts: Record<string, number> = {};
             const MAX_PER_CATEGORY = 4;
+            const MAX_GENERATED_ITEMS = 100; // Cap to keep consistent with pagination needs
 
             // Score items within each cluster by "interestingness"
             for (const cluster of clusters) {
@@ -264,10 +268,10 @@ export class RecommendationsService {
                         result.push(item);
                         categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
                     }
-                    if (result.length >= limit) break;
+                    if (result.length >= MAX_GENERATED_ITEMS) break;
                 }
 
-                if (result.length >= limit) break;
+                if (result.length >= MAX_GENERATED_ITEMS) break;
             }
 
             // 7. Cache and return
@@ -279,8 +283,8 @@ export class RecommendationsService {
                 if (firstKey) this.forYouCache.delete(firstKey);
             }
 
-            this.logger.log(`For You computed: ${result.length} items for ${cacheKey}`);
-            return result.slice(0, limit);
+            this.logger.log(`For You computed: ${result.length} items for ${cacheKey}, returning ${Math.min(limit, result.length - offset)} (offset ${offset})`);
+            return result.slice(offset, offset + limit);
 
         } catch (error) {
             this.logger.error(`Failed to compute For You: ${(error as Error).message}`);

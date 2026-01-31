@@ -20,6 +20,12 @@ const sanitizeLimit = (limit: string | undefined): number => {
     return parsed;
 };
 
+const sanitizeOffset = (offset: string | undefined): number => {
+    const parsed = parseInt(offset || '0', 10);
+    if (isNaN(parsed) || parsed < 0) return 0;
+    return parsed;
+};
+
 const sanitizeUserId = (userId: string | undefined): string | undefined => {
     if (!userId) return undefined;
     // Basic XSS prevention
@@ -74,14 +80,19 @@ export class RecommendationsController {
         description: 'Returns top content from all categories using weighted multi-factor ranking: Volume(25%) + Impact(20%) + SignalStrength(20%) + TrendScore(15%) + Freshness(10%) + Engagement(10%)'
     })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max items to return (1-100)', example: 20 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Items to skip', example: 0 })
     @ApiResponse({ status: 200, description: 'Top markets retrieved successfully' })
     @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
-    async getTopMarkets(@Query('limit') limit?: string) {
+    async getTopMarkets(
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string
+    ) {
         const sanitizedLimit = sanitizeLimit(limit);
-        this.logger.log(`Top Markets request: limit=${sanitizedLimit}`);
+        const sanitizedOffset = sanitizeOffset(offset);
+        this.logger.log(`Top Markets request: limit=${sanitizedLimit}, offset=${sanitizedOffset}`);
 
         const startTime = Date.now();
-        const result = await this.recommendationsService.getTopMarkets(sanitizedLimit);
+        const result = await this.recommendationsService.getTopMarkets(sanitizedLimit, sanitizedOffset);
         const duration = Date.now() - startTime;
 
         this.logger.log(`Top Markets returned ${result.length} items in ${duration}ms`);
@@ -100,19 +111,22 @@ export class RecommendationsController {
     })
     @ApiQuery({ name: 'userId', required: false, type: String, description: 'User UUID for personalization' })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max items to return (1-100)', example: 20 })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Items to skip', example: 0 })
     @ApiResponse({ status: 200, description: 'Recommendations retrieved successfully' })
     @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
     async getForYou(
         @Query('userId') userId?: string,
-        @Query('limit') limit?: string
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string
     ) {
         const sanitizedUserId = sanitizeUserId(userId);
         const sanitizedLimit = sanitizeLimit(limit);
+        const sanitizedOffset = sanitizeOffset(offset);
 
-        this.logger.log(`For You request: userId=${sanitizedUserId || 'anonymous'}, limit=${sanitizedLimit}`);
+        this.logger.log(`For You request: userId=${sanitizedUserId || 'anonymous'}, limit=${sanitizedLimit}, offset=${sanitizedOffset}`);
 
         const startTime = Date.now();
-        const result = await this.recommendationsService.getForYou(sanitizedUserId, sanitizedLimit);
+        const result = await this.recommendationsService.getForYou(sanitizedUserId, sanitizedLimit, sanitizedOffset);
         const duration = Date.now() - startTime;
 
         this.logger.log(`For You returned ${result.length} items in ${duration}ms`);

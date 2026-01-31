@@ -5,19 +5,28 @@ import {
     IsUUID,
     Min,
     Max,
+    IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsIdempotencyKey, IsUUIDv4 } from '../../../common/decorators/index.js';
 
 /**
  * Buy Shares DTO
  */
 export class BuySharesDto {
     @ApiProperty({
+        description: 'Idempotency key to prevent duplicate orders',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @IsIdempotencyKey()
+    idempotencyKey: string;
+
+    @ApiProperty({
         description: 'Market ID',
         example: '123e4567-e89b-12d3-a456-426614174000',
     })
-    @IsUUID()
+    @IsUUIDv4()
     marketId: string;
 
     @ApiProperty({
@@ -53,9 +62,16 @@ export class BuySharesDto {
  */
 export class SellSharesDto {
     @ApiProperty({
+        description: 'Idempotency key to prevent duplicate orders',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @IsIdempotencyKey()
+    idempotencyKey: string;
+
+    @ApiProperty({
         description: 'Market ID',
     })
-    @IsUUID()
+    @IsUUIDv4()
     marketId: string;
 
     @ApiProperty({
