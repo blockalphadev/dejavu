@@ -19,7 +19,7 @@ export function WalletOption({ icon, name, recommended, installed = true, isMobi
     return (
         <button
             className={cn(
-                "group relative flex w-full items-center justify-center sm:justify-start gap-3 rounded-xl border border-border/40 bg-card/50 p-3 transition-all duration-200 hover:bg-accent/40 hover:border-border active:scale-[0.98] outline-none focus:ring-2 focus:ring-primary/20 overflow-hidden",
+                "group relative flex w-full items-center justify-center sm:justify-start gap-3 rounded-xl border border-border/40 bg-card/50 p-2 sm:p-3 transition-all duration-200 hover:bg-accent/40 hover:border-border active:scale-[0.98] outline-none focus:ring-2 focus:ring-primary/20 overflow-hidden",
                 !isClickable && "opacity-75",
                 className
             )}

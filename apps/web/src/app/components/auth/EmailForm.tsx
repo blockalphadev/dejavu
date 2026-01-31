@@ -86,7 +86,7 @@ export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFor
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <span className="font-semibold">Check Your Email</span>
+                    <span className="font-semibold text-foreground dark:text-white">Check Your Email</span>
                 </div>
 
                 {/* Success Icon */}
@@ -95,7 +95,7 @@ export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFor
                         <MailCheck className="w-10 h-10" />
                     </div>
 
-                    <h3 className="text-xl font-bold mb-2 text-center">Account Created!</h3>
+                    <h3 className="text-xl font-bold mb-2 text-center text-foreground dark:text-white">Account Created!</h3>
 
                     <p className="text-sm text-muted-foreground text-center mb-6 max-w-xs">
                         We sent a verification link to <span className="font-medium text-foreground">{email}</span>.
@@ -166,7 +166,7 @@ export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFor
                 >
                     <ArrowLeft className="w-5 h-5" />
                 </button>
-                <span className="font-semibold">
+                <span className="font-semibold text-foreground dark:text-white">
                     {mode === 'login' ? 'Log In' : 'Create Account'}
                 </span>
             </div>
@@ -202,7 +202,7 @@ export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFor
                             placeholder="John Doe"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl bg-accent/20 border border-border/50 focus:border-primary/50 focus:bg-accent/30 focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/50 text-sm"
+                            className="w-full px-4 py-3 rounded-xl bg-accent/20 border border-border/50 focus:border-primary/50 focus:bg-accent/30 focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/50 text-sm text-foreground dark:text-white"
                         />
                     </div>
                 )}
@@ -217,7 +217,7 @@ export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFor
                             placeholder="name@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 pl-11 rounded-xl bg-accent/20 border border-border/50 focus:border-primary/50 focus:bg-accent/30 focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/50 text-sm"
+                            className="w-full px-4 py-3 pl-11 rounded-xl bg-accent/20 border border-border/50 focus:border-primary/50 focus:bg-accent/30 focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/50 text-sm text-foreground dark:text-white"
                             autoFocus
                         />
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
@@ -234,7 +234,7 @@ export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFor
                             placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 pr-12 rounded-xl bg-accent/20 border border-border/50 focus:border-primary/50 focus:bg-accent/30 focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/50 text-sm"
+                            className="w-full px-4 py-3 pr-12 rounded-xl bg-accent/20 border border-border/50 focus:border-primary/50 focus:bg-accent/30 focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/50 text-sm text-foreground dark:text-white"
                         />
                         <button
                             type="button"
@@ -270,7 +270,7 @@ export function EmailForm({ initialMode = 'login', onBack, onSuccess }: EmailFor
                     type="submit"
                     disabled={loading || !email || !password || !termsAccepted}
                     className={cn(
-                        "w-full h-12 rounded-xl text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/20 transition-all",
+                        "w-full h-12 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/20 transition-all",
                         loading && "opacity-80"
                     )}
                 >

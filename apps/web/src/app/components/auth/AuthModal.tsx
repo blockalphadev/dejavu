@@ -449,7 +449,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-center gap-3 sm:grid sm:grid-cols-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:grid sm:grid-cols-2">
                         <WalletOption
                             icon={<AuthIcons.Metamask />}
                             name="Metamask"
@@ -535,7 +535,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     <div className="absolute -top-[100px] -left-[100px] w-[200px] h-[200px] bg-blue-500/20 blur-[100px] rounded-full pointer-events-none" />
                     <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-purple-500/20 blur-[80px] rounded-full pointer-events-none" />
 
-                    <div className="px-6 pt-16 pb-8 sm:p-8 sm:pb-10 relative">
+                    <div className="px-5 pt-14 pb-8 sm:p-8 sm:pb-10 relative">
                         {renderContent()}
                     </div>
                 </DialogContent>
