@@ -324,7 +324,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             {walletState?.provider === 'walletconnect' && <AuthIcons.WalletConnect className="w-full h-full" />}
                         </div>
                     </div>
-                    <h3 className="text-lg font-bold">Connecting to {displayName}...</h3>
+                    <h3 className="text-lg font-bold text-zinc-950 dark:text-zinc-50">Connecting to {displayName}...</h3>
                     <p className="text-muted-foreground text-sm mt-2">Please approve the request in your wallet.</p>
                 </div>
             );
@@ -345,7 +345,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                         {walletState?.provider === 'walletconnect' && <AuthIcons.WalletConnect className="w-10 h-10" />}
                     </div>
 
-                    <h3 className="text-lg font-bold mb-1">Sign Message</h3>
+                    <h3 className="text-lg font-bold mb-1 text-zinc-950 dark:text-zinc-50">Sign Message</h3>
                     <p className="text-muted-foreground text-sm mb-4">
                         Connected: <span className="font-mono">{shortAddress}</span>
                     </p>
@@ -385,7 +385,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     <div className="w-16 h-16 mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
                         <AlertCircle className="w-8 h-8 text-red-500" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2">Connection Failed</h3>
+                    <h3 className="text-lg font-bold mb-2 text-zinc-950 dark:text-zinc-50">Connection Failed</h3>
                     <p className="text-muted-foreground text-sm text-center mb-6 max-w-xs">
                         {walletState?.error || 'Something went wrong. Please try again.'}
                     </p>
@@ -405,7 +405,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     <div className="w-16 h-16 mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
                         <CheckCircle className="w-8 h-8 text-green-500" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2">Connected!</h3>
+                    <h3 className="text-lg font-bold mb-2 text-zinc-950 dark:text-zinc-50">Connected!</h3>
                     <p className="text-muted-foreground text-sm">
                         Redirecting...
                     </p>
@@ -417,7 +417,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         return (
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center space-y-1.5">
-                    <h2 className="text-2xl font-bold tracking-tight">
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground dark:text-white">
                         {initialMode === 'signup' ? 'Create an Account' : 'Welcome to DeJaVu'}
                     </h2>
                     <p className="text-muted-foreground text-sm">
@@ -449,7 +449,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-3 sm:grid sm:grid-cols-2">
                         <WalletOption
                             icon={<AuthIcons.Metamask />}
                             name="Metamask"
@@ -457,6 +457,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             installed={MetaMaskAdapter.isInstalled()}
                             isMobile={isMobile}
                             onClick={() => handleWalletConnect('Metamask')}
+                            className="w-auto sm:w-full shrink-0"
                         />
                         <WalletOption
                             icon={<AuthIcons.Phantom />}
@@ -464,6 +465,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             installed={PhantomAdapter.isInstalled()}
                             isMobile={isMobile}
                             onClick={() => handleWalletConnect('Phantom')}
+                            className="w-auto sm:w-full shrink-0"
                         />
                         <WalletOption
                             icon={<AuthIcons.Coinbase />}
@@ -471,6 +473,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             installed={CoinbaseAdapter.isInstalled()}
                             isMobile={isMobile}
                             onClick={() => handleWalletConnect('Coinbase')}
+                            className="w-auto sm:w-full shrink-0"
                         />
                         <WalletOption
                             icon={<AuthIcons.Slush />}
@@ -478,11 +481,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                             installed={true}
                             isMobile={isMobile}
                             onClick={() => handleWalletConnect('Slush')}
+                            className="w-auto sm:w-full shrink-0"
                         />
                         <WalletOption
                             icon={<AuthIcons.WalletConnect />}
                             name="WalletConnect"
-                            className="col-span-2"
+                            className="w-auto sm:w-full sm:col-span-2 shrink-0"
                             installed={true}
                             isMobile={isMobile}
                             onClick={() => handleWalletConnect('WalletConnect')}
@@ -510,7 +514,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden bg-background/80 backdrop-blur-xl border-white/10 shadow-2xl duration-300 [&>button]:hidden ring-1 ring-white/5">
+                <DialogContent className="w-full max-w-[94vw] sm:max-w-[450px] max-h-[80vh] overflow-y-auto overflow-x-hidden p-0 gap-0 bg-background/80 backdrop-blur-xl border border-border shadow-2xl duration-300 [&>button]:hidden ring-1 ring-border/5 rounded-2xl custom-scrollbar">
                     <DialogTitle className="sr-only">Authentication</DialogTitle>
                     <DialogDescription className="sr-only">Sign in or create an account to access DeJaVu.</DialogDescription>
 
@@ -531,7 +535,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                     <div className="absolute -top-[100px] -left-[100px] w-[200px] h-[200px] bg-blue-500/20 blur-[100px] rounded-full pointer-events-none" />
                     <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-purple-500/20 blur-[80px] rounded-full pointer-events-none" />
 
-                    <div className="p-8 pb-10 relative">
+                    <div className="px-6 pt-16 pb-8 sm:p-8 sm:pb-10 relative">
                         {renderContent()}
                     </div>
                 </DialogContent>

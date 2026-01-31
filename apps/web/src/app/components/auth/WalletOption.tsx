@@ -19,7 +19,7 @@ export function WalletOption({ icon, name, recommended, installed = true, isMobi
     return (
         <button
             className={cn(
-                "group relative flex w-full items-center gap-3 rounded-xl border border-border/40 bg-card/50 p-3 transition-all duration-200 hover:bg-accent/40 hover:border-border active:scale-[0.98] outline-none focus:ring-2 focus:ring-primary/20 overflow-hidden",
+                "group relative flex w-full items-center justify-center sm:justify-start gap-3 rounded-xl border border-border/40 bg-card/50 p-3 transition-all duration-200 hover:bg-accent/40 hover:border-border active:scale-[0.98] outline-none focus:ring-2 focus:ring-primary/20 overflow-hidden",
                 !isClickable && "opacity-75",
                 className
             )}
@@ -29,7 +29,7 @@ export function WalletOption({ icon, name, recommended, installed = true, isMobi
                 <span className="w-6 h-6">{icon}</span>
             </div>
 
-            <div className="flex flex-1 flex-col items-start gap-0.5 min-w-0">
+            <div className="hidden sm:flex flex-1 flex-col items-start gap-0.5 min-w-0">
                 <span className="font-medium text-sm text-foreground truncate w-full text-left">{name}</span>
                 <div className="flex items-center gap-1.5 w-full">
                     {recommended && (
@@ -44,7 +44,7 @@ export function WalletOption({ icon, name, recommended, installed = true, isMobi
                 </div>
             </div>
 
-            <ChevronRight className="flex-shrink-0 w-4 h-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            <ChevronRight className="hidden sm:block flex-shrink-0 w-4 h-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
         </button>
     );
 }
