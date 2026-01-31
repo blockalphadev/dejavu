@@ -982,4 +982,115 @@ export class AuthService {
             profilePending,
         };
     }
+
+    /**
+     * Handle Google OAuth with full security verification
+     * Uses GoogleOAuthSecurityService for PKCE, state, nonce, and id_token validation
+     *
+     * @param idTokenPayload - Verified id_token payload from GoogleOAuthSecurityService
+     * @returns Auth response with tokens and profile status
+     */
+    async handleGoogleOAuthSecure(idTokenPayload: {
+        sub: string;
+        email: string;
+        name?: string;
+        picture?: string;
+        email_verified: boolean;
+    }): Promise<AuthResponse & { profilePending: boolean }> {
+        const { sub: googleId, email, name: fullName, picture: avatarUrl } = idTokenPayload;
+
+        this.logger.log(`Processing secure Google OAuth for: ${email}`);
+
+        // Check if user exists
+        let user = await this.usersService.findByEmail(email);
+        let isNewUser = false;
+
+        if (!user) {
+            // Create new user
+            const supabase = this.supabaseService.getAdminClient();
+            const { data: authData, error } = await supabase.auth.admin.createUser({
+                email,
+                email_confirm: true,
+                user_metadata: {
+                    full_name: fullName,
+                    avatar_url: avatarUrl,
+                    google_id: googleId,
+                    email_verified: idTokenPayload.email_verified,
+                },
+            });
+
+            if (error || !authData.user) {
+                this.logger.error(`Failed to create Google user: ${error?.message}`);
+                throw new BadRequestException('Failed to create Google user');
+            }
+
+            await this.usersService.createProfile({
+                id: authData.user.id,
+                email,
+                full_name: fullName || null,
+                avatar_url: avatarUrl || null,
+                wallet_addresses: [],
+            });
+
+            // Set Google ID and auth provider
+            await supabase
+                .from('profiles')
+                .update({
+                    google_id: googleId,
+                    auth_provider: 'google',
+                    profile_completed: false,
+                    email_verified: idTokenPayload.email_verified,
+                })
+                .eq('id', authData.user.id);
+
+            user = await this.usersService.findById(authData.user.id);
+            isNewUser = true;
+
+            this.logger.log(`New Google user created: ${email} (id: ${authData.user.id})`);
+        } else {
+            // Update existing user with Google ID if not set
+            const supabase = this.supabaseService.getAdminClient();
+            if (!user.google_id) {
+                await supabase
+                    .from('profiles')
+                    .update({
+                        google_id: googleId,
+                        avatar_url: user.avatar_url || avatarUrl,
+                        email_verified: idTokenPayload.email_verified,
+                    })
+                    .eq('id', user.id);
+
+                this.logger.log(`Linked Google account to existing user: ${email}`);
+            }
+        }
+
+        // Check if profile is complete
+        const profilePending = !user?.profile_completed && !user?.username;
+
+        // Generate tokens
+        const tokens = await this.generateTokens({ sub: user!.id, email });
+
+        // Log successful OAuth
+        await this.logLoginAttempt({
+            email,
+            ipAddress: 'oauth_google',
+            success: true,
+        });
+
+        return {
+            user: {
+                id: user!.id,
+                email: user?.email || email,
+                fullName: user?.full_name || fullName,
+                avatarUrl: user?.avatar_url || avatarUrl,
+                bio: user?.bio || undefined,
+                walletAddresses: user?.wallet_addresses?.map((w) => ({
+                    address: w.address,
+                    chain: w.chain,
+                })),
+            },
+            tokens,
+            profilePending,
+        };
+    }
 }

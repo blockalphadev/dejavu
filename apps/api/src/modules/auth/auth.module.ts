@@ -8,12 +8,14 @@ import { JwtStrategy, GoogleStrategy, WalletStrategy } from './strategies/index.
 import { JwtAuthGuard, CsrfGuard } from './guards/index.js';
 import { UsersModule } from '../users/users.module.js';
 import { PasswordValidator } from './validators/index.js';
-import { TokenBlacklistService, SecurityEventService } from './services/index.js';
+import { TokenBlacklistService, SecurityEventService, GoogleOAuthSecurityService } from './services/index.js';
 import { WalletConnectService } from './services/wallet-connect.service.js';
 import { OtpService } from './services/otp.service.js';
+import { DatabaseModule } from '../../database/database.module.js';
 
 @Module({
     imports: [
+        DatabaseModule,
         PassportModule.register({ defaultStrategy: 'jwt' }),
         JwtModule.registerAsync({
             imports: [ConfigModule],
@@ -32,6 +34,7 @@ import { OtpService } from './services/otp.service.js';
         AuthService,
         WalletConnectService,
         OtpService,
+        GoogleOAuthSecurityService,
         JwtStrategy,
         GoogleStrategy,
         WalletStrategy,
@@ -45,6 +48,7 @@ import { OtpService } from './services/otp.service.js';
         AuthService,
         WalletConnectService,
         OtpService,
+        GoogleOAuthSecurityService,
         JwtAuthGuard,
         CsrfGuard,
         PasswordValidator,
@@ -53,3 +57,4 @@ import { OtpService } from './services/otp.service.js';
     ],
 })
 export class AuthModule { }
+

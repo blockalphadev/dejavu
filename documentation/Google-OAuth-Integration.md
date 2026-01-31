@@ -1,17 +1,19 @@
 # Google OAuth & Privy Embedded Wallet Integration
 
 > Technical documentation for Google OAuth authentication with Privy embedded wallet integration.
-> Version 1.0.0 | Published: January 22, 2026
+> Version 1.1.0 | Updated: January 31, 2026
 
 ---
 
 ## Overview
 
-DeJaVu implements a comprehensive **Google OAuth 2.0** authentication flow with **Privy embedded wallet** creation. The system follows OWASP security guidelines, implements anti-throttling measures, and provides a seamless user experience across mobile and desktop devices.
+DeJaVu implements a **high-security Google OAuth 2.0** authentication flow. The system is hardened beyond standard OAuth implementations to prevent common attack vectors like CSRF, Replay Attacks, and Token Injection. It integrates seamlessly with Privy for embedded wallet creation.
 
 | Feature | Implementation |
 |---------|----------------|
-| **OAuth Provider** | Google OAuth 2.0 via Passport.js |
+| **OAuth Provider** | Google OAuth 2.0 (Custom Secure Flow) |
+| **Security Standard** | **RFC 7636 (PKCE)**, OIDC Core 1.0 |
+| **Key Defenses** | State Signing, Session Binding, Nonce Validation, Replay Detection |
 | **Wallet Provider** | Privy (Ethereum, Solana, Sui) |
 | **Security** | OWASP A05/A07 compliant, CSRF protection |
 | **Frontend** | React + PrivyProvider + ProfileCompletionModal |

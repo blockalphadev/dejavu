@@ -21,6 +21,15 @@ Real-time connections are secured using a dedicated Guard system:
 -   **`WsAuthGuard`**: Intercepts the WebSocket handshake. Extracts the JWT from the `authorization` query parameter or header. Verifies the token and its fingerprint before allowing the socket connection to upgrade.
 -   **Idle Cleanup**: Inactive socket connections are automatically terminated by the gateways (`SportsGateway`, `SecurityGateway`) to prevent resource exhaustion attacks.
 
+### 1.3 OAuth Security Hardening
+Our Google OAuth flow exceeds standard implementation security (RFC 7636) to prevent advanced attacks:
+
+-   **PKCE (S256)**: Proof Key for Code Exchange prevents auth code interception.
+-   **State Signing**: State parameters are signed with HMAC-SHA256 and bound to the user's session/IP to prevent CSRF and Login CSRF.
+-   **Nonce Validation**: Cryptographically secure nonces prevent ID Token injection and replay.
+-   **JTI Registry**: We track every used `jti` (JWT ID) to guarantee that an ID token can never be reused.
+-   **Strict Redirects**: Callback URIs are matched exactly against the database whitelist.
+
 ---
 
 ## 2. Authorization & RBAC

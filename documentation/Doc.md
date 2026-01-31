@@ -484,8 +484,9 @@ colors: {
 | 033 | **Email OTP Auth** | otp_codes | OTP funcs | 8KB |
 | 034 | **Fallback OTP** | fallback_otp_codes | Backup codes | 4KB |
 | 036 | **Email Verified** | profiles.email_verified | Column add | 1KB |
+| 047 | **OAuth Hardening** | oauth_state_tokens, oauth_jti_registry, oauth_rate_limits | 5 funcs + policies | 18KB |
 
-**Total: ~200KB of SQL, 40+ tables, 55+ functions**
+**Total: ~220KB of SQL, 40+ tables, 60+ functions**
 
 ### 7.2 Core Tables
 
