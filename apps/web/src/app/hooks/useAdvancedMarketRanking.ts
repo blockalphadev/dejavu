@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useMarketSocket, MarketMessage } from '../../hooks/useMarketSocket';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+const LIMIT = 20;
 
 // Unified item type matching backend
-interface RecommendedItem {
+export interface RecommendedItem {
     id: string;
     type: 'news' | 'market' | 'signal' | 'sports';
     title: string;
@@ -39,29 +41,84 @@ interface UseAdvancedMarketRankingResult {
     hasMore: boolean;
 }
 
+const fetchMarkets = async ({ pageParam = 0, endpoint }: { pageParam: number; endpoint: string }) => {
+    const offset = pageParam * LIMIT;
+    const res = await fetch(`${API_URL}/recommendations/${endpoint}?limit=${LIMIT}&offset=${offset}`, {
+        headers: {
+            'Accept': 'application/json'
+        }
+    });
+
+    if (!res.ok) {
+        throw new Error(`Failed to fetch ${endpoint}`);
+    }
+
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.data || []);
+};
+
 /**
  * Advanced Market Ranking Hook
  * 
- * Fetches Top Markets (weighted algorithm) and For You (K-Means clustering)
- * from the backend recommendation engine with real-time updates and pagination.
+ * Uses TanStack Query for caching and anti-throttling.
+ * Integrates with WebSockets for real-time updates by updating the query cache.
  */
 export function useAdvancedMarketRanking({ target = 'both' }: UseAdvancedMarketRankingOptions = {}): UseAdvancedMarketRankingResult {
-    const [topMarkets, setTopMarkets] = useState<RecommendedItem[]>([]);
-    const [forYouMarkets, setForYouMarkets] = useState<RecommendedItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [page, setPage] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
-    const abortControllerRef = useRef<AbortController | null>(null);
-    const LIMIT = 20;
+    const queryClient = useQueryClient();
 
-    // Handle real-time socket updates
+    // Top Markets Query
+    const {
+        data: topData,
+        fetchNextPage: fetchNextTop,
+        hasNextPage: hasNextTop,
+        isLoading: loadTop,
+        error: errorTop,
+        refetch: refetchTop
+    } = useInfiniteQuery({
+        queryKey: ['markets', 'top'],
+        queryFn: ({ pageParam }) => fetchMarkets({ pageParam, endpoint: 'top-markets' }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            return lastPage.length < LIMIT ? undefined : allPages.length;
+        },
+        enabled: target === 'top_markets' || target === 'both',
+        staleTime: 1000 * 60, // 1 minute stale time to prevent throttling
+    });
+
+    // For You Query
+    const {
+        data: forYouData,
+        fetchNextPage: fetchNextForYou,
+        hasNextPage: hasNextForYou,
+        isLoading: loadForYou,
+        error: errorForYou,
+        refetch: refetchForYou
+    } = useInfiniteQuery({
+        queryKey: ['markets', 'forYou'],
+        queryFn: ({ pageParam }) => fetchMarkets({ pageParam, endpoint: 'for-you' }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            return lastPage.length < LIMIT ? undefined : allPages.length;
+        },
+        enabled: target === 'for_you' || target === 'both',
+        staleTime: 1000 * 60,
+    });
+
+    // Flatten data
+    const topMarkets = useMemo(() =>
+        topData?.pages.flatMap(page => page) || [],
+        [topData]);
+
+    const forYouMarkets = useMemo(() =>
+        forYouData?.pages.flatMap(page => page) || [],
+        [forYouData]);
+
+    // Socket Integration
     const handleSocketMessage = useCallback((message: MarketMessage) => {
         if (message.type === 'new_item' || message.type === 'market_update') {
             const newItem = message.data?.item || message.data;
             if (!newItem?.id) return;
 
-            // Helper to format item
             const formatItem = (item: any): RecommendedItem => ({
                 id: item.id,
                 type: item.type || 'news',
@@ -84,145 +141,74 @@ export function useAdvancedMarketRanking({ target = 'both' }: UseAdvancedMarketR
 
             const formatted = formatItem(newItem);
 
-            // Update topMarkets if relevant
+            // Optimistically update caches
+            // We prepend to the first page of the query data
             if (target === 'top_markets' || target === 'both') {
-                setTopMarkets(prev => {
-                    if (prev.some(m => m.id === newItem.id)) return prev;
-                    return [formatted, ...prev];
+                queryClient.setQueryData(['markets', 'top'], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    const newPages = [...oldData.pages];
+                    if (newPages.length > 0) {
+                        // Check if exists
+                        const exists = newPages.some(page => page.some((m: RecommendedItem) => m.id === formatted.id));
+                        if (!exists) {
+                            newPages[0] = [formatted, ...newPages[0]];
+                        }
+                    }
+                    return { ...oldData, pages: newPages };
                 });
             }
 
-            // Update forYouMarkets if relevant
             if (target === 'for_you' || target === 'both') {
-                setForYouMarkets(prev => {
-                    if (prev.some(m => m.id === newItem.id)) return prev;
-                    return [formatted, ...prev];
+                queryClient.setQueryData(['markets', 'forYou'], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    const newPages = [...oldData.pages];
+                    if (newPages.length > 0) {
+                        const exists = newPages.some(page => page.some((m: RecommendedItem) => m.id === formatted.id));
+                        if (!exists) {
+                            newPages[0] = [formatted, ...newPages[0]];
+                        }
+                    }
+                    return { ...oldData, pages: newPages };
                 });
             }
         }
-    }, [target]);
+    }, [queryClient, target]);
 
-    // Setup socket for real-time updates
     const { subscribe, unsubscribe, isConnected } = useMarketSocket({
         autoConnect: true,
         onMessage: handleSocketMessage
     });
 
-    // Subscribe to trending/signals channel for updates
     useEffect(() => {
-        if (isConnected) {
-            subscribe('signals' as any);
-        }
-        return () => {
-            unsubscribe('signals' as any);
-        };
+        if (isConnected) subscribe('signals' as any);
+        return () => unsubscribe('signals' as any);
     }, [isConnected, subscribe, unsubscribe]);
 
-    // Fetch data function
-    const fetchData = useCallback(async (pageNum: number) => {
-        // Only abort if it's a NEW search/refresh (page 0), not pagination
-        // Actually we want to properly manage aborts per fetch call
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-        abortControllerRef.current = new AbortController();
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            const offset = pageNum * LIMIT;
-            const promises = [];
-
-            if (target === 'top_markets' || target === 'both') {
-                promises.push(fetch(`${API_URL}/recommendations/top-markets?limit=${LIMIT}&offset=${offset}`, {
-                    signal: abortControllerRef.current.signal,
-                    headers: { 'Accept': 'application/json' },
-                }).then(res => res.json().then(data => ({ type: 'top', data, ok: res.ok }))));
-            }
-
-            if (target === 'for_you' || target === 'both') {
-                promises.push(fetch(`${API_URL}/recommendations/for-you?limit=${LIMIT}&offset=${offset}`, {
-                    signal: abortControllerRef.current.signal,
-                    headers: { 'Accept': 'application/json' },
-                }).then(res => res.json().then(data => ({ type: 'forYou', data, ok: res.ok }))));
-            }
-
-            const results = await Promise.all(promises);
-
-            let newItemsCount = 0;
-
-            results.forEach(result => {
-                if (!result.ok) throw new Error(`Fetch failed for ${result.type}`);
-
-                const items = Array.isArray(result.data) ? result.data : (result.data.data || []);
-                newItemsCount = Math.max(newItemsCount, items.length);
-
-                if (result.type === 'top') {
-                    setTopMarkets(prev => pageNum === 0 ? items : [...prev, ...items]);
-                } else if (result.type === 'forYou') {
-                    setForYouMarkets(prev => pageNum === 0 ? items : [...prev, ...items]);
-                }
-            });
-
-            // Check if we have more pages
-            if (newItemsCount < LIMIT) {
-                setHasMore(false);
-            } else {
-                setHasMore(true);
-            }
-
-        } catch (err) {
-            if ((err as Error).name === 'AbortError') return;
-            console.error('Advanced Market Ranking fetch error:', err);
-            setError(err instanceof Error ? err : new Error('Failed to fetch recommendations'));
-        } finally {
-            setIsLoading(false);
-        }
-    }, [target]);
-
-    // Initial fetch
-    useEffect(() => {
-        setPage(0);
-        setHasMore(true);
-        fetchData(0);
-
-        // Refresh every 2 minutes (only if on page 0 to avoid jitter)
-        const refreshInterval = setInterval(() => {
-            if (page === 0) fetchData(0);
-        }, 120000);
-
-        return () => {
-            clearInterval(refreshInterval);
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
-    }, [fetchData]); // Dependency on fetchData which depends on target
-
-    // Pagination handler
-    const loadMore = useCallback(() => {
-        if (!isLoading && hasMore) {
-            const nextPage = page + 1;
-            setPage(nextPage); // Update state
-            fetchData(nextPage); // Fetch next page
-        }
-    }, [isLoading, hasMore, page, fetchData]);
-
-    // Manual refresh function
     const refresh = useCallback(() => {
-        setPage(0);
-        setHasMore(true);
-        fetchData(0);
-    }, [fetchData]);
+        if (target === 'top_markets' || target === 'both') refetchTop();
+        if (target === 'for_you' || target === 'both') refetchForYou();
+    }, [target, refetchTop, refetchForYou]);
+
+    const loadMore = useCallback(() => {
+        if (target === 'top_markets' || target === 'both') fetchNextTop();
+        if (target === 'for_you' || target === 'both') fetchNextForYou();
+    }, [target, fetchNextTop, fetchNextForYou]);
+
+    const isLoading = (target === 'top_markets' && loadTop) ||
+        (target === 'for_you' && loadForYou) ||
+        (target === 'both' && (loadTop || loadForYou));
+
+    const hasMore = (target === 'top_markets' && hasNextTop) ||
+        (target === 'for_you' && hasNextForYou) ||
+        (target === 'both' && (hasNextTop || hasNextForYou));
 
     return {
         topMarkets,
         forYouMarkets,
         isLoading,
-        error,
+        error: (errorTop || errorForYou) as Error | null,
         refresh,
         loadMore,
-        hasMore
+        hasMore: !!hasMore
     };
 }

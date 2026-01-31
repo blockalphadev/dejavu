@@ -240,30 +240,43 @@
     @apply border-border outline-ring/50;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    /* Smooth theme transitions */
-    /* Target specific properties for performance (anti-throttling) */
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  /* Optimize transitions: Avoid universal selectors which kill performance */
+  /* Only transition background and color on major layout elements if needed */
+  /* Optimize transitions: Smart targeting for 60fps performance */
+  /* We target the most common containers and interactive elements */
+  body,
+  div,
+  section,
+  article,
+  header,
+  footer,
+  nav,
+  aside,
+  main,
+  button,
+  input,
+  textarea,
+  select,
+  details,
+  summary,
+  .card,
+  /* Shadcn/Custom Cards */
+  .popover,
+  .sheet,
+  .dialog {
+    /* Smooth theme transitions for colors only */
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      fill 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Apply transitions to other common elements that change with theme */
-  /* Using a low-specificity selector to avoid overriding utility classes if needed, 
-     but broadly enough to catch UI components */
-  div,
-  span,
-  p,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  input,
-  button,
-  a,
-  svg {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
+  /* Exclude heavy optimizable elements or elements that shouldn't transition */
+  /* Exclude heavy optimizable elements or elements that shouldn't transition */
+  .no-transition,
+  .animate-spin {
+    transition: none !important;
   }
 
   html {

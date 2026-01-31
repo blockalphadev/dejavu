@@ -103,6 +103,8 @@ export const PolymarketCard = memo(function PolymarketCard({
                             <img
                                 src={image}
                                 alt=""
+                                loading="lazy"
+                                decoding="async"
                                 className="w-12 h-12 rounded-xl object-cover ring-1 ring-border/10"
                                 onError={(e) => {
                                     e.currentTarget.src = '';
@@ -146,6 +148,8 @@ export const PolymarketCard = memo(function PolymarketCard({
                                     <img
                                         src={outcome.image}
                                         alt=""
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-6 h-6 rounded-full object-cover"
                                     />
                                 )}
@@ -289,6 +293,8 @@ export const BinaryMarketCard = memo(function BinaryMarketCard({
                         <img
                             src={image}
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             className="w-14 h-14 rounded-xl object-cover ring-1 ring-border/10"
                         />
                     ) : icon ? (

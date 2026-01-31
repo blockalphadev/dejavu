@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 
 type Theme = "dark" | "light" | "system";
 
@@ -29,39 +29,60 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark", "tokyo-night");
+
+    // Helper to apply theme
+    const applyTheme = (targetTheme: Theme) => {
+      root.classList.remove("light", "dark", "tokyo-night");
+
+      if (targetTheme === "system") {
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+        root.classList.add(systemTheme);
+        // "System" dark uses standard dark theme, distinct from "tokyo-night"
+        return;
+      }
+
+      root.classList.add(targetTheme);
+      if (targetTheme === "dark") {
+        root.classList.add("tokyo-night");
+      }
+    };
+
+    applyTheme(theme);
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
-
-      // Apply initial system theme
-      root.classList.add(systemTheme.matches ? "dark" : "light");
-
-      // Listener for system theme changes
-      // Using addEventListener for modern browser support (React 19+)
-      const listener = (e: MediaQueryListEvent) => {
-        const newTheme = e.matches ? "dark" : "light";
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const curriedListener = (e: MediaQueryListEvent) => {
+        const newSystemTheme = e.matches ? "dark" : "light";
         root.classList.remove("light", "dark", "tokyo-night");
-        root.classList.add(newTheme);
+        root.classList.add(newSystemTheme);
+        // System listener also adheres to standard dark
       };
 
-      systemTheme.addEventListener("change", listener);
-      return () => systemTheme.removeEventListener("change", listener);
-    }
-
-    root.classList.add(theme);
-    if (theme === "dark") {
-      root.classList.add("tokyo-night");
+      mediaQuery.addEventListener("change", curriedListener);
+      return () => mediaQuery.removeEventListener("change", curriedListener);
     }
   }, [theme]);
 
-  const value = {
+  // Listen for storage events to sync across tabs
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === storageKey && e.newValue) {
+        setTheme(e.newValue as Theme);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [storageKey]);
+
+  const value = useMemo(() => ({
     theme,
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
     },
-  };
+  }), [theme, storageKey]);
 
   return (
     <ThemeContext.Provider value={value}>
