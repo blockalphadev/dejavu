@@ -94,7 +94,7 @@ export function OtpInput({ length = 6, value, onChange, disabled, autoFocus }: O
                     onFocus={() => setFocusedIndex(i)}
                     onBlur={() => setFocusedIndex(-1)}
                     className={cn(
-                        "w-12 h-14 text-center text-xl font-bold rounded-xl border-2 outline-none transition-all duration-200 bg-background/50",
+                        "w-12 h-14 text-center text-xl font-bold rounded-xl border-2 outline-none transition-all duration-200 bg-background/50 text-foreground dark:text-white",
                         focusedIndex === i
                             ? "border-primary ring-4 ring-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)] scale-105"
                             : "border-border/60 hover:border-border",

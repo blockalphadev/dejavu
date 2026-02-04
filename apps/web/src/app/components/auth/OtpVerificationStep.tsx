@@ -126,18 +126,18 @@ export function OtpVerificationStep({
                 >
                     <ArrowLeft className="w-5 h-5" />
                 </button>
-                <span className="font-semibold">Verify Email</span>
+                <span className="font-semibold text-foreground dark:text-white">Verify Email</span>
             </div>
 
             {/* Email indicator */}
             <div className="flex items-center justify-center gap-2 mb-6 p-3 rounded-lg bg-accent/30">
                 <Mail className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{email}</span>
+                <span className="text-sm font-medium text-foreground dark:text-white">{email}</span>
             </div>
 
             {/* Instructions */}
             <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold mb-2">Check your email</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground dark:text-white">Check your email</h3>
                 <p className="text-sm text-muted-foreground">
                     We sent a 6-digit verification code to your email.
                     <br />Enter it below to continue.

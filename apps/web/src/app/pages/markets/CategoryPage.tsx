@@ -224,7 +224,7 @@ export function CategoryPage({
             <div className="container mx-auto px-4 max-w-[1600px]">
                 {title && (
                     <h2 className="text-2xl font-bold mb-6 text-foreground capitalize">
-                        {title || category} Markets
+                        {title || category}
                     </h2>
                 )}
 

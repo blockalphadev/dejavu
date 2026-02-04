@@ -179,7 +179,7 @@ export function SportsMarketPage({ onOpenAuth, initialSport }: SportsMarketPageP
                                         <div className="p-2 bg-red-500/10 rounded-lg">
                                             <Zap className="w-6 h-6 text-red-500 fill-current" />
                                         </div>
-                                        Live Markets
+                                        Live Sports
                                     </>
                                 ) : (
                                     <>
