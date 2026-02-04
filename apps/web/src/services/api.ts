@@ -160,6 +160,16 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
 
             // Handle token expiration
             if (response.status === 401) {
+                // If it's a login attempt, throw the specific error (e.g. "Invalid email or password")
+                // immediately instead of treating it as an expired session.
+                const isLoginRequest = endpoint.includes('/auth/login') ||
+                    endpoint.includes('/auth/otp/login') ||
+                    endpoint.includes('/auth/otp/verify');
+
+                if (isLoginRequest) {
+                    throw new Error(errorData.message || 'Invalid credentials');
+                }
+
                 // Prevent infinite loops if refresh fails
                 if (!endpoint.includes('/auth/refresh')) {
                     const refreshed = await refreshToken();
