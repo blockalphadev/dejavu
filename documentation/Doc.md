@@ -208,9 +208,12 @@ sequenceDiagram
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | **ETL Pipeline** | NestJS + Cron | Aggregates data from 8 categories |
+| **Image Enrichment** | ImageScraperUtil | Scrapes og:image, topic-based fallbacks |
 | **Streaming** | RabbitMQ | Topic-based event distribution |
 | **Gateway** | Socket.io | WebSocket broadcasting to clients |
 | **Intelligence** | Recommendations | Real-time "Top Markets" ranking |
+
+> **See Also:** [Image Scraping & ETL Enhancement](./Image-Scraping-ETL.md) for image enrichment strategies per category.
 
 ---
 

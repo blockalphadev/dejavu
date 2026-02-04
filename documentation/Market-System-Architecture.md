@@ -155,11 +155,15 @@ All API clients extend this class to inherit enterprise-grade resilience feature
 1.  **Fetch**: Client requests data from external API (e.g., IMF, CoinMarketCap).
 2.  **Transform**: Data is mapped to a DTO (Data Transfer Object).
 3.  **Deduplicate**: System checks `content_hash` against existing records.
-4.  **Enrich**: (Optional) AI sentiment analysis or entity extraction.
+4.  **Enrich**: 
+    *   AI sentiment analysis or entity extraction.
+    *   **Image Scraping**: Extracts `og:image` from source URLs with topic-based fallbacks.
 5.  **Persist**:
     *   Insert into `market_data_items`.
     *   Upsert into category-specific table (e.g., `crypto_assets`).
 6.  **Stream**: Publish `new_item` event to RabbitMQ.
+
+> **See Also**: [Image Scraping & ETL Enhancement](./Image-Scraping-ETL.md) for detailed image enrichment strategies.
 
 ---
 

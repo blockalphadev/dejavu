@@ -310,4 +310,72 @@ export abstract class BaseETLOrchestrator {
         if (combined > 100) return 'medium';
         return 'low';
     }
+
+    /**
+     * Enrich items with images scraped from their URLs
+     * Fetches og:image, twitter:image for items without images
+     * @param items - Items to enrich
+     * @param getFallbackImage - Optional callback to get topic-based fallback image from title
+     */
+    protected async enrichItemsWithImages(
+        items: MarketDataItem[],
+        getFallbackImage?: (title: string, description?: string) => string
+    ): Promise<void> {
+        // Filter items that need images AND have URLs to scrape
+        const itemsNeedingImages = items.filter(item => !item.imageUrl && item.url);
+
+        if (itemsNeedingImages.length === 0) {
+            // Still apply fallbacks to items without URLs
+            if (getFallbackImage) {
+                for (const item of items) {
+                    if (!item.imageUrl) {
+                        item.imageUrl = getFallbackImage(item.title || '', item.description);
+                    }
+                }
+            }
+            this.logger.debug('All items already have images or no URLs, applied fallbacks');
+            return;
+        }
+
+        this.logger.log(`Enriching ${itemsNeedingImages.length} items with scraped images...`);
+
+        // Dynamic import to avoid circular dependencies
+        const { ImageScraperUtil } = await import('../../../common/utils/image-scraper.util.js');
+
+        const results = await ImageScraperUtil.scrapeImages(
+            itemsNeedingImages.map(item => ({ url: item.url, imageUrl: item.imageUrl })),
+            5, // concurrency
+            { timeout: 5000 }
+        );
+
+        // Apply scraped images to items
+        let enrichedCount = 0;
+        for (const item of itemsNeedingImages) {
+            if (item.url) {
+                const result = results.get(item.url);
+                if (result?.imageUrl && result.source !== 'placeholder') {
+                    // Use scraped image
+                    item.imageUrl = result.imageUrl;
+                    enrichedCount++;
+                } else if (getFallbackImage) {
+                    // Use topic-based fallback from callback
+                    item.imageUrl = getFallbackImage(item.title || '', item.description);
+                } else {
+                    // Use generic category placeholder
+                    item.imageUrl = ImageScraperUtil.getPlaceholderForCategory(item.category);
+                }
+            }
+        }
+
+        // Apply fallbacks to remaining items without images
+        if (getFallbackImage) {
+            for (const item of items) {
+                if (!item.imageUrl) {
+                    item.imageUrl = getFallbackImage(item.title || '', item.description);
+                }
+            }
+        }
+
+        this.logger.log(`Image enrichment complete: ${enrichedCount} real images scraped, ${itemsNeedingImages.length - enrichedCount} using fallbacks`);
+    }
 }

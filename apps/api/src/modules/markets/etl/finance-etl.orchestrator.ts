@@ -68,6 +68,9 @@ export class FinanceETLOrchestrator extends BaseETLOrchestrator implements OnMod
                 ...yahooItems
             ];
 
+            // Enrich items with scraped images (for items missing images)
+            await this.enrichItemsWithImages(newsItems);
+
             const newsStats = await this.upsertItems(newsItems);
             recordsCreated += newsStats.created;
             recordsUpdated += newsStats.updated;

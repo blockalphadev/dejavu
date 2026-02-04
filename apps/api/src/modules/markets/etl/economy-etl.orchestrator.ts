@@ -101,6 +101,10 @@ export class EconomyETLOrchestrator extends BaseETLOrchestrator implements OnMod
             recordsFetched += economicNews.length;
 
             const newsItems = economicNews.map(n => this.transformGDELTToItem(n));
+
+            // Enrich news items with scraped images
+            await this.enrichItemsWithImages(newsItems);
+
             const newsStats = await this.upsertItems(newsItems);
             recordsCreated += newsStats.created;
             recordsUpdated += newsStats.updated;
@@ -189,6 +193,9 @@ export class EconomyETLOrchestrator extends BaseETLOrchestrator implements OnMod
                 title = `Economic Update: ${indicatorName}`;
             }
 
+            // Get country flag/economy image based on area
+            const imageUrl = this.getEconomyImageUrl(record.area || source);
+
             return {
                 externalId: this.generateContentHash(`${source}-${record.indicatorId}-${date.getTime()}`, source),
                 source: source as any,
@@ -198,6 +205,7 @@ export class EconomyETLOrchestrator extends BaseETLOrchestrator implements OnMod
                 description: `Latest ${indicatorName} data released. Value: ${valueStr}`,
                 sourceName: source.toUpperCase(),
                 publishedAt: date,
+                imageUrl: imageUrl,
                 sentiment: 'neutral', // Indicators are neutral unless analyzed
                 sentimentScore: 0,
                 impact: 'medium',
@@ -215,5 +223,58 @@ export class EconomyETLOrchestrator extends BaseETLOrchestrator implements OnMod
 
         // 3. Persist to specialized table (optional/future: economy_global_indicators)
         // For now, the Unified Feed is the priority for the user's UI.
+    }
+
+    /**
+     * Get economy-themed image based on country or source
+     */
+    private getEconomyImageUrl(area: string): string {
+        // Country flag images from FlagCDN (high quality SVGs)
+        const countryFlags: Record<string, string> = {
+            'USA': 'https://flagcdn.com/w320/us.png',
+            'US': 'https://flagcdn.com/w320/us.png',
+            'United States': 'https://flagcdn.com/w320/us.png',
+            'China': 'https://flagcdn.com/w320/cn.png',
+            'CHN': 'https://flagcdn.com/w320/cn.png',
+            'Japan': 'https://flagcdn.com/w320/jp.png',
+            'JPN': 'https://flagcdn.com/w320/jp.png',
+            'Germany': 'https://flagcdn.com/w320/de.png',
+            'DEU': 'https://flagcdn.com/w320/de.png',
+            'United Kingdom': 'https://flagcdn.com/w320/gb.png',
+            'GBR': 'https://flagcdn.com/w320/gb.png',
+            'UK': 'https://flagcdn.com/w320/gb.png',
+            'France': 'https://flagcdn.com/w320/fr.png',
+            'FRA': 'https://flagcdn.com/w320/fr.png',
+            'India': 'https://flagcdn.com/w320/in.png',
+            'IND': 'https://flagcdn.com/w320/in.png',
+            'Italy': 'https://flagcdn.com/w320/it.png',
+            'ITA': 'https://flagcdn.com/w320/it.png',
+            'Canada': 'https://flagcdn.com/w320/ca.png',
+            'CAN': 'https://flagcdn.com/w320/ca.png',
+            'South Korea': 'https://flagcdn.com/w320/kr.png',
+            'KOR': 'https://flagcdn.com/w320/kr.png',
+            'Russia': 'https://flagcdn.com/w320/ru.png',
+            'RUS': 'https://flagcdn.com/w320/ru.png',
+            'Brazil': 'https://flagcdn.com/w320/br.png',
+            'BRA': 'https://flagcdn.com/w320/br.png',
+            'Australia': 'https://flagcdn.com/w320/au.png',
+            'AUS': 'https://flagcdn.com/w320/au.png',
+            'Spain': 'https://flagcdn.com/w320/es.png',
+            'ESP': 'https://flagcdn.com/w320/es.png',
+            'Mexico': 'https://flagcdn.com/w320/mx.png',
+            'MEX': 'https://flagcdn.com/w320/mx.png',
+            'Indonesia': 'https://flagcdn.com/w320/id.png',
+            'IDN': 'https://flagcdn.com/w320/id.png',
+            'Netherlands': 'https://flagcdn.com/w320/nl.png',
+            'NLD': 'https://flagcdn.com/w320/nl.png',
+            'Switzerland': 'https://flagcdn.com/w320/ch.png',
+            'CHE': 'https://flagcdn.com/w320/ch.png',
+            'Saudi Arabia': 'https://flagcdn.com/w320/sa.png',
+            'SAU': 'https://flagcdn.com/w320/sa.png',
+            'Global': 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=600',
+        };
+
+        // Return flag if found, else default economy image
+        return countryFlags[area] || 'https://images.unsplash.com/photo-1611974765270-ca12586343bb?auto=format&fit=crop&q=80&w=600';
     }
 }

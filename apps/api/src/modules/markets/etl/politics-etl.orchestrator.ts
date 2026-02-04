@@ -121,6 +121,9 @@ export class PoliticsETLOrchestrator extends BaseETLOrchestrator implements OnMo
 
             this.logger.log(`Total items fetched: ${allItems.length} (GDELT: ${gdeltNews.length}, NewsAPI: ${newsApiItems.length}, RSS: ${rssItems.length})`);
 
+            // 4. Enrich items with scraped images (for items missing images)
+            await this.enrichItemsWithImages(allItems);
+
             // Upsert into unified market_data_items table
             const stats = await this.upsertItems(allItems);
             recordsCreated += stats.created;

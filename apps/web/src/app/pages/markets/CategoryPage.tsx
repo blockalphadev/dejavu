@@ -49,7 +49,7 @@ function transformToPolymarketFormat(market: any) {
         return {
             id: market.id,
             title: market.title,
-            image: resolveImage(market.image || market.imageUrl),
+            image: resolveImage(market.image_url || market.image || market.imageUrl),
             icon: market.emoji || market.icon,
             outcomes: market.outcomes.map((o: any, idx: number) => ({
                 id: o.id || `${market.id}-outcome-${idx}`,
@@ -67,7 +67,7 @@ function transformToPolymarketFormat(market: any) {
         return {
             id: market.id,
             title: market.title,
-            image: resolveImage(market.image),
+            image: resolveImage(market.image_url || market.image),
             icon: market.emoji,
             outcomes: market.questions.map((q: any, idx: number) => ({
                 id: `${market.id}-q-${idx}`,
@@ -84,7 +84,7 @@ function transformToPolymarketFormat(market: any) {
     return {
         id: market.id,
         title: market.title,
-        image: resolveImage(market.image || market.imageUrl),
+        image: resolveImage(market.image_url || market.image || market.imageUrl),
         icon: market.emoji || '📊',
         outcomes: [{
             id: `${market.id}-default`,
@@ -124,7 +124,7 @@ function transformNewsToMarket(item: any): any {
     return {
         id: `news-${item.id}`,
         title: `Will "${title.substring(0, 60)}..." have significant market impact?`,
-        image: item.image_url || item.image,
+        image: item.imageUrl || item.image_url || item.image,
         icon: isCrypto ? '₿' : '📰',
         outcomes: outcomes,
         volume: undefined,

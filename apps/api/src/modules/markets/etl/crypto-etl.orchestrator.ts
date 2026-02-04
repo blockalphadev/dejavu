@@ -79,6 +79,10 @@ export class CryptoETLOrchestrator extends BaseETLOrchestrator implements OnModu
 
             // Transform and upsert news
             const newsItems = news.map(n => this.transformNewsToItem(n));
+
+            // Enrich news items with scraped images
+            await this.enrichItemsWithImages(newsItems);
+
             const newsStats = await this.upsertItems(newsItems);
             recordsCreated += newsStats.created;
             recordsUpdated += newsStats.updated;
@@ -232,6 +236,10 @@ export class CryptoETLOrchestrator extends BaseETLOrchestrator implements OnModu
      * Transform crypto news to market data item
      */
     private transformNewsToItem(news: any): MarketDataItem {
+        // Get the first currency symbol if available for the image
+        const primaryCurrency = news.currencies?.[0]?.toLowerCase() || 'btc';
+        const fallbackImage = this.getCoinImageUrl(primaryCurrency);
+
         return {
             externalId: `cp_${news.id}`,
             source: 'cryptopanic',
@@ -239,6 +247,7 @@ export class CryptoETLOrchestrator extends BaseETLOrchestrator implements OnModu
             contentType: 'news',
             title: news.title,
             url: news.url,
+            imageUrl: news.image || fallbackImage,
             sourceName: news.sourceTitle,
             publishedAt: news.publishedAt,
             tags: news.currencies || [],
@@ -267,6 +276,9 @@ export class CryptoETLOrchestrator extends BaseETLOrchestrator implements OnModu
             const trend = coin.priceChange24h > 0 ? '📈' : '📉';
             const sentiment = coin.priceChange24h > 0 ? 'bullish' : 'bearish';
 
+            // Use coin image from API or fallback to popular coin logos
+            const coinImageUrl = coin.imageUrl || this.getCoinImageUrl(coin.symbol.toLowerCase());
+
             return {
                 externalId: this.generateContentHash(`${coin.symbol}-price-${hourKey}`, 'coingecko'),
                 source: 'coingecko', // or coinmarketcap
@@ -276,6 +288,7 @@ export class CryptoETLOrchestrator extends BaseETLOrchestrator implements OnModu
                 description: `${coin.name} (${coin.symbol.toUpperCase()}) is trading at $${coin.priceUsd.toLocaleString()}. 24h Change: ${trend} ${coin.priceChange24h.toFixed(2)}%.`,
                 sourceName: 'Market Data',
                 publishedAt: timestamp,
+                imageUrl: coinImageUrl,
                 sentiment: sentiment as any,
                 sentimentScore: coin.priceChange24h / 100, // Normalized roughly
                 impact: Math.abs(coin.priceChange24h) > 5 ? 'high' : 'medium',
@@ -288,5 +301,30 @@ export class CryptoETLOrchestrator extends BaseETLOrchestrator implements OnModu
         });
 
         await this.upsertItems(feedItems);
+    }
+
+    /**
+     * Get coin image URL with fallbacks
+     */
+    private getCoinImageUrl(symbol: string): string {
+        // CoinGecko fallback images for popular coins
+        const coinImages: Record<string, string> = {
+            'btc': 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png',
+            'eth': 'https://assets.coingecko.com/coins/images/279/large/ethereum.png',
+            'sol': 'https://assets.coingecko.com/coins/images/4128/large/solana.png',
+            'xrp': 'https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png',
+            'bnb': 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
+            'ada': 'https://assets.coingecko.com/coins/images/975/large/cardano.png',
+            'doge': 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png',
+            'avax': 'https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png',
+            'dot': 'https://assets.coingecko.com/coins/images/12171/large/polkadot.png',
+            'matic': 'https://assets.coingecko.com/coins/images/4713/large/polygon.png',
+            'link': 'https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png',
+            'uni': 'https://assets.coingecko.com/coins/images/12504/large/uniswap-logo.png',
+            'atom': 'https://assets.coingecko.com/coins/images/1481/large/cosmos_hub.png',
+            'ltc': 'https://assets.coingecko.com/coins/images/2/large/litecoin.png',
+            'hype': 'https://assets.coingecko.com/coins/images/37396/large/hyperliquid.png',
+        };
+        return coinImages[symbol] || 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?auto=format&fit=crop&q=80&w=600';
     }
 }

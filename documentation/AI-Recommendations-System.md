@@ -16,26 +16,26 @@ The Recommendation System (`RecommendationsService`) is a dedicated micro-servic
 
 ```mermaid
 graph TD
-    subgraph Data Sources
-        Markets[Betting Markets]
-        Signals[AI Signals]
-        News[Category News]
+    subgraph Data_Sources["Data Sources"]
+        Markets["Betting Markets"]
+        Signals["AI Signals"]
+        News["Category News"]
     end
 
-    subgraph Aggregation Layer
-        AllCand[Candidate Pool<br/>(Fetch 50+ items/cat)]
-        Vector[Vectorization Engine]
+    subgraph Aggregation_Layer["Aggregation Layer"]
+        AllCand["Candidate Pool"]
+        Vector["Vectorization Engine"]
     end
 
-    subgraph Intelligence Layer
-        Norm[Score Normalizer]
-        KMeans[K-Means Clustering]
-        Centroids[Cluster Archetypes]
+    subgraph Intelligence_Layer["Intelligence Layer"]
+        Norm["Score Normalizer"]
+        KMeans["K-Means Clustering"]
+        Centroids["Cluster Archetypes"]
     end
 
-    subgraph Serving Layer
-        Top[Top Markets API<br/>/recommendations/top-markets]
-        ForYou[For You API<br/>/recommendations/for-you]
+    subgraph Serving_Layer["Serving Layer"]
+        Top["Top Markets API"]
+        ForYou["For You API"]
     end
 
     Markets --> AllCand
