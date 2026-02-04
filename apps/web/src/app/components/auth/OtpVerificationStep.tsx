@@ -128,7 +128,6 @@ export function OtpVerificationStep({
                 </button>
                 <span className="font-semibold text-foreground dark:text-white">Verify Email</span>
             </div>
-
             {/* Email indicator */}
             <div className="flex items-center justify-center gap-2 mb-6 p-3 rounded-lg bg-accent/30">
                 <Mail className="w-4 h-4 text-muted-foreground" />
