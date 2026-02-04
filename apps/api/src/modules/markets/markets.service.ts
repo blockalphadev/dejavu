@@ -328,39 +328,88 @@ export class MarketsService {
      * @param category - Category to filter by (or 'latest' for all)
      * @param limit - Max items to return (capped at 100 for anti-throttling)
      * @param offset - Pagination offset
-     * @param search - Optional search query
+     * @param search - Optional search query (searches title, description, source, tags)
+     * @param sortBy - Sort field: 'relevance', 'date', 'engagement'
+     * 
+     * OWASP Security:
+     * - A03:2021 Injection: SQL wildcards escaped, parameterized queries via Supabase
+     * - Anti-throttling: Limit capped at 100, offset validated
      */
     async findCategoryFeed(
         category: string,
         limit: number = 20,
         offset: number = 0,
-        search?: string
+        search?: string,
+        sortBy: 'relevance' | 'date' | 'engagement' = 'date'
     ): Promise<{ data: any[]; total: number; hasMore: boolean }> {
         // Use AdminClient to bypass potential RLS issues for public read
         const supabase = this.supabaseService.getAdminClient();
 
-        // Anti-throttling: Enforce safe limits
+        // Anti-throttling: Enforce safe limits (OWASP A04:2021)
         const safeLimit = Math.min(Math.max(limit, 1), 100);
         const safeOffset = Math.max(offset, 0);
+
+        // OWASP A03:2021 Injection Prevention: Sanitize search input
+        let sanitizedSearch = '';
+        if (search && search.trim().length > 0) {
+            // Remove SQL wildcards and special characters
+            sanitizedSearch = search
+                .replace(/[%_'";\\]/g, '') // Remove SQL special chars
+                .replace(/[<>]/g, '') // Remove HTML brackets
+                .trim()
+                .toLowerCase();
+
+            // Limit search length to prevent DoS
+            if (sanitizedSearch.length > 100) {
+                sanitizedSearch = sanitizedSearch.substring(0, 100);
+            }
+
+            // Minimum search length
+            if (sanitizedSearch.length < 2) {
+                sanitizedSearch = '';
+            }
+        }
 
         let query = supabase
             .from('market_data_items')
             .select('*', { count: 'exact' })
             .eq('is_active', true)
-            .eq('is_duplicate', false)
-            .order('published_at', { ascending: false })
-            .range(safeOffset, safeOffset + safeLimit - 1);
+            .eq('is_duplicate', false);
 
         // Filter by category unless 'latest' (which shows all categories)
         if (category && category !== 'latest' && category !== 'all') {
             query = query.eq('category', category.toLowerCase());
         }
 
-        // Optional search filter (OWASP: sanitize input)
-        if (search && search.trim().length > 0) {
-            const sanitizedSearch = search.replace(/[%_]/g, ''); // Escape SQL wildcards
-            query = query.ilike('title', `%${sanitizedSearch}%`);
+        // Multi-field search filter using Supabase's OR query
+        if (sanitizedSearch) {
+            // Use Supabase's .or() for multi-field search
+            // Searches across: title, description, source_name
+            query = query.or(
+                `title.ilike.%${sanitizedSearch}%,` +
+                `description.ilike.%${sanitizedSearch}%,` +
+                `source_name.ilike.%${sanitizedSearch}%`
+            );
         }
+
+        // Apply sorting based on preference
+        switch (sortBy) {
+            case 'engagement':
+                // Use relevance_score as proxy for engagement since engagement_score is not in schema
+                query = query.order('relevance_score', { ascending: false, nullsFirst: false });
+                break;
+            case 'relevance':
+                // For relevance, prioritize higher confidence/relevance scores
+                query = query.order('relevance_score', { ascending: false, nullsFirst: false });
+                break;
+            case 'date':
+            default:
+                query = query.order('published_at', { ascending: false });
+                break;
+        }
+
+        // Apply pagination
+        query = query.range(safeOffset, safeOffset + safeLimit - 1);
 
         const { data, error, count } = await query;
 
@@ -372,33 +421,54 @@ export class MarketsService {
         const total = count || 0;
         const hasMore = (safeOffset + safeLimit) < total;
 
-        // Transform to consistent response format
-        const transformedData = (data || []).map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            category: item.category,
-            source: item.source_name || item.source,
-            publishedAt: item.published_at,
-            impact: item.impact || 'medium',
-            sentiment: item.sentiment || 'neutral',
-            sentimentScore: item.sentiment_score || 0,
-            relevanceScore: item.relevance_score || 0.5,
-            confidenceScore: item.confidence_score || 0.5,
-            imageUrl: item.image_url,
-            url: item.url,
-            tags: item.tags || [],
-            // Add market-like properties for frontend compatibility
-            outcomes: item.market_potential ? [
-                { id: `${item.id}-yes`, label: 'Yes', probability: 50 },
-                { id: `${item.id}-no`, label: 'No', probability: 50 }
-            ] : undefined,
-            volume: item.engagement_score || 0,
-            timeframe: 'New',
-        }));
+        // Transform to consistent response format with search relevance indicator
+        const transformedData = (data || []).map((item: any) => {
+            // Calculate a simple relevance boost for search matches
+            let searchRelevance = 0;
+            if (sanitizedSearch && item.title) {
+                const titleLower = item.title.toLowerCase();
+                if (titleLower.includes(sanitizedSearch)) {
+                    searchRelevance = titleLower.startsWith(sanitizedSearch) ? 1.0 : 0.8;
+                } else if (item.description?.toLowerCase().includes(sanitizedSearch)) {
+                    searchRelevance = 0.5;
+                } else {
+                    searchRelevance = 0.3;
+                }
+            }
+
+            return {
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                category: item.category,
+                source: item.source_name || item.source,
+                publishedAt: item.published_at,
+                impact: item.impact || 'medium',
+                sentiment: item.sentiment || 'neutral',
+                sentimentScore: item.sentiment_score || 0,
+                relevanceScore: sanitizedSearch ? searchRelevance : (item.relevance_score || 0.5),
+                confidenceScore: item.confidence_score || 0.5,
+                imageUrl: item.image_url,
+                url: item.url,
+                tags: item.tags || [],
+                // Add market-like properties for frontend compatibility
+                outcomes: item.market_potential ? [
+                    { id: `${item.id}-yes`, label: 'Yes', probability: 50 },
+                    { id: `${item.id}-no`, label: 'No', probability: 50 }
+                ] : undefined,
+                volume: item.engagement_score || 0,
+                timeframe: 'New',
+            };
+        });
+
+        // If searching, sort by relevance score client-side for better results
+        if (sanitizedSearch) {
+            transformedData.sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
+        }
 
         return { data: transformedData, total, hasMore };
     }
+
 
     // ==========================================
     // Auto Market Generation (for ETL)

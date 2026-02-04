@@ -1053,6 +1053,20 @@ export class SportsService {
             queryBuilder = queryBuilder.eq('is_featured', query.isFeatured);
         }
 
+        if (query.search) {
+            // Multi-field search
+            // We need to join relations first if we want to search them, or use the event inner join we already have?
+            // The query already joins 'event'!inner' if sport is present, otherwise just 'event'.
+            // Note: Supabase/PostgREST doesn't easily support OR across joined tables with simple syntax in one go perfectly without embedding.
+            // But we are using the JS client.
+            // We can stringify the OR condition.
+
+            const searchTerm = `%${query.search}%`;
+            queryBuilder = queryBuilder.or(
+                `title.ilike.${searchTerm},description.ilike.${searchTerm},question.ilike.${searchTerm}`
+            );
+        }
+
         const sortField = query.sortBy === 'volume' ? 'volume' :
             query.sortBy === 'createdAt' ? 'created_at' : 'closes_at';
         queryBuilder = queryBuilder

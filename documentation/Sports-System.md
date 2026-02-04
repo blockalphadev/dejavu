@@ -380,6 +380,9 @@ class SportsService {
   // Create a prediction market from an event
   async createMarketFromEvent(eventId: string, dto: CreateSportsMarketDto): Promise<SportsMarket>;
   
+  // Get paginated markets with filters and sorting
+  async getMarkets(query: SportsMarketsQuery): Promise<PaginatedResponse<SportsMarket>>;
+
   // Resolve a market based on event outcome
   async resolveMarket(marketId: string, outcome: boolean): Promise<SportsMarket>;
 }
@@ -464,7 +467,7 @@ broadcastEventUpdate(event: any) {
 | GET | `/api/v1/sports/events/live` | Get live events only |
 | GET | `/api/v1/sports/events/upcoming` | Get upcoming events |
 | GET | `/api/v1/sports/events/:id` | Get single event with details |
-| GET | `/api/v1/sports/markets` | Get sports markets |
+| GET | `/api/v1/sports/markets` | Get sports markets (supports search, sort, filter) |
 
 #### Admin Sync Endpoints
 

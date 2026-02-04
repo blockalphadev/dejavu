@@ -57,7 +57,10 @@ export class MarketsController {
     /**
      * Get category feed data from ETL-populated market_data_items
      * This endpoint serves data for category pages (Politics, Finance, Tech, etc.)
+     * Also used for Search functionality with multi-field search
+     * 
      * @security Public with anti-throttling measures
+     * @security Input sanitization via middleware + service layer
      */
     @Get('feed')
     @Public()
@@ -67,19 +70,25 @@ export class MarketsController {
         @Query('category') category?: string,
         @Query('limit') limit?: number,
         @Query('offset') offset?: number,
-        @Query('search') search?: string
+        @Query('search') search?: string,
+        @Query('sortBy') sortBy?: 'relevance' | 'date' | 'engagement'
     ) {
         // Anti-throttling: Enforce limits at controller level
         const safeLimit = Math.min(Number(limit) || 20, 100);
         const safeOffset = Math.max(Number(offset) || 0, 0);
+        const safeSortBy = ['relevance', 'date', 'engagement'].includes(sortBy || '')
+            ? sortBy as 'relevance' | 'date' | 'engagement'
+            : 'date';
 
         return this.marketsService.findCategoryFeed(
             category || 'latest',
             safeLimit,
             safeOffset,
-            search
+            search,
+            safeSortBy
         );
     }
+
 
     /**
      * Get featured/trending markets

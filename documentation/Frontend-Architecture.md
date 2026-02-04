@@ -23,6 +23,7 @@ The DeJaVu frontend is a high-performance, enterprise-grade generic prediction m
 | **Framer Motion** | Animation | Layout Transitions, Micro-interactions |
 | **Socket.io Client** | Real-time | Live Odds & Score Streaming |
 | **K-Means Client** | AI Engine | "For You" Personalization Logic |
+| **Search Engine** | Search | Specialized Multi-Endpoint Aggregation |
 
 ### 1.1 New Capabilities (AI & Recommendations)
 *   **Top Markets**: A unified interface blending high-volume betting markets with critical global news.
@@ -50,7 +51,10 @@ apps/web/src/
 │   │   │   │   │   └── ...
 │   │   │   │   └── GenericCategoryView.tsx
 │   │   │   ├── marketsConfig.ts  # Routing Configuration
+│   │   │   │   └── GenericCategoryView.tsx
+│   │   │   ├── marketsConfig.ts  # Routing Configuration
 │   │   │   └── MarketsIndex.tsx  # Router Entry
+│   ├── search/             # Enhanced Search Page [UPDATED]
 │   ├── settings/           # Dedicated Settings Page [NEW]
 │   ├── schemas/          # Zod Validation Schemas
 │   └── utils/            # Shared Utilities
@@ -187,7 +191,7 @@ All global state contexts are consolidated in `src/app/contexts/` for maintainab
 
 | Hook | Location | Purpose |
 |------|----------|---------|
-| `useSportsMarkets` | `app/hooks/useSportsMarkets.ts` | **TanStack Query + Zod** for fetching markets |
+| `useSportsMarkets` | `app/hooks/useSportsMarkets.ts` | **TanStack Query + Zod** for fetching markets (supports Search & Filters) |
 | `useMarketData` | `app/hooks/useMarketData.ts` | **Unified Data Hook** for Betting, News, and AI Feeds |
 | `useSettings` | `app/pages/settings/index.tsx` | Local state for tab navigation and responsive layout |
 | `useSportsSocket` | `app/hooks/useSportsSocket.ts` | WebSocket connection with strict payload types |

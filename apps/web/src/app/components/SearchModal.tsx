@@ -8,13 +8,12 @@ import {
     X,
     Sparkles,
     TrendingUp,
-    Flame,
     Timer,
     Bitcoin,
     Landmark,
-    Globe,
     Dumbbell,
-    Zap,
+    Banknote,
+    Laptop,
 } from "lucide-react";
 
 interface SearchModalProps {
@@ -27,15 +26,14 @@ const QUICK_TOPICS = [
     { id: "crypto", label: "Crypto", icon: Bitcoin },
     { id: "politics", label: "Politics", icon: Landmark },
     { id: "sports", label: "Sports", icon: Dumbbell },
-    { id: "world", label: "World", icon: Globe },
-    { id: "ai", label: "AI", icon: Zap },
+    { id: "finance", label: "Finance", icon: Banknote },
+    { id: "tech", label: "Tech", icon: Laptop },
 ];
 
 // Browse filters
 const QUICK_FILTERS = [
     { id: "new", label: "New", icon: Sparkles },
     { id: "trending", label: "Trending", icon: TrendingUp },
-    { id: "popular", label: "Popular", icon: Flame },
     { id: "ending_soon", label: "Ending Soon", icon: Timer },
 ];
 
@@ -77,7 +75,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
     // Handle topic click
     const handleTopicClick = (topicId: string) => {
-        navigate(`/${topicId}`);
+        navigate(`/search?category=${topicId}`);
         onClose();
     };
 

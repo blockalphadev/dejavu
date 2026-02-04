@@ -138,6 +138,11 @@ export class SportsMarketsQueryDto {
     @IsBoolean()
     isFeatured?: boolean;
 
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    search?: string;
+
     @ApiPropertyOptional({ default: 1 })
     @IsOptional()
     @Type(() => Number)
