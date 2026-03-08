@@ -1,6 +1,6 @@
 -- ============================================================
--- Sports Data Schema for DeJaVu Prediction Market
--- Comprehensive schema for sports scraping and prediction markets
+-- Sports Data Schema for ExoDuZe AI Agent Competition
+-- Comprehensive schema for sports scraping and AI agent competitions
 -- ============================================================
 
 -- ========================
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS sports_events (
     -- Stats (JSON for flexibility)
     stats JSONB DEFAULT '{}',
     
-    -- Prediction market flags
+    -- AI agent competition flags
     has_market BOOLEAN NOT NULL DEFAULT false,
     market_created_at TIMESTAMPTZ,
     
@@ -575,7 +575,7 @@ COMMENT ON TABLE sports_leagues IS 'Stores sports league/competition metadata fr
 COMMENT ON TABLE sports_teams IS 'Stores team information with logos and colors';
 COMMENT ON TABLE sports_events IS 'Stores match/fixture data with scores and status';
 COMMENT ON TABLE sports_players IS 'Optional table for player statistics';
-COMMENT ON TABLE sports_markets IS 'Prediction markets created from sports events';
+COMMENT ON TABLE sports_markets IS 'AI agent competitions created from sports events';
 COMMENT ON TABLE sports_sync_logs IS 'Audit trail for data synchronization operations';
 COMMENT ON TABLE sports_odds_history IS 'Historical odds data for markets';
 

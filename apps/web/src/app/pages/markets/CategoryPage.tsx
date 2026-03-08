@@ -291,7 +291,7 @@ export function CategoryPage({
                         {!isLoading && displayMarkets.length === 0 && (
                             <div className="text-center py-20 text-muted-foreground bg-accent/20 rounded-xl border border-border/40">
                                 <p className="text-xl">No active markets found for {category}</p>
-                                <p className="text-sm mt-2">Check back later for new predictions</p>
+                                <p className="text-sm mt-2">Check back later for new AI agent competitions</p>
                             </div>
                         )}
                     </div>

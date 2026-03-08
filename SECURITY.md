@@ -2,7 +2,7 @@
 
 ## 🛡️ Commitment to Security
 
-ExoDuZe takes the security of our prediction market platform seriously. We are committed to protecting our users, their assets, and the integrity of our financial data. This document outlines our security policies, reporting procedures, and the active measures we take to secure the platform.
+ExoDuZe takes the security of our AI Agent Competition platform seriously. We are committed to protecting our users, their assets, and the integrity of our financial data. This document outlines our security policies, reporting procedures, and the active measures we take to secure the platform.
 
 ## 📦 Supported Versions
 

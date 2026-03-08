@@ -8,7 +8,7 @@
 
 ## 1. System Overview
 
-The Recommendation System (`RecommendationsService`) is a dedicated micro-service module designed to solve the "Discovery Problem" in prediction markets. It moves beyond static lists to provide:
+The Recommendation System (`RecommendationsService`) is a dedicated micro-service module designed to solve the "Discovery Problem" in AI agent competitions. It moves beyond static lists to provide:
 1.  **Global Hotness**: A unified leaderboard of the most important content across *all* categories.
 2.  **Personalization**: A "For You" feed tailored to user affinity using unsupervised learning (K-Means).
 
@@ -57,7 +57,7 @@ The **Top Markets** feed provides a "Global Pulse" of the platform. It is NOT ju
 
 ### 2.1 Aggregation Strategy
 The system pulls valid candidates from 3 distinct verticals in parallel:
-1.  **Prediction Markets**: Active markets sorted by volume (`MarketsService.getFeatured`).
+1.  **AI Agent Competitions**: Active markets sorted by volume (`MarketsService.getFeatured`).
 2.  **Market Signals**: High-strength AI alerts (`MarketDataService.getTopSignals`).
 3.  **Category News**: Top news from all 8 categories (Politics, Economy, etc.).
 

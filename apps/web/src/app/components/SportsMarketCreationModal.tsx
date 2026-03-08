@@ -1,7 +1,7 @@
 /**
  * Sports Market Creation Modal
  * 
- * Modal to create a prediction market from a sports event.
+ * Modal to create an AI agent competition from a sports event.
  * Allows admins to set market type, question, and initial liquidity.
  */
 

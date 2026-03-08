@@ -1,7 +1,7 @@
 /**
  * Sports Module
  * 
- * Main NestJS module for sports data scraping and prediction markets.
+ * Main NestJS module for sports data scraping and AI agent competitions.
  * Integrates TheSportsDB and API-Sports clients with ETL orchestrator.
  */
 

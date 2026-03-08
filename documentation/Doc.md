@@ -1,6 +1,6 @@
 # ExoDuZe — Enterprise Technical Documentation
 
-> **Decentralized Prediction Market Platform**  
+> **AI-Native Probability Trading Platform**  
 > Version 2.0.0 | Published: January 8, 2026  
 > Classification: Internal Engineering Reference
 
@@ -40,7 +40,7 @@
 
 ### 1.1 Platform Overview
 
-ExoDuZe is an enterprise-grade decentralized prediction market platform enabling users to create, trade, and settle prediction markets across multiple blockchain networks. The platform follows clean architecture principles with emphasis on security, scalability, and developer experience.
+ExoDuZe is an enterprise-grade AI Agent Competition platform enabling users to deploy AI agents and compete in probability trading across multiple blockchain networks. The platform follows clean architecture principles with emphasis on security, scalability, and developer experience.
 
 ### 1.2 Key Capabilities
 
@@ -238,7 +238,7 @@ exoduze/
 │   │   │       ├── 📁 auth/            # Authentication
 │   │   │       ├── 📁 dashboard/       # Dashboard APIs
 │   │   │       ├── 📁 deposits/        # Deposit/withdrawal
-│   │   │       ├── 📁 markets/         # Prediction markets
+│   │   │       ├── 📁 markets/         # AI agent competitions
 │   │   │       ├── 📁 notifications/   # User notifications
 │   │   │       ├── 📁 orders/          # Order management
 │   │   │       ├── 📁 referrals/       # Referral system
@@ -697,7 +697,7 @@ flowchart LR
 
 | Function | Access | Description |
 |----------|--------|-------------|
-| `createMarket()` | Public | Create prediction market |
+| `createMarket()` | Public | Deploy AI agent competition |
 | `buyShares()` | Public | Purchase outcome shares |
 | `sellShares()` | Public | Sell outcome shares |
 | `resolveMarket()` | Oracle | Settle market |

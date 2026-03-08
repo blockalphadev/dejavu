@@ -133,7 +133,7 @@ export const EXTERNAL_APIS = {
 export const APP_CONFIG = {
     name: 'ExoDuZe',
     version: '0.0.1',
-    description: 'Next-generation prediction market platform',
+    description: 'Next-generation AI Agent Competition platform',
     supportedChains: ['ethereum', 'base', 'polygon', 'solana', 'sui'] as ChainId[],
     defaultChain: 'base' as ChainId,
 } as const;

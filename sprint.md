@@ -1,4 +1,4 @@
-# Independent Prediction Market Platform
+# AI Agent Competition Platform
 ## Sprint & Phase Plan (Desember 2025 – Maret 2026)
 
 **Start Resmi:** 20 Desember 2025  
@@ -12,7 +12,7 @@
 | Periode | Target |
 |------|------|
 | 20–31 Des 2025 | Fondasi & keputusan arsitektur |
-| Jan 2026 | Core market & prediction berjalan |
+| Jan 2026 | Core market & AI Agent berjalan |
 | Feb 2026 | Resolver, settlement, hardening |
 | Awal Mar 2026 | MVP production-ready |
 
@@ -36,7 +36,7 @@
 
 ### Tasks
 - Finalisasi sektor MVP (Crypto + 1 opsional)
-- Lock flow: Ingestion → Market → Prediction → Resolve → Settlement
+- Lock flow: Ingestion → Market → AI Agent → Resolve → Settlement
 - Tentukan resolver off-chain
 - Setup monorepo & branching
 - Setup environment dev/staging
@@ -50,7 +50,7 @@
 ### Sprint 1 (1–12 Jan 2026)
 **Fokus:** Backend & Database
 
-- NestJS core modules (Auth, Market, Prediction)
+- NestJS core modules (Auth, Market, AI Agent)
 - WebSocket gateway
 - Redis cache layer
 - Final schema PostgreSQL
@@ -117,7 +117,7 @@
 **Tanggal:** 7 Maret 2026  
 
 ### MVP Delivered
-- Prediction market berjalan
+- AI Agent Competition berjalan
 - Resolve & settlement lengkap
 - Multi-source data
 - Hybrid Web2 + Web3

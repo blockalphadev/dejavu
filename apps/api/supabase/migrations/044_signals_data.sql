@@ -1,5 +1,5 @@
 -- ============================================================
--- Signals Data Schema for DeJaVu Prediction Market
+-- Signals Data Schema for ExoDuZe AI Agent Competition
 -- Aggregated signals from all data sources
 -- Migration: 044_signals_data.sql
 -- ============================================================

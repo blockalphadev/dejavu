@@ -27,7 +27,7 @@ export class OrdersController {
      */
     @Post('buy')
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Buy shares in a prediction market' })
+    @ApiOperation({ summary: 'Buy shares in an AI agent competition' })
     @ApiResponse({ status: 201, description: 'Order filled successfully' })
     @ApiResponse({ status: 400, description: 'Invalid order or slippage exceeded' })
     async buyShares(
@@ -42,7 +42,7 @@ export class OrdersController {
      */
     @Post('sell')
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Sell shares in a prediction market' })
+    @ApiOperation({ summary: 'Sell shares in an AI agent competition' })
     @ApiResponse({ status: 201, description: 'Order filled successfully' })
     @ApiResponse({ status: 400, description: 'Insufficient shares or slippage exceeded' })
     async sellShares(

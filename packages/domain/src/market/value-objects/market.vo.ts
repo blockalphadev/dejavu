@@ -25,7 +25,7 @@ export class MarketIdVO extends SingleValueObject<string> {
 }
 
 /**
- * Price value object (0-1 range for prediction markets)
+ * Price value object (0-1 range for AI agent competitions)
  */
 export class PriceVO extends SingleValueObject<number> {
     protected validate(value: number): void {

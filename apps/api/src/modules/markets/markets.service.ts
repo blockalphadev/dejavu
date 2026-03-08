@@ -36,7 +36,7 @@ export interface PaginatedResult<T> {
 /**
  * Markets Service
  * 
- * Handles prediction market CRUD operations
+ * Handles AI agent competition CRUD operations
  */
 @Injectable()
 export class MarketsService {
@@ -47,7 +47,7 @@ export class MarketsService {
     ) { }
 
     /**
-     * Create a new prediction market
+     * Create a new AI agent competition
      */
     async create(userId: string, dto: CreateMarketDto): Promise<MarketResponseDto> {
         const supabase = this.supabaseService.getAdminClient();
@@ -559,7 +559,7 @@ export class MarketsService {
             ? `Will ${params.candidate1} defeat ${params.candidate2} in the ${params.country} ${params.electionType} election?`
             : `Will ${params.candidate1} win the ${params.country} ${params.electionType} election?`;
 
-        const description = `Prediction market for the ${params.country} ${params.electionType} election` +
+        const description = `AI agent competition for the ${params.country} ${params.electionType} election` +
             (params.region ? ` in ${params.region}` : '') +
             `. Election date: ${params.electionDate.toISOString().split('T')[0]}.`;
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- Finance Data Schema for DeJaVu Prediction Market
+-- Finance Data Schema for ExoDuZe AI Agent Competition
 -- Tables for financial indicators, stocks, and economic data
 -- Migration: 039_finance_data.sql
 -- ============================================================

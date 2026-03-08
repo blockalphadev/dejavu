@@ -1,8 +1,8 @@
 /**
- * Sports Prediction Card - Polymarket Style
+ * Sports AI Agent Card - Competition Style
  * 
- * Premium prediction market card with:
- * - Yes/No prediction buttons with dynamic pricing
+ * Premium AI agent competition card with:
+ * - Yes/No AI agent position buttons with dynamic pricing
  * - Live score updates
  * - Responsive design (mobile + desktop)
  * - Anti-throttling with optimistic updates
@@ -127,7 +127,7 @@ export function SportsPredictionCard({
             // 3. Success Callback
             onPredict?.(market.id, outcome);
         } catch (err) {
-            console.error("Prediction failed:", err);
+            console.error("AI agent action failed:", err);
             // Optionally show toast error here
         } finally {
             setIsPending(false);
@@ -267,7 +267,7 @@ export function SportsPredictionCard({
                     </h3>
                 </div>
 
-                {/* Prediction Buttons */}
+                {/* AI Agent Position Buttons */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                     {/* Transaction Link */}
                     {lastTxHash && (

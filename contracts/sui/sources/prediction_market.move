@@ -1,6 +1,6 @@
-/// ExoDuZe Prediction Market - Sui Move Module
+/// ExoDuZe AI Agent Competition - Sui Move Module
 /// 
-/// Core prediction market contract for the ExoDuZe platform on Sui.
+/// Core AI agent competition contract for the ExoDuZe platform on Sui.
 module exoduze::prediction_market {
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};
@@ -46,7 +46,7 @@ module exoduze::prediction_market {
         id: UID,
     }
 
-    /// Prediction market object
+    /// AI agent competition object
     public struct Market has key, store {
         id: UID,
         title: String,
@@ -112,7 +112,7 @@ module exoduze::prediction_market {
     // Public Functions
     // ============================================================================
 
-    /// Create a new prediction market
+    /// Create a new AI agent competition
     public entry fun create_market(
         title: vector<u8>,
         description: vector<u8>,

@@ -14,7 +14,7 @@ const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'b56e18d47c72
 // Metadata
 const metadata = {
     name: 'ExoDuZe',
-    description: 'ExoDuZe Decentralized Prediction Market',
+    description: 'ExoDuZe AI-Native Probability Trading Platform',
     url: 'https://exoduzebuild.netlify.app',
     icons: ['https://assets.reown.com/reown-profile-pic.png']
 }

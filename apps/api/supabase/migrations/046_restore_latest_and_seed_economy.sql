@@ -1,5 +1,5 @@
 -- ============================================================
--- Restoration & Seeding for DeJaVu Prediction Market
+-- Restoration & Seeding for ExoDuZe AI Agent Competition
 -- 1. Restores missing 'latest_market_news' view
 -- 2. Seeds 'Economy' and 'Crypto' feeds from existing static data
 -- Migration: 046_restore_latest_and_seed_economy.sql

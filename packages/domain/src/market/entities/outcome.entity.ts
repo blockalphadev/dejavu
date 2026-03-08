@@ -1,7 +1,7 @@
 /**
  * Outcome Entity
  *
- * Represents a possible outcome in a prediction market.
+ * Represents a possible outcome in an AI agent competition.
  */
 
 import { Entity, EntityProps, StringId } from '../../common/entity.base';

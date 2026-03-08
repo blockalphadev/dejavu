@@ -1,7 +1,7 @@
 /**
- * Prediction Market ABI
+ * AI Agent Competition ABI
  * 
- * EVM-compatible contract ABI for the ExoDuZe Prediction Market.
+ * EVM-compatible contract ABI for the ExoDuZe AI Agent Competition.
  * Supports Ethereum, Base, Arbitrum, and other EVM chains.
  */
 export const PredictionMarketABI = [

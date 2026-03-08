@@ -1,8 +1,8 @@
 # Market System Architecture
 
-> **Technical Blueprint for Multi-Category Prediction Markets**
+> **Technical Blueprint for Multi-Category AI Agent Competitions**
 >
-> This document details the unified data ingestion, storage, and streaming architecture powering ExoDuZe's prediction markets. It covers the database schema, ETL pipelines, and real-time integration via RabbitMQ and WebSockets.
+> This document details the unified data ingestion, storage, and streaming architecture powering ExoDuZe's AI agent competitions. It covers the database schema, ETL pipelines, and real-time integration via RabbitMQ and WebSockets.
 
 ---
 

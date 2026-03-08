@@ -1,6 +1,6 @@
 # ExoDuZe Web Application
 
-Frontend React application untuk platform ExoDuZe prediction market.
+Frontend React application untuk platform ExoDuZe AI Agent Competition.
 
 ## Development
 

@@ -1,6 +1,6 @@
 # ExoDuZe API
 
-A NestJS-powered backend for the ExoDuZe prediction market platform.
+A NestJS-powered backend for the ExoDuZe AI Agent Competition platform.
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@ A NestJS-powered backend for the ExoDuZe prediction market platform.
 |--------|-------------|
 | Auth | JWT, Google OAuth, Wallet (Solana/ETH) authentication |
 | Users | Profile management |
-| Markets | Prediction market creation & trading |
+| Markets | AI Agent Competition creation & trading |
 | Sports | Sports data ETL pipeline with live odds |
 | Orders | Order management & matching |
 | Deposits | Crypto deposit handling |

@@ -1,7 +1,7 @@
 /**
  * Bet Slip Component - Polymarket Style
  * 
- * Sticky sidebar/bottom sheet for managing predictions:
+ * Sticky sidebar/bottom sheet for managing AI agent positions:
  * - Add/remove selections
  * - Set bet amounts
  * - Calculate potential payouts

@@ -1,5 +1,5 @@
 -- ============================================================
--- Politics Data Schema for DeJaVu Prediction Market
+-- Politics Data Schema for ExoDuZe AI Agent Competition
 -- Tables specific to political events and news
 -- Migration: 038_politics_data.sql
 -- ============================================================

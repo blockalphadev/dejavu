@@ -1,6 +1,6 @@
-# Sports Prediction Market System Documentation
+# Sports AI Agent Competition System Documentation
 
-> Comprehensive technical documentation for the Sports Data Scraping, Prediction Market Integration, and Real-time Streaming System.
+> Comprehensive technical documentation for the Sports Data Scraping, AI Agent Competition Integration, and Real-time Streaming System.
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -19,7 +19,7 @@
 
 ## System Overview
 
-The Sports Prediction Market System enables users to create and trade prediction markets based on real-time sports data. It integrates with **multiple external APIs** (TheSportsDB + 11 API-Sports endpoints) to fetch comprehensive live sports data, processes events through RabbitMQ for real-time distribution, and provides a professional frontend experience.
+The Sports AI Agent Competition System enables users to deploy AI agents and compete in competitions based on real-time sports data. It integrates with **multiple external APIs** (TheSportsDB + 11 API-Sports endpoints) to fetch comprehensive live sports data, processes events through RabbitMQ for real-time distribution, and provides a professional frontend experience.
 
 ### Key Features
 - **12 Supported Sports**: AFL, Baseball, Basketball, Football, Formula 1, Handball, Hockey, MMA, NBA, NFL, Rugby, Volleyball
@@ -262,11 +262,11 @@ Stores matches/fixtures with live scores.
 | home_score | INTEGER | Home team score |
 | away_score | INTEGER | Away team score |
 | venue | VARCHAR(255) | Event venue |
-| has_market | BOOLEAN | Has prediction market |
+| has_market | BOOLEAN | Has AI agent competition |
 | metadata | JSONB | Additional data |
 
 #### `sports_markets`
-Stores prediction markets linked to events.
+Stores AI agent competitions linked to events.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -377,7 +377,7 @@ class SportsService {
   // Get live events for a sport
   async getLiveEvents(sport?: SportType): Promise<SportsEvent[]>;
   
-  // Create a prediction market from an event
+  // Create an AI agent competition from an event
   async createMarketFromEvent(eventId: string, dto: CreateSportsMarketDto): Promise<SportsMarket>;
   
   // Get paginated markets with filters and sorting
@@ -690,7 +690,7 @@ const { joinSport, leaveSport } = useSportsSocket({
 | Component | File | Purpose |
 |-----------|------|---------|
 | `SportsMarketPage` | `SportsMarketPage.tsx` | Main page with all sports components integrated |
-| `SportsPredictionCard` | `SportsPredictionCard.tsx` | Polymarket-style prediction card with Yes/No buttons |
+| `SportsPredictionCard` | `SportsPredictionCard.tsx` | AI Agent Competition-style card with Yes/No buttons |
 | `BetSlip` | `BetSlip.tsx` | Desktop sidebar for managing selections |
 | `MobileBetSlip` | `MobileBetSlip.tsx` | Mobile bottom sheet for bet management |
 | `SportsSidebar` | `SportsSidebar.tsx` | Navigation for 12 sports categories |
@@ -699,10 +699,10 @@ const { joinSport, leaveSport } = useSportsSocket({
 
 #### SportsPredictionCard
 
-Premium Polymarket-style prediction card with:
+Premium AI Agent Competition-style card with:
 
 ```tsx
-interface PredictionMarket {
+interface AgentCompetition {
   id: string;
   eventId: string;
   question: string;
@@ -723,7 +723,7 @@ interface PredictionMarket {
 **Features:**
 - Team matchup display with logos
 - Live score indicators (pulsing red dot)
-- Yes/No prediction buttons with dynamic pricing
+- AI agent position buttons with dynamic pricing
 - Glassmorphism design
 - Volume and participant stats
 - Featured badge for hot markets
@@ -738,7 +738,7 @@ interface PredictionMarket {
 
 #### BetSlip
 
-Desktop sidebar for managing predictions:
+Desktop sidebar for managing AI agent positions:
 
 ```tsx
 interface BetSelection {

@@ -1,7 +1,7 @@
 /**
- * EVM Prediction Market Client
+ * EVM AI Agent Competition Client
  * 
- * Type-safe client wrapper for interacting with EVM prediction markets
+ * Type-safe client wrapper for interacting with EVM AI agent competitions
  * using viem.
  */
 
@@ -16,7 +16,7 @@ export interface EVMClientConfig {
 }
 
 /**
- * EVM Prediction Market Client
+ * EVM AI Agent Competition Client
  */
 export class EVMPredictionMarketClient {
     private readonly publicClient: PublicClient;

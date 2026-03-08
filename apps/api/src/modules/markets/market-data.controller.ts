@@ -2,7 +2,7 @@
  * Market Data Controller
  * 
  * REST API endpoints for accessing ETL market data.
- * Separate from the MarketsController which handles prediction market CRUD.
+ * Separate from the MarketsController which handles AI agent competition CRUD.
  */
 
 import { Controller, Get, Param, Query, Post, HttpCode, HttpStatus } from '@nestjs/common';

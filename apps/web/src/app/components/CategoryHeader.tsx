@@ -69,7 +69,7 @@ const CATEGORY_THEMES: Record<string, CategoryConfig> = {
     },
     default: {
         icon: Newspaper,
-        description: "Explore prediction markets and real-time insights.",
+        description: "Explore AI agent competitions and real-time insights.",
         gradient: "from-primary/20 via-primary/5 to-background",
         accentColor: "text-primary"
     }

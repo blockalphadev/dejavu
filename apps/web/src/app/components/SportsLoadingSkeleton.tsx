@@ -1,7 +1,7 @@
 /**
  * Sports Loading Skeleton Components
  * 
- * Professional loading states for sports prediction market interface.
+ * Professional loading states for sports AI agent competition interface.
  * Provides visual feedback during data loading.
  */
 

@@ -1,17 +1,17 @@
-//! DeJaVu Prediction Market - Solana Program
+//! ExoDuZe AI Agent Competition - Solana Program
 //!
-//! This is the core Anchor program for the DeJaVu prediction market on Solana.
+//! This is the core Anchor program for the ExoDuZe AI Agent Competition on Solana.
 
 use anchor_lang::prelude::*;
 
 declare_id!("DeJaVuXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 
-/// DeJaVu Prediction Market Program
+/// ExoDuZe AI Agent Competition Program
 #[program]
 pub mod dejavu {
     use super::*;
 
-    /// Initialize a new prediction market
+    /// Initialize a new AI agent competition
     pub fn create_market(
         ctx: Context<CreateMarket>,
         title: String,

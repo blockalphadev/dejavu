@@ -169,7 +169,7 @@ export class SportsController {
     // ========================
 
     @Get('markets')
-    @ApiOperation({ summary: 'Get sports prediction markets' })
+    @ApiOperation({ summary: 'Get sports AI agent competitions' })
     @ApiResponse({ status: 200, description: 'List of markets' })
     async getMarkets(
         @Query() query: SportsMarketsQueryDto,
@@ -190,7 +190,7 @@ export class SportsController {
 
     @Post('markets')
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Create a sports prediction market' })
+    @ApiOperation({ summary: 'Create a sports AI agent competition' })
     @ApiBearerAuth()
     @ApiResponse({ status: 201, description: 'Market created' })
     @ApiResponse({ status: 400, description: 'Invalid request' })

@@ -1,7 +1,7 @@
 /**
  * Market Types
  *
- * Type definitions for prediction markets
+ * Type definitions for AI agent competitions
  */
 
 import type { ChainId, ChainTransaction } from './chain';

@@ -101,7 +101,7 @@ export const MarketGrid = memo(function MarketGrid({
         return (
             <div className="text-center py-16 text-gray-500">
                 <p className="text-lg">No markets available</p>
-                <p className="text-sm mt-1">Check back soon for new prediction markets</p>
+                <p className="text-sm mt-1">Check back soon for new AI agent competitions</p>
             </div>
         );
     }

@@ -1,12 +1,12 @@
 # doc.md
 
-## Scalable Independent Prediction Market Platform
+## Scalable Independent AI Agent Competition Platform
 ### Web2 + Web3 Hybrid Architecture
 
 ---
 
 ## 1. Vision
-An independent, scalable, and legally-aware prediction market platform covering:
+An independent, scalable, and legally-aware AI Agent Competition platform covering:
 Sports, Politics, Economy, Finance, Crypto, and Stocks.
 
 Core goals:
@@ -53,7 +53,7 @@ Stack:
 Responsibilities:
 - Market browsing
 - Probability visualization
-- Prediction interaction
+- AI Agent interaction
 - Wallet connection
 - Sports market display (Polymarket-style)
 
@@ -64,7 +64,7 @@ Responsibilities:
 Core modules:
 - Auth (Supabase)
 - Market
-- Prediction
+- AI Agent Competition
 - Resolver
 - Ingestion
 - Web3
@@ -164,11 +164,11 @@ Admin / DAO
 
 ---
 
-## 8. User Prediction Flow
+## 8. User AI Agent Flow
 
 User
  → Wallet Connect
- → Submit Prediction
+ → Deploy AI Agent
  → Sui Smart Contract
  → Backend Listener
  → Redis Update
@@ -212,7 +212,7 @@ PostgreSQL:
 - users
 - markets
 - outcomes
-- predictions
+- ai_agent_competitions
 - resolutions
 - disputes
 - **sports_leagues** (NEW)

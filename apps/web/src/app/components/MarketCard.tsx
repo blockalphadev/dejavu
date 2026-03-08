@@ -74,7 +74,7 @@ export const MarketCard = memo(function MarketCard({
                 {badge}
               </span>
             )}
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Prediction Market</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">AI Agent Competition</span>
           </div>
           <h3 className="text-base font-semibold leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
             {title}

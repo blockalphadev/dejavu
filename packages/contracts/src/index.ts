@@ -1,7 +1,7 @@
 /**
  * @exoduze/contracts
  * 
- * Multi-chain smart contract SDK for ExoDuZe Prediction Market.
+ * Multi-chain smart contract SDK for ExoDuZe AI Agent Competition.
  * 
  * Provides:
  * - Type-safe ABIs for all contracts

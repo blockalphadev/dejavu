@@ -1,5 +1,5 @@
 -- ============================================================
--- Economy Data Schema for DeJaVu Prediction Market
+-- Economy Data Schema for ExoDuZe AI Agent Competition
 -- Tables for global economic indicators and country data
 -- Migration: 042_economy_data.sql
 -- ============================================================

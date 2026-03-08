@@ -1,5 +1,5 @@
 -- ============================================================
--- Crypto Data Schema for DeJaVu Prediction Market
+-- Crypto Data Schema for ExoDuZe AI Agent Competition
 -- Tables for cryptocurrency prices, assets, and news
 -- Focus: BTC, ETH, SOL, XRP, HYPE
 -- Migration: 041_crypto_data.sql

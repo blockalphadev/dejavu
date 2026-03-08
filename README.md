@@ -1,6 +1,6 @@
 # 🔮 ExoDuZe
 
-**ExoDuZe** adalah platform prediction market generasi baru yang dibangun dengan arsitektur enterprise-grade, mendukung multi-chain Web3 (EVM, Solana, Sui).
+**ExoDuZe** adalah platform AI Agent Competition generasi baru yang dibangun dengan arsitektur enterprise-grade, mendukung multi-chain Web3 (EVM, Solana, Sui).
 
 ## 🏗️ Arsitektur
 

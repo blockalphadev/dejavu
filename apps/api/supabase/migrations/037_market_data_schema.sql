@@ -1,5 +1,5 @@
 -- ============================================================
--- Market Data Schema for DeJaVu Prediction Market
+-- Market Data Schema for ExoDuZe AI Agent Competition
 -- Unified schema for all market categories (non-sports)
 -- Migration: 037_market_data_schema.sql
 -- ============================================================
@@ -568,5 +568,5 @@ CREATE INDEX IF NOT EXISTS idx_market_data_sync_logs_source ON market_data_sync_
 CREATE INDEX IF NOT EXISTS idx_market_generation_queue_status ON market_generation_queue(status, priority DESC);
 
 COMMENT ON COLUMN market_data_items.content_hash IS 'SHA256 hash for deduplication';
-COMMENT ON COLUMN market_data_items.is_market_worthy IS 'Whether this item could generate a prediction market';
+COMMENT ON COLUMN market_data_items.is_market_worthy IS 'Whether this item could generate an AI agent competition';
 COMMENT ON COLUMN market_data_items.relevance_score IS 'AI-computed relevance score 0-1';

@@ -1,4 +1,4 @@
--- DeJaVu Prediction Market Schema
+-- ExoDuZe AI Agent Competition Schema
 -- Run this migration in Supabase SQL Editor
 
 -- ========================

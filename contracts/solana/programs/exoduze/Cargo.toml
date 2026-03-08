@@ -1,7 +1,7 @@
 [package]
 name = "exoduze"
 version = "0.1.0"
-description = "ExoDuZe Prediction Market on Solana"
+description = "ExoDuZe AI Agent Competition on Solana"
 edition = "2021"
 
 [lib]

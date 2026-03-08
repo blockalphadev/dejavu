@@ -188,7 +188,7 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
               <TopicBadge>Canada</TopicBadge>
               <TopicBadge>Trump Inauguration</TopicBadge>
               <TopicBadge>Trump Presidency</TopicBadge>
-              <TopicBadge>2025 Predictions</TopicBadge>
+              <TopicBadge>2025 AI Competitions</TopicBadge>
               <TopicBadge>Geopolitics</TopicBadge>
               <TopicBadge>NFL Draft</TopicBadge>
               <TopicBadge>Elon Musk</TopicBadge>

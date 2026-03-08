@@ -2,7 +2,7 @@
  * Politics ETL Orchestrator
  * 
  * ETL pipeline for political data from GDELT, NewsAPI, and RSS Feeds.
- * Enhanced with auto-market generation for prediction markets.
+ * Enhanced with auto-market generation for AI agent competitions.
  * 
  * Data Sources:
  * - GDELT: Global political events and news
@@ -137,7 +137,7 @@ export class PoliticsETLOrchestrator extends BaseETLOrchestrator implements OnMo
 
             // 5. AUTO-GENERATE MARKETS from high-impact political events
             if (MARKET_GENERATION_CONFIG.enabled) {
-                this.logger.debug('Generating prediction markets from political events...');
+                this.logger.debug('Generating AI agent competitions from political events...');
                 await this.generateMarketsFromItems(allItems);
             }
 
@@ -269,7 +269,7 @@ export class PoliticsETLOrchestrator extends BaseETLOrchestrator implements OnMo
     // --- Market Generation ---
 
     /**
-     * Generate prediction markets from high-impact political items
+     * Generate AI agent competitions from high-impact political items
      */
     private async generateMarketsFromItems(items: MarketDataItem[]) {
         // Sort by impact and take top candidates

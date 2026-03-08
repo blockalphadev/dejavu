@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Clock, ChevronDown, ChevronUp, Plus, TrendingUp } from "lucide-react";
 
 /**
- * Polymarket-Style Prediction Market Card
+ * AI Agent Competition-Style Card
  * 
  * Features:
  * - Dark glassmorphism design

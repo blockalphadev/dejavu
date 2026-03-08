@@ -8,7 +8,7 @@
 
 ## 1. System Overview
 
-The ExoDuZe frontend is a high-performance, enterprise-grade generic prediction market interface built for scalability ("Data Besar"), security, and responsiveness. It utilizes a **modular, lazy-loaded architecture** to support dozens of sports and thousands of active markets without performance degradation.
+The ExoDuZe frontend is a high-performance, enterprise-grade generic AI Agent Competition interface built for scalability ("Data Besar"), security, and responsiveness. It utilizes a **modular, lazy-loaded architecture** to support dozens of sports and thousands of active markets without performance degradation.
 
 ### Core Technology Stack
 

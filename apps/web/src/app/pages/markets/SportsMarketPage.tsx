@@ -1,10 +1,10 @@
 /**
  * Sports Market Page - Polymarket Style
  * 
- * Complete sports prediction market interface with:
+ * Complete sports AI agent competition interface with:
  * - Sport category selection
  * - Live/upcoming event filtering
- * - Prediction cards with Yes/No buttons
+ * - AI agent cards with Yes/No buttons
  * - Integrated bet slip (desktop sidebar + mobile bottom sheet)
  * - Real-time updates
  * - Anti-throttling with optimistic updates

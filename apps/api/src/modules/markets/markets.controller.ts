@@ -22,13 +22,13 @@ export class MarketsController {
     constructor(private readonly marketsService: MarketsService) { }
 
     /**
-     * Create a new prediction market
+     * Create a new AI agent competition
      */
     @Post()
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Create a new prediction market' })
+    @ApiOperation({ summary: 'Create a new AI agent competition' })
     @ApiResponse({ status: 201, description: 'Market created successfully' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async create(
@@ -132,7 +132,7 @@ export class MarketsController {
     @Patch(':id/resolve')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Resolve a prediction market' })
+    @ApiOperation({ summary: 'Resolve an AI agent competition' })
     @ApiResponse({ status: 200, description: 'Market resolved successfully' })
     @ApiResponse({ status: 403, description: 'Not authorized to resolve' })
     @ApiResponse({ status: 404, description: 'Market not found' })

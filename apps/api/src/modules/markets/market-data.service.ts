@@ -264,7 +264,7 @@ export class MarketDataService {
             }
         }
 
-        // 2. Fetch active prediction markets
+        // 2. Fetch active AI agent competitions
         const { data: markets, error: marketsError } = await this.supabase
             .from('markets')
             .select('id, title, description, category, volume, liquidity, yes_price, created_at, tags')

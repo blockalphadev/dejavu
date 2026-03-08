@@ -1,5 +1,5 @@
 -- ============================================================
--- Tech Data Schema for DeJaVu Prediction Market
+-- Tech Data Schema for ExoDuZe AI Agent Competition
 -- Tables for technology trends, products, and companies
 -- Migration: 040_tech_data.sql
 -- ============================================================

@@ -65,7 +65,7 @@ export const FEATURE_FLAGS: Record<string, FeatureFlag> = {
     // ==================
     ENABLE_MARKET_CREATION: {
         name: 'Market Creation',
-        description: 'Allow users to create new prediction markets',
+        description: 'Allow users to deploy new AI agent competitions',
         defaultValue: false,
         environments: {
             development: true,

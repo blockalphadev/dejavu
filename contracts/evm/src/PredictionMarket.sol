@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 /**
- * @title ExoDuZe Prediction Market
- * @notice Core prediction market contract for ExoDuZe platform
+ * @title ExoDuZe AI Agent Competition
+ * @notice Core AI agent competition contract for ExoDuZe platform
  * @dev This is a scaffold contract - implementation to be completed
  */
 contract PredictionMarket {
@@ -129,7 +129,7 @@ contract PredictionMarket {
     // ============================================================================
 
     /**
-     * @notice Create a new prediction market
+     * @notice Create a new AI agent competition
      * @param title Market title
      * @param description Market description
      * @param endTime Timestamp when trading ends

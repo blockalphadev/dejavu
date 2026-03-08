@@ -1,5 +1,5 @@
 -- ============================================================
--- Science Data Schema for DeJaVu Prediction Market
+-- Science Data Schema for ExoDuZe AI Agent Competition
 -- Tables for scientific research, papers, and breakthroughs
 -- Migration: 043_science_data.sql
 -- ============================================================

@@ -1,5 +1,5 @@
 -- ============================================================
--- Security Fixes for DeJaVu Prediction Market
+-- Security Fixes for ExoDuZe AI Agent Competition
 -- Resolves linter warnings: security_definer_view, function_search_path_mutable
 -- Migration: 045_security_fixes.sql
 -- ============================================================
