@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-The DeJaVu Withdrawal System has been completely redesigned to offer a **Premium Web3** experience. It features a modern, glassmorphic UI, real-time multi-chain balance fetching, and advanced security measures. The system supports direct withdrawals for EVM (Ethereum, Base), Solana, and Sui networks, ensuring users can only withdraw funds they actually possess on-chain.
+The ExoDuZe Withdrawal System has been completely redesigned to offer a **Premium Web3** experience. It features a modern, glassmorphic UI, real-time multi-chain balance fetching, and advanced security measures. The system supports direct withdrawals for EVM (Ethereum, Base), Solana, and Sui networks, ensuring users can only withdraw funds they actually possess on-chain.
 
 ---
 

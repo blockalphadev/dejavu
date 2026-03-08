@@ -16,7 +16,7 @@ export class EmailService {
     private readonly fromEmail: string;
 
     constructor(private readonly configService: ConfigService) {
-        this.fromEmail = this.configService.get('SMTP_FROM', 'noreply@dejavu.bet');
+        this.fromEmail = this.configService.get('SMTP_FROM', 'noreply@exoduze.bet');
 
         const host = this.configService.get('SMTP_HOST');
         const user = this.configService.get('SMTP_USER');
@@ -65,7 +65,7 @@ export class EmailService {
 
         try {
             const info = await this.transporter.sendMail({
-                from: `"DeJaVu" <${this.fromEmail}>`,
+                from: `"ExoDuZe" <${this.fromEmail}>`,
                 to: options.to,
                 subject: options.subject,
                 text: options.text,
@@ -86,7 +86,7 @@ export class EmailService {
      * Send verification magic link
      */
     async sendVerificationEmail(email: string, link: string, fullName?: string): Promise<boolean> {
-        const subject = 'Verify your email - DeJaVu';
+        const subject = 'Verify your email - ExoDuZe';
         const html = `
             <!DOCTYPE html>
             <html>
@@ -103,17 +103,17 @@ export class EmailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>DeJaVu</h1>
+                        <h1>ExoDuZe</h1>
                     </div>
                     <p>Hi ${fullName || 'there'},</p>
-                    <p>Welcome to DeJaVu! Please verify your email address to activate your account.</p>
+                    <p>Welcome to ExoDuZe! Please verify your email address to activate your account.</p>
                     <div style="text-align: center;">
                         <a href="${link}" class="button">Verify Email Address</a>
                     </div>
                     <p>Or verify using this link: <br/><a href="${link}">${link}</a></p>
                     <p>This link will expire in 15 minutes.</p>
                     <div class="footer">
-                        <p>&copy; ${new Date().getFullYear()} DeJaVu. All rights reserved.</p>
+                        <p>&copy; ${new Date().getFullYear()} ExoDuZe. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -124,7 +124,7 @@ export class EmailService {
             to: email,
             subject,
             html,
-            text: `Welcome to DeJaVu! Use this link to verify your email: ${link}`
+            text: `Welcome to ExoDuZe! Use this link to verify your email: ${link}`
         });
     }
 
@@ -132,7 +132,7 @@ export class EmailService {
      * Send OTP code
      */
     async sendOtpEmail(email: string, code: string): Promise<boolean> {
-        const subject = 'Your Verification Code - DeJaVu';
+        const subject = 'Your Verification Code - ExoDuZe';
         const html = `
             <!DOCTYPE html>
             <html>
@@ -149,7 +149,7 @@ export class EmailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>DeJaVu</h1>
+                        <h1>ExoDuZe</h1>
                     </div>
                     <p>Your verification code is:</p>
                     <div style="text-align: center;">
@@ -157,7 +157,7 @@ export class EmailService {
                     </div>
                     <p>This code will expire in 10 minutes. Do not share this code with anyone.</p>
                     <div class="footer">
-                        <p>&copy; ${new Date().getFullYear()} DeJaVu. All rights reserved.</p>
+                        <p>&copy; ${new Date().getFullYear()} ExoDuZe. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -168,7 +168,7 @@ export class EmailService {
             to: email,
             subject,
             html,
-            text: `Your DeJaVu verification code is: ${code}`
+            text: `Your ExoDuZe verification code is: ${code}`
         });
     }
 }

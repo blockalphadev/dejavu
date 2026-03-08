@@ -1,7 +1,7 @@
 /**
  * Exchange Definitions
  *
- * Predefined exchanges for the DeJaVu platform.
+ * Predefined exchanges for the ExoDuZe platform.
  */
 
 import type { ExchangeConfig } from './messaging.types';
@@ -12,7 +12,7 @@ import type { ExchangeConfig } from './messaging.types';
  * Used for publishing domain events (topic exchange for flexible routing)
  */
 export const DOMAIN_EVENTS_EXCHANGE: ExchangeConfig = {
-    name: 'dejavu.domain.events',
+    name: 'exoduze.domain.events',
     type: 'topic',
     durable: true,
     autoDelete: false,
@@ -24,7 +24,7 @@ export const DOMAIN_EVENTS_EXCHANGE: ExchangeConfig = {
  * Used for async command processing (direct exchange for point-to-point)
  */
 export const COMMANDS_EXCHANGE: ExchangeConfig = {
-    name: 'dejavu.commands',
+    name: 'exoduze.commands',
     type: 'direct',
     durable: true,
     autoDelete: false,
@@ -36,7 +36,7 @@ export const COMMANDS_EXCHANGE: ExchangeConfig = {
  * Used for user notifications (fanout for broadcasting)
  */
 export const NOTIFICATIONS_EXCHANGE: ExchangeConfig = {
-    name: 'dejavu.notifications',
+    name: 'exoduze.notifications',
     type: 'fanout',
     durable: true,
     autoDelete: false,
@@ -48,7 +48,7 @@ export const NOTIFICATIONS_EXCHANGE: ExchangeConfig = {
  * Used for failed messages
  */
 export const DEAD_LETTER_EXCHANGE: ExchangeConfig = {
-    name: 'dejavu.dlx',
+    name: 'exoduze.dlx',
     type: 'direct',
     durable: true,
     autoDelete: false,
@@ -60,7 +60,7 @@ export const DEAD_LETTER_EXCHANGE: ExchangeConfig = {
  * Note: Requires rabbitmq_delayed_message_exchange plugin
  */
 export const DELAYED_EXCHANGE: ExchangeConfig = {
-    name: 'dejavu.delayed',
+    name: 'exoduze.delayed',
     type: 'direct', // Will be 'x-delayed-message' with plugin
     durable: true,
     autoDelete: false,
@@ -72,7 +72,7 @@ export const DELAYED_EXCHANGE: ExchangeConfig = {
  * Used for sports events and live updates (topic for flexible routing)
  */
 export const SPORTS_EXCHANGE: ExchangeConfig = {
-    name: 'dejavu.sports',
+    name: 'exoduze.sports',
     type: 'topic',
     durable: true,
     autoDelete: false,

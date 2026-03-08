@@ -174,8 +174,8 @@ async function bootstrap() {
     // ===================
     if (nodeEnv !== 'production') {
         const config = new DocumentBuilder()
-            .setTitle('DeJaVu API')
-            .setDescription('The DeJaVu API documentation')
+            .setTitle('ExoDuZe API')
+            .setDescription('The ExoDuZe API documentation')
             .setVersion('1.0')
             .addBearerAuth()
             .build();
@@ -194,7 +194,7 @@ async function bootstrap() {
 
     await app.listen(port);
 
-    logger.log(`🚀 DeJaVu API running on http://localhost:${port}/${apiPrefix}`);
+    logger.log(`🚀 ExoDuZe API running on http://localhost:${port}/${apiPrefix}`);
     if (nodeEnv !== 'production') {
         logger.log(`📚 Swagger UI: http://localhost:${port}/docs`);
     }

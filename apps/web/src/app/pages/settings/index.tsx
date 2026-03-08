@@ -529,7 +529,7 @@ export function SettingsPage() {
                     <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
                         <div>
                             <h3 className="text-2xl font-bold mb-2">Theme Preferences</h3>
-                            <p className="text-muted-foreground text-lg">Choose how DeJaVu looks to you.</p>
+                            <p className="text-muted-foreground text-lg">Choose how ExoDuZe looks to you.</p>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                             {[
@@ -578,7 +578,7 @@ export function SettingsPage() {
                             </div>
                             <h2 className="text-3xl font-bold mb-3 capitalize">{navItems.find(i => i.id === activeTab)?.label}</h2>
                             <p className="text-muted-foreground max-w-md mb-8 text-lg">
-                                This feature makes DeJaVu even more powerful. We're putting the finishing touches on it.
+                                This feature makes ExoDuZe even more powerful. We're putting the finishing touches on it.
                             </p>
                             <Button variant="outline" className="rounded-full px-8 border-primary/20 bg-primary/5 text-primary" disabled>
                                 Coming Soon
@@ -785,7 +785,7 @@ export function SettingsPage() {
                 onClose={() => setShowProfileCompletion(false)}
                 onComplete={() => {
                     setShowProfileCompletion(false);
-                    showToast('Profile completed successfully! Welcome to DeJaVu.', 'success');
+                    showToast('Profile completed successfully! Welcome to ExoDuZe.', 'success');
                     // Navigate to profile tab
                     setActiveTab('profile');
                 }}

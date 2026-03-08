@@ -18,7 +18,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  storageKey = "dejavu-theme",
+  storageKey = "exoduze-theme",
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== "undefined") {

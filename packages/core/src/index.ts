@@ -1,7 +1,7 @@
 /**
- * @dejavu/core
+ * @exoduze/core
  * 
- * Core utilities, types, and constants for the DeJaVu platform.
+ * Core utilities, types, and constants for the ExoDuZe platform.
  */
 
 // Export all types

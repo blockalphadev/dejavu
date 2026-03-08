@@ -1,4 +1,4 @@
-# DeJaVu — Enterprise Technical Documentation
+# ExoDuZe — Enterprise Technical Documentation
 
 > **Decentralized Prediction Market Platform**  
 > Version 2.0.0 | Published: January 8, 2026  
@@ -13,7 +13,7 @@
 | **Document Type** | Technical Architecture Blueprint |
 | **Target Audience** | Engineers, Architects, DevOps |
 | **Confidentiality** | Internal Use |
-| **Maintainer** | DeJaVu Engineering Team |
+| **Maintainer** | ExoDuZe Engineering Team |
 
 ---
 
@@ -40,7 +40,7 @@
 
 ### 1.1 Platform Overview
 
-DeJaVu is an enterprise-grade decentralized prediction market platform enabling users to create, trade, and settle prediction markets across multiple blockchain networks. The platform follows clean architecture principles with emphasis on security, scalability, and developer experience.
+ExoDuZe is an enterprise-grade decentralized prediction market platform enabling users to create, trade, and settle prediction markets across multiple blockchain networks. The platform follows clean architecture principles with emphasis on security, scalability, and developer experience.
 
 ### 1.2 Key Capabilities
 
@@ -222,7 +222,7 @@ sequenceDiagram
 ### 4.1 Repository Layout
 
 ```
-dejavu/
+exoduze/
 ├── 📁 apps/                            # Application packages
 │   ├── 📁 api/                         # NestJS Backend API
 │   │   ├── 📁 src/
@@ -728,19 +728,19 @@ sui move build && sui move test
 
 | Package | Path | Purpose | Dependencies |
 |---------|------|---------|--------------|
-| `@dejavu/domain` | `packages/domain/` | DDD entities, aggregates | None |
-| `@dejavu/application` | `packages/application/` | Use cases, services | domain |
-| `@dejavu/infrastructure` | `packages/infrastructure/` | Repository implementations | domain, application |
-| `@dejavu/web3` | `packages/web3/` | Multi-chain wallet adapters | ethers, solana |
-| `@dejavu/core` | `packages/core/` | Utilities, constants | None |
-| `@dejavu/shared` | `packages/shared/` | Common types | None |
-| `@dejavu/ui` | `packages/ui/` | Shared React components | react |
-| `@dejavu/events` | `packages/events/` | Domain events | None |
-| `@dejavu/messaging` | `packages/messaging/` | Message bus | events |
-| `@dejavu/caching` | `packages/caching/` | Cache abstraction | None |
-| `@dejavu/config` | `packages/config/` | Shared configuration | None |
-| `@dejavu/contracts` | `packages/contracts/` | Contract ABIs | None |
-| `@dejavu/testing` | `packages/testing/` | Test utilities | None |
+| `@exoduze/domain` | `packages/domain/` | DDD entities, aggregates | None |
+| `@exoduze/application` | `packages/application/` | Use cases, services | domain |
+| `@exoduze/infrastructure` | `packages/infrastructure/` | Repository implementations | domain, application |
+| `@exoduze/web3` | `packages/web3/` | Multi-chain wallet adapters | ethers, solana |
+| `@exoduze/core` | `packages/core/` | Utilities, constants | None |
+| `@exoduze/shared` | `packages/shared/` | Common types | None |
+| `@exoduze/ui` | `packages/ui/` | Shared React components | react |
+| `@exoduze/events` | `packages/events/` | Domain events | None |
+| `@exoduze/messaging` | `packages/messaging/` | Message bus | events |
+| `@exoduze/caching` | `packages/caching/` | Cache abstraction | None |
+| `@exoduze/config` | `packages/config/` | Shared configuration | None |
+| `@exoduze/contracts` | `packages/contracts/` | Contract ABIs | None |
+| `@exoduze/testing` | `packages/testing/` | Test utilities | None |
 
 ### 10.2 Domain Package Structure
 
@@ -854,8 +854,8 @@ packages/domain/src/
 
 | Service | URL |
 |---------|-----|
-| **API Backend** | `https://backend-dejavu.onrender.com/api/v1` |
-| **WebSocket** | `https://backend-dejavu.onrender.com` |
+| **API Backend** | `https://backend-exoduze.onrender.com/api/v1` |
+| **WebSocket** | `https://backend-exoduze.onrender.com` |
 
 ### 12.3 Deployment Platforms
 
@@ -908,10 +908,10 @@ packages/domain/src/
 
 | Role | Contact |
 |------|---------|
-| Lead Engineer | engineering@dejavu.io |
-| Security | security@dejavu.io |
-| DevOps | devops@dejavu.io |
+| Lead Engineer | engineering@exoduze.io |
+| Security | security@exoduze.io |
+| DevOps | devops@exoduze.io |
 
 ---
 
-*This document is maintained by the DeJaVu Engineering Team. For updates or corrections, please submit a pull request.*
+*This document is maintained by the ExoDuZe Engineering Team. For updates or corrections, please submit a pull request.*

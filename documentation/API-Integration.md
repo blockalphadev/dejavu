@@ -6,7 +6,7 @@
 
 ## Overview
 
-The DeJaVu platform integrates with **multiple external sports data providers** to fetch real-time scores, fixtures, and team information. Data is combined through an ETL pipeline with intelligent deduplication.
+The ExoDuZe platform integrates with **multiple external sports data providers** to fetch real-time scores, fixtures, and team information. Data is combined through an ETL pipeline with intelligent deduplication.
 
 | Provider | Coverage | Rate Limit (Free) | Best For | Priority |
 |----------|----------|-------------------|----------|----------|

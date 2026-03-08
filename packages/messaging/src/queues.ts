@@ -1,7 +1,7 @@
 /**
  * Queue Definitions
  *
- * Predefined queues for the DeJaVu platform.
+ * Predefined queues for the ExoDuZe platform.
  */
 
 import type { QueueConfig, BindingConfig } from './messaging.types';
@@ -16,7 +16,7 @@ import {
  * Market events processor queue
  */
 export const MARKET_EVENTS_QUEUE: QueueConfig = {
-    name: 'dejavu.market.events',
+    name: 'exoduze.market.events',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.market.events',
@@ -27,7 +27,7 @@ export const MARKET_EVENTS_QUEUE: QueueConfig = {
  * Order events processor queue
  */
 export const ORDER_EVENTS_QUEUE: QueueConfig = {
-    name: 'dejavu.order.events',
+    name: 'exoduze.order.events',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.order.events',
@@ -39,7 +39,7 @@ export const ORDER_EVENTS_QUEUE: QueueConfig = {
  * Trade settlement queue
  */
 export const TRADE_SETTLEMENT_QUEUE: QueueConfig = {
-    name: 'dejavu.trade.settlement',
+    name: 'exoduze.trade.settlement',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.trade.settlement',
@@ -49,7 +49,7 @@ export const TRADE_SETTLEMENT_QUEUE: QueueConfig = {
  * Notification processor queue
  */
 export const NOTIFICATION_QUEUE: QueueConfig = {
-    name: 'dejavu.notifications',
+    name: 'exoduze.notifications',
     durable: true,
     messageTtl: 86400000, // 24 hours
     maxLength: 100000,
@@ -59,7 +59,7 @@ export const NOTIFICATION_QUEUE: QueueConfig = {
  * Blockchain transaction queue
  */
 export const BLOCKCHAIN_TX_QUEUE: QueueConfig = {
-    name: 'dejavu.blockchain.tx',
+    name: 'exoduze.blockchain.tx',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.blockchain.tx',
@@ -70,7 +70,7 @@ export const BLOCKCHAIN_TX_QUEUE: QueueConfig = {
  * Analytics events queue
  */
 export const ANALYTICS_QUEUE: QueueConfig = {
-    name: 'dejavu.analytics',
+    name: 'exoduze.analytics',
     durable: true,
     messageTtl: 3600000, // 1 hour
     maxLength: 100000,
@@ -80,25 +80,25 @@ export const ANALYTICS_QUEUE: QueueConfig = {
  * Dead letter queues
  */
 export const DLQ_MARKET: QueueConfig = {
-    name: 'dejavu.dlq.market',
+    name: 'exoduze.dlq.market',
     durable: true,
     messageTtl: 604800000, // 7 days
 };
 
 export const DLQ_ORDER: QueueConfig = {
-    name: 'dejavu.dlq.order',
+    name: 'exoduze.dlq.order',
     durable: true,
     messageTtl: 604800000,
 };
 
 export const DLQ_TRADE: QueueConfig = {
-    name: 'dejavu.dlq.trade',
+    name: 'exoduze.dlq.trade',
     durable: true,
     messageTtl: 604800000,
 };
 
 export const DLQ_BLOCKCHAIN: QueueConfig = {
-    name: 'dejavu.dlq.blockchain',
+    name: 'exoduze.dlq.blockchain',
     durable: true,
     messageTtl: 604800000,
 };
@@ -107,7 +107,7 @@ export const DLQ_BLOCKCHAIN: QueueConfig = {
  * Sports events queue
  */
 export const SPORTS_EVENTS_QUEUE: QueueConfig = {
-    name: 'dejavu.sports.events',
+    name: 'exoduze.sports.events',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.sports.events',
@@ -118,7 +118,7 @@ export const SPORTS_EVENTS_QUEUE: QueueConfig = {
  * Sports live updates queue
  */
 export const SPORTS_LIVE_QUEUE: QueueConfig = {
-    name: 'dejavu.sports.live',
+    name: 'exoduze.sports.live',
     durable: true,
     messageTtl: 300000, // 5 minutes - live data expires quickly
     maxLength: 10000,
@@ -129,7 +129,7 @@ export const SPORTS_LIVE_QUEUE: QueueConfig = {
  * Sports market updates queue
  */
 export const SPORTS_MARKET_QUEUE: QueueConfig = {
-    name: 'dejavu.sports.markets',
+    name: 'exoduze.sports.markets',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.sports.markets',
@@ -140,7 +140,7 @@ export const SPORTS_MARKET_QUEUE: QueueConfig = {
  * Sports market resolution queue
  */
 export const SPORTS_RESOLUTION_QUEUE: QueueConfig = {
-    name: 'dejavu.sports.resolution',
+    name: 'exoduze.sports.resolution',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.sports.resolution',
@@ -150,7 +150,7 @@ export const SPORTS_RESOLUTION_QUEUE: QueueConfig = {
  * Sports sync tasks queue
  */
 export const SPORTS_SYNC_QUEUE: QueueConfig = {
-    name: 'dejavu.sports.sync',
+    name: 'exoduze.sports.sync',
     durable: true,
     deadLetterExchange: DEAD_LETTER_EXCHANGE.name,
     deadLetterRoutingKey: 'dlq.sports.sync',
@@ -162,7 +162,7 @@ export const SPORTS_SYNC_QUEUE: QueueConfig = {
  * Sports odds updates queue
  */
 export const SPORTS_ODDS_QUEUE: QueueConfig = {
-    name: 'dejavu.sports.odds',
+    name: 'exoduze.sports.odds',
     durable: true,
     messageTtl: 60000, // 1 minute - odds change frequently
     maxLength: 50000,
@@ -172,7 +172,7 @@ export const SPORTS_ODDS_QUEUE: QueueConfig = {
  * Sports dead letter queue
  */
 export const DLQ_SPORTS: QueueConfig = {
-    name: 'dejavu.dlq.sports',
+    name: 'exoduze.dlq.sports',
     durable: true,
     messageTtl: 604800000, // 7 days
 };
@@ -181,7 +181,7 @@ export const DLQ_SPORTS: QueueConfig = {
  * Sports markets dead letter queue
  */
 export const DLQ_SPORTS_MARKETS: QueueConfig = {
-    name: 'dejavu.dlq.sports.markets',
+    name: 'exoduze.dlq.sports.markets',
     durable: true,
     messageTtl: 604800000,
 };
@@ -190,7 +190,7 @@ export const DLQ_SPORTS_MARKETS: QueueConfig = {
  * Sports sync dead letter queue
  */
 export const DLQ_SPORTS_SYNC: QueueConfig = {
-    name: 'dejavu.dlq.sports.sync',
+    name: 'exoduze.dlq.sports.sync',
     durable: true,
     messageTtl: 604800000,
 };

@@ -1,14 +1,14 @@
 # Frontend Architecture Documentation
 
-> **DeJaVu Web Frontend**  
+> **ExoDuZe Web Frontend**  
 > Version: 2.1.0 "Perfection" | Published: January 21, 2026  
-> Author: DeJaVu Engineering Team
+> Author: ExoDuZe Engineering Team
 
 ---
 
 ## 1. System Overview
 
-The DeJaVu frontend is a high-performance, enterprise-grade generic prediction market interface built for scalability ("Data Besar"), security, and responsiveness. It utilizes a **modular, lazy-loaded architecture** to support dozens of sports and thousands of active markets without performance degradation.
+The ExoDuZe frontend is a high-performance, enterprise-grade generic prediction market interface built for scalability ("Data Besar"), security, and responsiveness. It utilizes a **modular, lazy-loaded architecture** to support dozens of sports and thousands of active markets without performance degradation.
 
 ### Core Technology Stack
 
@@ -227,5 +227,5 @@ All global state contexts are consolidated in `src/app/contexts/` for maintainab
 
 ---
 
-*This document is maintained by the DeJaVu Engineering Team.*
+*This document is maintained by the ExoDuZe Engineering Team.*
 

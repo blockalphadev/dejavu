@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain - User Domain
+ * @exoduze/domain - User Domain
  */
 
 export * from './value-objects';

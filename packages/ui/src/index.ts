@@ -1,7 +1,7 @@
 /**
- * @dejavu/ui
+ * @exoduze/ui
  * 
- * Shared UI design system for the DeJaVu platform.
+ * Shared UI design system for the ExoDuZe platform.
  */
 
 // Utilities

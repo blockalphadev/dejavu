@@ -1,6 +1,6 @@
-# DeJaVu API
+# ExoDuZe API
 
-A NestJS-powered backend for the DeJaVu prediction market platform.
+A NestJS-powered backend for the ExoDuZe prediction market platform.
 
 ## Tech Stack
 

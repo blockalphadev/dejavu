@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain - Common Building Blocks
+ * @exoduze/domain - Common Building Blocks
  */
 
 export * from './entity.base';

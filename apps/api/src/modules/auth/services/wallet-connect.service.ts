@@ -77,8 +77,8 @@ export class WalletConnectService {
         const nonce = this.generateCryptoNonce();
         const issuedAt = new Date();
         const expiresAt = new Date(issuedAt.getTime() + 5 * 60 * 1000); // 5 minutes
-        const domain = 'dejavu.app';
-        const uri = 'https://dejavu.app';
+        const domain = 'exoduze.app';
+        const uri = 'https://exoduze.app';
 
         // Generate SIWE-compatible message
         const message = this.generateSIWEMessage(address, chain, nonce, issuedAt, expiresAt, domain, uri);
@@ -491,7 +491,7 @@ export class WalletConnectService {
         const supabase = this.supabaseService.getAdminClient();
 
         // Create user via Supabase Auth with a placeholder email
-        const walletEmail = `${address.slice(0, 10)}@wallet.dejavu.app`;
+        const walletEmail = `${address.slice(0, 10)}@wallet.exoduze.app`;
         const randomPassword = this.generateRandomPassword();
 
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -578,7 +578,7 @@ export class WalletConnectService {
         // Check reserved usernames
         const reserved = [
             'admin', 'administrator', 'mod', 'moderator', 'support', 'help',
-            'dejavu', 'official', 'system', 'root', 'api', 'www', 'mail',
+            'exoduze', 'official', 'system', 'root', 'api', 'www', 'mail',
             'bot', 'null', 'undefined', 'anonymous', 'guest', 'test', 'demo',
         ];
         if (reserved.includes(normalized)) {
@@ -735,7 +735,7 @@ export class WalletConnectService {
             return `${domain} wants you to sign in with your Ethereum account:
 ${address}
 
-Welcome to DeJaVu! Sign this message to verify your wallet ownership.
+Welcome to ExoDuZe! Sign this message to verify your wallet ownership.
 
 This request will NOT trigger a blockchain transaction or cost any gas fees.
 
@@ -776,7 +776,7 @@ Sign to verify ownership.`;
         }
 
         // Generic format for other chains
-        return `DeJaVu Login Request
+        return `ExoDuZe Login Request
 
 Wallet: ${address}
 Chain: ${chain}

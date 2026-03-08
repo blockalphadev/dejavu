@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/caching",
+    "name": "@exoduze/caching",
     "version": "0.0.1",
     "private": true,
     "type": "module",
@@ -27,7 +27,7 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@dejavu/shared": "workspace:*",
+        "@exoduze/shared": "workspace:*",
         "ioredis": "^5.4.1"
     },
     "devDependencies": {

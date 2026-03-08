@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/messaging",
+    "name": "@exoduze/messaging",
     "version": "0.0.1",
     "private": true,
     "main": "./dist/index.js",
@@ -26,7 +26,7 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@dejavu/shared": "workspace:*",
+        "@exoduze/shared": "workspace:*",
         "amqplib": "^0.10.4"
     },
     "devDependencies": {

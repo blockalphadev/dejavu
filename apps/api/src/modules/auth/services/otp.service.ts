@@ -243,14 +243,14 @@ export class OtpService {
                 // Send secure numeric code via EmailService
                 await this.emailService.sendEmail({
                     to: normalizedEmail,
-                    subject: 'Login Verification Code - DeJaVu',
+                    subject: 'Login Verification Code - ExoDuZe',
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
                             <div style="text-align: center; margin-bottom: 20px;">
                                 <h1 style="color: #333;">Login Request</h1>
                             </div>
                             <p style="color: #666; font-size: 16px;">Hello,</p>
-                            <p style="color: #666; font-size: 16px;">We received a login request for your DeJaVu account. Please use the verification code below:</p>
+                            <p style="color: #666; font-size: 16px;">We received a login request for your ExoDuZe account. Please use the verification code below:</p>
                             
                             <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0;">
                                 <h1 style="margin: 0; font-size: 36px; letter-spacing: 8px; color: #2d3748; font-weight: bold;">${fallbackCode}</h1>
@@ -260,7 +260,7 @@ export class OtpService {
                             <p style="color: #999; font-size: 12px; margin-top: 30px; text-align: center;">If you did not request this code, please secure your account.</p>
                         </div>
                     `,
-                    text: `Your DeJaVu Login Code: ${fallbackCode} (Expires in 10 minutes)`
+                    text: `Your ExoDuZe Login Code: ${fallbackCode} (Expires in 10 minutes)`
                 });
 
                 this.logger.log(`Login OTP Code sent via SMTP fallback to ${normalizedEmail}`);

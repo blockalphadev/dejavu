@@ -1,5 +1,5 @@
 /**
- * @dejavu/shared
+ * @exoduze/shared
  *
  * Cross-platform shared types, utilities, and error handling patterns
  * for enterprise-grade application development.

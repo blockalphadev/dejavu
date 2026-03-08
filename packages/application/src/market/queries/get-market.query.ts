@@ -3,7 +3,7 @@
  */
 
 import { Query } from '../../common/query.interface';
-import type { MarketCategory, MarketStatus, MarketType } from '@dejavu/shared/types';
+import type { MarketCategory, MarketStatus, MarketType } from '@exoduze/shared/types';
 
 /**
  * Market view model

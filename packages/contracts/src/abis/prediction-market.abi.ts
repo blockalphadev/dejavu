@@ -1,7 +1,7 @@
 /**
  * Prediction Market ABI
  * 
- * EVM-compatible contract ABI for the DeJaVu Prediction Market.
+ * EVM-compatible contract ABI for the ExoDuZe Prediction Market.
  * Supports Ethereum, Base, Arbitrum, and other EVM chains.
  */
 export const PredictionMarketABI = [

@@ -1,5 +1,5 @@
 /**
- * @dejavu/shared - Types
+ * @exoduze/shared - Types
  */
 
 export * from './common';

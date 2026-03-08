@@ -5,9 +5,9 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { DomainEvent } from '@dejavu/domain';
-import type { IEventBus } from '@dejavu/events';
-import { EventDispatcher } from '@dejavu/events';
+import type { DomainEvent } from '@exoduze/domain';
+import type { IEventBus } from '@exoduze/events';
+import { EventDispatcher } from '@exoduze/events';
 
 /**
  * Unit of Work interface

@@ -6,13 +6,13 @@
         "composite": false,
         "baseUrl": ".",
         "paths": {
-            "@dejavu/web3/*": [
+            "@exoduze/web3/*": [
                 "./src/*"
             ],
-            "@dejavu/core": [
+            "@exoduze/core": [
                 "../core/src"
             ],
-            "@dejavu/core/*": [
+            "@exoduze/core/*": [
                 "../core/src/*"
             ]
         }

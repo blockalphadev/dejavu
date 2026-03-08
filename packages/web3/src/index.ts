@@ -1,7 +1,7 @@
 /**
- * @dejavu/web3
+ * @exoduze/web3
  * 
- * Web3 abstraction layer for the DeJaVu platform.
+ * Web3 abstraction layer for the ExoDuZe platform.
  * Provides chain-agnostic wallet connection and blockchain interactions.
  */
 

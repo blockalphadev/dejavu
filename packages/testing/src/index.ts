@@ -1,7 +1,7 @@
 /**
- * @dejavu/testing
+ * @exoduze/testing
  * 
- * Shared testing utilities for the DeJaVu platform.
+ * Shared testing utilities for the ExoDuZe platform.
  */
 
 export * from './fixtures.js';

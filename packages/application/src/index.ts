@@ -1,5 +1,5 @@
 /**
- * @dejavu/application
+ * @exoduze/application
  *
  * Application layer implementing CQRS pattern with Commands, Queries,
  * and their handlers. Contains use cases and application services.

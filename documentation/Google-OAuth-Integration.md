@@ -7,7 +7,7 @@
 
 ## Overview
 
-DeJaVu implements a **high-security Google OAuth 2.0** authentication flow. The system is hardened beyond standard OAuth implementations to prevent common attack vectors like CSRF, Replay Attacks, and Token Injection. It integrates seamlessly with Privy for embedded wallet creation.
+ExoDuZe implements a **high-security Google OAuth 2.0** authentication flow. The system is hardened beyond standard OAuth implementations to prevent common attack vectors like CSRF, Replay Attacks, and Token Injection. It integrates seamlessly with Privy for embedded wallet creation.
 
 | Feature | Implementation |
 |---------|----------------|
@@ -309,7 +309,7 @@ app.use('/api/v1/auth', authLimiter);
 
 The following usernames are blocked:
 - `admin`, `administrator`, `mod`, `moderator`
-- `dejavu`, `official`, `system`, `support`, `help`
+- `exoduze`, `official`, `system`, `support`, `help`
 - `root`, `api`, `www`, `mail`, `bot`
 - `null`, `undefined`, `anonymous`, `guest`, `test`, `demo`
 
@@ -335,7 +335,7 @@ Environment variables required on Render:
 |----------|-------|
 | `GOOGLE_CLIENT_ID` | From Google Cloud Console |
 | `GOOGLE_CLIENT_SECRET` | From Google Cloud Console |
-| `GOOGLE_CALLBACK_URL` | `https://backend-dejavu.onrender.com/api/v1/auth/google/callback` |
+| `GOOGLE_CALLBACK_URL` | `https://backend-exoduze.onrender.com/api/v1/auth/google/callback` |
 | `PRIVY_APP_ID` | From Privy Dashboard |
 | `PRIVY_APP_SECRET` | From Privy Dashboard |
 

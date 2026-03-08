@@ -6,7 +6,7 @@
 
 ## Overview
 
-The DeJaVu Email Verification System allows wallet-only users to add and verify email addresses. This provides enhanced account security, notification preferences, and account recovery options.
+The ExoDuZe Email Verification System allows wallet-only users to add and verify email addresses. This provides enhanced account security, notification preferences, and account recovery options.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * @dejavu/core - Constants
+ * @exoduze/core - Constants
  * 
  * Application-wide constants and configuration values.
  */
@@ -131,7 +131,7 @@ export const EXTERNAL_APIS = {
 // ============================================================================
 
 export const APP_CONFIG = {
-    name: 'DeJaVu',
+    name: 'ExoDuZe',
     version: '0.0.1',
     description: 'Next-generation prediction market platform',
     supportedChains: ['ethereum', 'base', 'polygon', 'solana', 'sui'] as ChainId[],

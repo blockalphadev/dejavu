@@ -3,8 +3,8 @@
  */
 
 import { SingleValueObject, ValueObject } from '../common/value-object.base';
-import { ValidationError } from '@dejavu/shared/errors';
-import type { ChainId, ChainType } from '@dejavu/shared/types';
+import { ValidationError } from '@exoduze/shared/errors';
+import type { ChainId, ChainType } from '@exoduze/shared/types';
 
 /**
  * User ID value object

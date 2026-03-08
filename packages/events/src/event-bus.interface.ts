@@ -5,7 +5,7 @@
  * Supports both synchronous (in-memory) and asynchronous (distributed) implementations.
  */
 
-import type { DomainEvent } from '@dejavu/domain';
+import type { DomainEvent } from '@exoduze/domain';
 
 /**
  * Event handler interface

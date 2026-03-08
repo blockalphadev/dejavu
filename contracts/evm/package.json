@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/contracts-evm",
+    "name": "@exoduze/contracts-evm",
     "version": "0.0.1",
     "private": true,
     "scripts": {

@@ -280,7 +280,7 @@ export class MarketDataService {
                     title: market.title,
                     description: market.description,
                     category: market.category,
-                    source: 'dejavu',
+                    source: 'exoduze',
                     publishedAt: market.created_at,
                     impact: this.volumeToImpact(market.volume),
                     sentiment: this.priceToSentiment(market.yes_price),

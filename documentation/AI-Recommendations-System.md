@@ -2,7 +2,7 @@
 
 > **Technical Deep Dive: "For You" & "Top Markets" Engine**
 >
-> This document details the algorithmic approach, data aggregation strategies, and K-Means clustering logic powering the personalized recommendation engine in DeJaVu.
+> This document details the algorithmic approach, data aggregation strategies, and K-Means clustering logic powering the personalized recommendation engine in ExoDuZe.
 
 ---
 

@@ -1,7 +1,7 @@
 /**
- * @dejavu/config
+ * @exoduze/config
  * 
- * Centralized configuration for the DeJaVu platform.
+ * Centralized configuration for the ExoDuZe platform.
  * 
  * Provides:
  * - Chain configurations (EVM, Solana, Sui)

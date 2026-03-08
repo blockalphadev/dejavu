@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 /**
- * @title DeJaVu Prediction Market
- * @notice Core prediction market contract for DeJaVu platform
+ * @title ExoDuZe Prediction Market
+ * @notice Core prediction market contract for ExoDuZe platform
  * @dev This is a scaffold contract - implementation to be completed
  */
 contract PredictionMarket {

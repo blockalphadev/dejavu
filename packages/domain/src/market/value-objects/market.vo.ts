@@ -3,7 +3,7 @@
  */
 
 import { SingleValueObject, ValueObject } from '../common/value-object.base';
-import { ValidationError } from '@dejavu/shared/errors';
+import { ValidationError } from '@exoduze/shared/errors';
 
 /**
  * Market ID value object

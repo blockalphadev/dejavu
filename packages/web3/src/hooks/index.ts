@@ -1,11 +1,11 @@
 /**
- * @dejavu/web3 - React Hooks
+ * @exoduze/web3 - React Hooks
  * 
  * Chain-agnostic React hooks for Web3 interactions.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import type { ChainId, ChainType } from '@dejavu/core';
+import type { ChainId, ChainType } from '@exoduze/core';
 import type { WalletState, ChainAdapter } from '../types';
 import { evmAdapter } from '../adapters/evm';
 import { solanaAdapter } from '../adapters/solana';

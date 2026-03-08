@@ -54,7 +54,7 @@ export function AuthErrorPage() {
                 {/* Help link */}
                 <p className="text-sm text-muted-foreground mt-8">
                     Having trouble?{' '}
-                    <a href="mailto:support@dejavu.app" className="text-primary hover:underline">
+                    <a href="mailto:support@exoduze.app" className="text-primary hover:underline">
                         Contact Support
                     </a>
                 </p>

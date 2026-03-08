@@ -2,7 +2,7 @@
 
 > **Overview**
 >
-> This document details the multi-layered security architecture implemented in the DeJaVu backend to protect against OWASP Top 10 vulnerabilities, ensure financial data integrity, and secure real-time communication channels.
+> This document details the multi-layered security architecture implemented in the ExoDuZe backend to protect against OWASP Top 10 vulnerabilities, ensure financial data integrity, and secure real-time communication channels.
 
 ---
 

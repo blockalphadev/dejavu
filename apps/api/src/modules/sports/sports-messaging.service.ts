@@ -80,7 +80,7 @@ export class SportsMessagingService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(SportsMessagingService.name);
     private readonly eventEmitter = new EventEmitter();
     private isEnabled: boolean = false;
-    private readonly exchange: string = 'dejavu.sports';
+    private readonly exchange: string = 'exoduze.sports';
 
     // Message handlers registry
     private readonly handlers: Map<string, Array<(message: unknown) => Promise<void>>> = new Map();

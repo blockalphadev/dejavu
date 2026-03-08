@@ -1,5 +1,5 @@
 /**
- * DeJaVu API Client
+ * ExoDuZe API Client
  * Handles all communication with the backend API
  */
 
@@ -41,8 +41,8 @@ let tokenExpiresAt: number | null = null;
 export function setAccessToken(token: string, expiresIn: number): void {
     accessToken = token;
     tokenExpiresAt = Date.now() + expiresIn * 1000;
-    localStorage.setItem('dejavu_access_token', token);
-    localStorage.setItem('dejavu_token_expires', tokenExpiresAt.toString());
+    localStorage.setItem('exoduze_access_token', token);
+    localStorage.setItem('exoduze_token_expires', tokenExpiresAt.toString());
 }
 
 /**
@@ -50,7 +50,7 @@ export function setAccessToken(token: string, expiresIn: number): void {
  */
 export function setRefreshToken(token: string): void {
     refreshTokenValue = token;
-    localStorage.setItem('dejavu_refresh_token', token);
+    localStorage.setItem('exoduze_refresh_token', token);
 }
 
 /**
@@ -60,7 +60,7 @@ function getRefreshToken(): string | null {
     if (refreshTokenValue) {
         return refreshTokenValue;
     }
-    const stored = localStorage.getItem('dejavu_refresh_token');
+    const stored = localStorage.getItem('exoduze_refresh_token');
     if (stored) {
         refreshTokenValue = stored;
         return refreshTokenValue;
@@ -77,8 +77,8 @@ export function getAccessToken(): string | null {
     }
 
     // Try from localStorage
-    const stored = localStorage.getItem('dejavu_access_token');
-    const expires = localStorage.getItem('dejavu_token_expires');
+    const stored = localStorage.getItem('exoduze_access_token');
+    const expires = localStorage.getItem('exoduze_token_expires');
 
     if (stored && expires && Date.now() < parseInt(expires, 10)) {
         accessToken = stored;
@@ -96,9 +96,9 @@ export function clearTokens(): void {
     accessToken = null;
     refreshTokenValue = null;
     tokenExpiresAt = null;
-    localStorage.removeItem('dejavu_access_token');
-    localStorage.removeItem('dejavu_refresh_token');
-    localStorage.removeItem('dejavu_token_expires');
+    localStorage.removeItem('exoduze_access_token');
+    localStorage.removeItem('exoduze_refresh_token');
+    localStorage.removeItem('exoduze_token_expires');
 }
 
 /**

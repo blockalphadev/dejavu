@@ -1,11 +1,11 @@
-# 🔮 DeJaVu
+# 🔮 ExoDuZe
 
-**DeJaVu** adalah platform prediction market generasi baru yang dibangun dengan arsitektur enterprise-grade, mendukung multi-chain Web3 (EVM, Solana, Sui).
+**ExoDuZe** adalah platform prediction market generasi baru yang dibangun dengan arsitektur enterprise-grade, mendukung multi-chain Web3 (EVM, Solana, Sui).
 
 ## 🏗️ Arsitektur
 
 ```
-dejavu/
+exoduze/
 ├── apps/
 │   ├── web/                    # Frontend React application
 │   └── backend/                # API server (coming soon)
@@ -59,8 +59,8 @@ dejavu/
 
 ```bash
 # Clone the repository
-git clone https://github.com/siabang35/dejavu.git
-cd dejavu
+git clone https://github.com/siabang35/exoduze.git
+cd exoduze
 
 # Install dependencies
 pnpm install
@@ -79,8 +79,8 @@ pnpm typecheck              # TypeScript check
 pnpm lint                   # Lint all packages
 
 # Specific packages
-pnpm dev --filter=@dejavu/web     # Dev server only
-pnpm build --filter=@dejavu/core  # Build core only
+pnpm dev --filter=@exoduze/web     # Dev server only
+pnpm build --filter=@exoduze/core  # Build core only
 
 # Contracts
 cd contracts/evm && forge build   # Build EVM contracts
@@ -90,28 +90,28 @@ cd contracts/sui && sui move build   # Build Sui
 
 ## 📦 Package Overview
 
-### `@dejavu/core`
+### `@exoduze/core`
 Shared utilities, TypeScript types, and constants.
 
 ```typescript
-import { formatCurrency, truncateAddress, CHAINS } from '@dejavu/core';
-import type { Market, Chain, User } from '@dejavu/core';
+import { formatCurrency, truncateAddress, CHAINS } from '@exoduze/core';
+import type { Market, Chain, User } from '@exoduze/core';
 ```
 
-### `@dejavu/ui`
+### `@exoduze/ui`
 Reusable React components built on Radix UI.
 
 ```typescript
-import { Button, Dialog, Card } from '@dejavu/ui';
-import { cn } from '@dejavu/ui/utils';
+import { Button, Dialog, Card } from '@exoduze/ui';
+import { cn } from '@exoduze/ui/utils';
 ```
 
-### `@dejavu/web3`
+### `@exoduze/web3`
 Chain-agnostic wallet connection and blockchain interactions.
 
 ```typescript
-import { useWallet, Web3Provider } from '@dejavu/web3';
-import { evmAdapter, solanaAdapter, suiAdapter } from '@dejavu/web3';
+import { useWallet, Web3Provider } from '@exoduze/web3';
+import { evmAdapter, solanaAdapter, suiAdapter } from '@exoduze/web3';
 ```
 
 ## 🔗 Smart Contracts
@@ -136,4 +136,4 @@ MIT
 
 ---
 
-*Built with ❤️ by DeJaVu Team*
+*Built with ❤️ by ExoDuZe Team*

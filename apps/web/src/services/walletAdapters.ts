@@ -211,7 +211,7 @@ export const MetaMaskAdapter: WalletAdapter = {
     icon: '/icons/metamask.svg',
     chains: ['ethereum', 'base', 'polygon', 'arbitrum', 'optimism'],
     downloadUrl: 'https://metamask.io/download/',
-    mobileDeepLink: 'metamask://dapp/dejavu.app',
+    mobileDeepLink: 'metamask://dapp/exoduze.app',
 
     isInstalled: () => {
         return getMetaMaskProvider() !== null;
@@ -308,7 +308,7 @@ export const PhantomAdapter: WalletAdapter = {
     icon: '/icons/phantom.svg',
     chains: ['solana'],
     downloadUrl: 'https://phantom.app/download',
-    mobileDeepLink: 'phantom://browse/dejavu.app',
+    mobileDeepLink: 'phantom://browse/exoduze.app',
 
     isInstalled: () => {
         return getPhantomSolanaProvider() !== null;
@@ -641,7 +641,7 @@ function encodeBase58(bytes: Uint8Array): string {
     return ALPHABET[0].repeat(leadingZeros) + digits.reverse().map(d => ALPHABET[d]).join('');
 }
 
-export function isMessageSafe(message: string, expectedDomain: string = 'dejavu.app'): { safe: boolean; issues: string[] } {
+export function isMessageSafe(message: string, expectedDomain: string = 'exoduze.app'): { safe: boolean; issues: string[] } {
     const issues: string[] = [];
     if (typeof message !== 'string' || !message) {
         issues.push('Message is invalid');

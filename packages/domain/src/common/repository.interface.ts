@@ -4,7 +4,7 @@
  * Base interface for persistence abstraction.
  */
 
-import { Result } from '@dejavu/shared/utils';
+import { Result } from '@exoduze/shared/utils';
 import { AggregateRoot, AggregateRootProps } from './aggregate-root.base';
 import { EntityId } from './entity.base';
 

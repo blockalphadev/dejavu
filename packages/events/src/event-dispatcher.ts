@@ -6,7 +6,7 @@
  * successful persistence.
  */
 
-import type { DomainEvent } from '@dejavu/domain';
+import type { DomainEvent } from '@exoduze/domain';
 import type { IEventBus } from './event-bus.interface';
 
 /**

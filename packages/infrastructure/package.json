@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/infrastructure",
+    "name": "@exoduze/infrastructure",
     "version": "0.0.1",
     "private": true,
     "type": "module",
@@ -27,10 +27,10 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@dejavu/shared": "workspace:*",
-        "@dejavu/domain": "workspace:*",
-        "@dejavu/caching": "workspace:*",
-        "@dejavu/events": "workspace:*",
+        "@exoduze/shared": "workspace:*",
+        "@exoduze/domain": "workspace:*",
+        "@exoduze/caching": "workspace:*",
+        "@exoduze/events": "workspace:*",
         "@supabase/supabase-js": "^2.45.0"
     },
     "devDependencies": {

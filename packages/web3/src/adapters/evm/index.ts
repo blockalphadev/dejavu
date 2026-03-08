@@ -1,11 +1,11 @@
 /**
- * @dejavu/web3 - EVM Chain Adapter
+ * @exoduze/web3 - EVM Chain Adapter
  * 
  * Adapter for EVM-compatible chains (Ethereum, Base, Polygon, Arbitrum, Optimism)
  * using wagmi and viem under the hood.
  */
 
-import type { ChainId } from '@dejavu/core';
+import type { ChainId } from '@exoduze/core';
 import type {
     ChainAdapter,
     TransactionRequest,

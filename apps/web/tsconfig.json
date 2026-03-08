@@ -28,22 +28,22 @@
             "@/*": [
                 "./src/*"
             ],
-            "@dejavu/core": [
+            "@exoduze/core": [
                 "../../packages/core/src"
             ],
-            "@dejavu/core/*": [
+            "@exoduze/core/*": [
                 "../../packages/core/src/*"
             ],
-            "@dejavu/ui": [
+            "@exoduze/ui": [
                 "../../packages/ui/src"
             ],
-            "@dejavu/ui/*": [
+            "@exoduze/ui/*": [
                 "../../packages/ui/src/*"
             ],
-            "@dejavu/web3": [
+            "@exoduze/web3": [
                 "../../packages/web3/src"
             ],
-            "@dejavu/web3/*": [
+            "@exoduze/web3/*": [
                 "../../packages/web3/src/*"
             ]
         }

@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/application",
+    "name": "@exoduze/application",
     "version": "0.0.1",
     "private": true,
     "type": "module",
@@ -35,9 +35,9 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@dejavu/shared": "workspace:*",
-        "@dejavu/domain": "workspace:*",
-        "@dejavu/events": "workspace:*"
+        "@exoduze/shared": "workspace:*",
+        "@exoduze/domain": "workspace:*",
+        "@exoduze/events": "workspace:*"
     },
     "devDependencies": {
         "@types/node": "^22.0.0",

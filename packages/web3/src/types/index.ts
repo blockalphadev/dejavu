@@ -1,10 +1,10 @@
 /**
- * @dejavu/web3 - Types
+ * @exoduze/web3 - Types
  * 
  * Chain-agnostic Web3 types for the wallet abstraction layer.
  */
 
-import type { ChainId, ChainType } from '@dejavu/core';
+import type { ChainId, ChainType } from '@exoduze/core';
 
 // ============================================================================
 // Wallet State Types

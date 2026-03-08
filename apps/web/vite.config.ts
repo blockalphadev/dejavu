@@ -17,9 +17,9 @@ export default defineConfig({
       // Local src alias
       '@': path.resolve(__dirname, './src'),
       // Workspace package aliases
-      '@dejavu/core': path.resolve(__dirname, '../../packages/core/src'),
-      '@dejavu/ui': path.resolve(__dirname, '../../packages/ui/src'),
-      '@dejavu/web3': path.resolve(__dirname, '../../packages/web3/src'),
+      '@exoduze/core': path.resolve(__dirname, '../../packages/core/src'),
+      '@exoduze/ui': path.resolve(__dirname, '../../packages/ui/src'),
+      '@exoduze/web3': path.resolve(__dirname, '../../packages/web3/src'),
     },
   },
   server: {

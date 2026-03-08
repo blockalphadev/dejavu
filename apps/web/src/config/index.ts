@@ -10,8 +10,8 @@ const DEFAULT_API_URL = 'http://localhost:3001/api/v1';
 const DEFAULT_WS_URL = 'http://localhost:3001';
 
 // Production API URL
-const PRODUCTION_API_URL = 'https://backend-dejavu.onrender.com/api/v1';
-const PRODUCTION_WS_URL = 'https://backend-dejavu.onrender.com';
+const PRODUCTION_API_URL = 'https://backend-exoduze.onrender.com/api/v1';
+const PRODUCTION_WS_URL = 'https://backend-exoduze.onrender.com';
 
 /**
  * Get the API base URL

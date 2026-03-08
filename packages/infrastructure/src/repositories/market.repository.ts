@@ -5,9 +5,9 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { CacheService } from '@dejavu/caching';
-import type { IEventBus } from '@dejavu/events';
-import type { IMarketRepository } from '@dejavu/domain';
+import type { CacheService } from '@exoduze/caching';
+import type { IEventBus } from '@exoduze/events';
+import type { IMarketRepository } from '@exoduze/domain';
 import { BaseRepository, type RepositoryOptions } from './base.repository';
 
 /**

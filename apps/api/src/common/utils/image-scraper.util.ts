@@ -79,7 +79,7 @@ export class ImageScraperUtil {
             const response = await fetch(articleUrl, {
                 signal: controller.signal,
                 headers: {
-                    'User-Agent': 'DejavuBot/1.0 (+https://dejavu.app; image-extraction)',
+                    'User-Agent': 'ExoduzeBot/1.0 (+https://exoduze.app; image-extraction)',
                     'Accept': 'text/html,application/xhtml+xml',
                     'Accept-Language': 'en-US,en;q=0.9',
                 },

@@ -1,10 +1,10 @@
 /**
- * @dejavu/web3 - Sui Chain Adapter
+ * @exoduze/web3 - Sui Chain Adapter
  * 
  * Adapter for Sui blockchain using @mysten/sui.js.
  */
 
-import type { ChainId } from '@dejavu/core';
+import type { ChainId } from '@exoduze/core';
 import type {
     ChainAdapter,
     TransactionRequest,

@@ -1,5 +1,5 @@
 [build]
-  command = "npx turbo build --filter=@dejavu/web"
+  command = "npx turbo build --filter=@exoduze/web"
   publish = "apps/web/dist"
 
 [build.environment]

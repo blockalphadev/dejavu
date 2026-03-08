@@ -2,13 +2,13 @@
 
 > **Deep Dive: Streaming Intelligence Pipeline**
 >
-> This document details the end-to-end streaming architecture that powers DeJaVu's "Live Feed" and real-time market updates. It covers the journey of a data point from external API to the user's screen in milliseconds.
+> This document details the end-to-end streaming architecture that powers ExoDuZe's "Live Feed" and real-time market updates. It covers the journey of a data point from external API to the user's screen in milliseconds.
 
 ---
 
 ## 1. Pipeline Overview
 
-The DeJaVu streaming pipeline is designed for **low latency**, **high throughput**, and **fault tolerance**. It processes over 100+ events per minute from 8 different categories, normalizing them into a unified stream.
+The ExoDuZe streaming pipeline is designed for **low latency**, **high throughput**, and **fault tolerance**. It processes over 100+ events per minute from 8 different categories, normalizing them into a unified stream.
 
 ```mermaid
 sequenceDiagram

@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain
+ * @exoduze/domain
  *
  * Domain layer containing entities, value objects, aggregates, and domain events
  * following Domain-Driven Design principles.

@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain - User Events
+ * @exoduze/domain - User Events
  */
 
 export * from './user.events';

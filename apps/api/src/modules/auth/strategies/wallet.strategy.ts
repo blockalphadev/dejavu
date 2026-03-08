@@ -24,11 +24,11 @@ export class WalletStrategy {
     generateChallenge(address: string, chain: string): string {
         const nonce = Math.random().toString(36).substring(2, 15);
         const timestamp = Date.now();
-        const domain = 'dejavu.app';
+        const domain = 'exoduze.app';
 
-        return `Welcome to DeJaVu!
+        return `Welcome to ExoDuZe!
 
-Click to sign in and accept the DeJaVu Terms of Service.
+Click to sign in and accept the ExoDuZe Terms of Service.
 
 This request will not trigger a blockchain transaction or cost any gas fees.
 

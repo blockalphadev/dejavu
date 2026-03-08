@@ -5,7 +5,7 @@
 
 services:
   - type: web
-    name: dejavu-api
+    name: exoduze-api
     runtime: node
     plan: free
     rootDir: api

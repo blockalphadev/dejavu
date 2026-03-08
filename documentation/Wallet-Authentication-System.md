@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-The DeJaVu Wallet Authentication System provides a secure, non-custodial login mechanism supporting multiple blockchain ecosystems (EVM, Solana, SUI). It acts as a unified identity layer allowing users to authenticate via cryptographic signatures without relying on passwords or traditional OAuth providers.
+The ExoDuZe Wallet Authentication System provides a secure, non-custodial login mechanism supporting multiple blockchain ecosystems (EVM, Solana, SUI). It acts as a unified identity layer allowing users to authenticate via cryptographic signatures without relying on passwords or traditional OAuth providers.
 
 ### Key Capabilities
 - **Multi-Chain Support**: Ethereum (and L2s), Solana, and SUI.
@@ -118,7 +118,7 @@ The backend generates a cryptographically random, single-use nonce via the datab
 **Security Features**:
 - **Nonce Entropy**: 32 bytes random hex (pgcrypto).
 - **Expiration**: Nonces expire after 5 minutes.
-- **Domain Binding**: Message binds to `dejavu.app` to prevent phishing.
+- **Domain Binding**: Message binds to `exoduze.app` to prevent phishing.
 - **Format**: 
   - EVM: EIP-4361 (SIWE) standard.
   - SUI/Solana: Custom readable message formats.

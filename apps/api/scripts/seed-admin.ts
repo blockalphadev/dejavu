@@ -23,12 +23,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Admin credentials - can be overridden via environment variables
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@dejavu.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@exoduze.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const ADMIN_FULL_NAME = process.env.ADMIN_FULL_NAME || 'System Administrator';
 
 async function seedAdmin() {
-    console.log('🔐 DeJaVu Admin Seeder');
+    console.log('🔐 ExoDuZe Admin Seeder');
     console.log('='.repeat(50));
 
     // Validate environment

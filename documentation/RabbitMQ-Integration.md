@@ -1,10 +1,10 @@
 # RabbitMQ Integration Guide
 
-> Comprehensive guide for the DeJaVu messaging infrastructure using RabbitMQ.
+> Comprehensive guide for the ExoDuZe messaging infrastructure using RabbitMQ.
 
 ## Overview
 
-RabbitMQ provides the backbone for real-time event distribution, decoupled service communication, and reliable message delivery in the DeJaVu platform.
+RabbitMQ provides the backbone for real-time event distribution, decoupled service communication, and reliable message delivery in the ExoDuZe platform.
 
 ---
 
@@ -25,7 +25,7 @@ RabbitMQ provides the backbone for real-time event distribution, decoupled servi
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │                     EXCHANGES                                │   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │   │
-│  │  │dejavu.sports │  │dejavu.domain │  │dejavu.direct │       │   │
+│  │  │exoduze.sports │  │exoduze.domain │  │exoduze.direct │       │   │
 │  │  │   (topic)    │  │   (topic)    │  │   (direct)   │       │   │
 │  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘       │   │
 │  └─────────┼─────────────────┼─────────────────┼────────────────┘   │
@@ -80,7 +80,7 @@ General domain events for the platform.
 
 ```typescript
 export const DOMAIN_EVENTS_EXCHANGE: ExchangeConfig = {
-  name: 'dejavu.domain.events',
+  name: 'exoduze.domain.events',
   type: 'topic',
   durable: true,
   autoDelete: false,
@@ -92,7 +92,7 @@ Dedicated exchange for sports-related events.
 
 ```typescript
 export const SPORTS_EXCHANGE: ExchangeConfig = {
-  name: 'dejavu.sports',
+  name: 'exoduze.sports',
   type: 'topic',
   durable: true,
   autoDelete: false,
@@ -104,7 +104,7 @@ For direct service-to-service communication.
 
 ```typescript
 export const DIRECT_EXCHANGE: ExchangeConfig = {
-  name: 'dejavu.direct',
+  name: 'exoduze.direct',
   type: 'direct',
   durable: true,
   autoDelete: false,
@@ -165,7 +165,7 @@ export const SPORTS_EVENTS_QUEUE: QueueConfig = {
   exclusive: false,
   autoDelete: false,
   arguments: {
-    'x-dead-letter-exchange': 'dejavu.dlx',
+    'x-dead-letter-exchange': 'exoduze.dlx',
     'x-dead-letter-routing-key': 'sports.dlq',
     'x-message-ttl': 86400000, // 24 hours
   },
@@ -207,7 +207,7 @@ export const DLQ_SPORTS: QueueConfig = {
 ### Connection
 
 ```typescript
-import { RabbitMQClient } from '@dejavu/messaging';
+import { RabbitMQClient } from '@exoduze/messaging';
 
 const client = new RabbitMQClient({
   host: 'localhost',
@@ -225,7 +225,7 @@ await client.connect();
 ```typescript
 // Publish sports event update
 await client.publish({
-  exchange: 'dejavu.sports',
+  exchange: 'exoduze.sports',
   routingKey: 'sports.event.updated',
   message: {
     id: 'event-123',
@@ -296,7 +296,7 @@ Dedicated service for publishing sports events to RabbitMQ.
 ```typescript
 @Injectable()
 export class SportsMessagingService implements OnModuleInit {
-  private readonly exchange = 'dejavu.sports';
+  private readonly exchange = 'exoduze.sports';
   private isConnected = false;
 
   // Routing keys
@@ -457,14 +457,14 @@ Messages that fail processing are routed to the DLQ:
 
 ```typescript
 export const DEAD_LETTER_EXCHANGE: ExchangeConfig = {
-  name: 'dejavu.dlx',
+  name: 'exoduze.dlx',
   type: 'direct',
   durable: true,
 };
 
 // Queue with DLQ configuration
 const queueArgs = {
-  'x-dead-letter-exchange': 'dejavu.dlx',
+  'x-dead-letter-exchange': 'exoduze.dlx',
   'x-dead-letter-routing-key': 'failed.messages',
 };
 ```

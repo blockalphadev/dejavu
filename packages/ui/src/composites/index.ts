@@ -1,5 +1,5 @@
 /**
- * @dejavu/ui - Composites
+ * @exoduze/ui - Composites
  * 
  * Complex UI components built from primitives.
  * These are typically feature-specific or composed components.

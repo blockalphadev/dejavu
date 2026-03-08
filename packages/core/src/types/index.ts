@@ -1,7 +1,7 @@
 /**
- * @dejavu/core - Shared Types
+ * @exoduze/core - Shared Types
  * 
- * This module exports all shared TypeScript types used across the DeJaVu platform.
+ * This module exports all shared TypeScript types used across the ExoDuZe platform.
  */
 
 // ============================================================================

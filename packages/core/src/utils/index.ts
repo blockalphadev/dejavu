@@ -1,7 +1,7 @@
 /**
- * @dejavu/core - Utility Functions
+ * @exoduze/core - Utility Functions
  * 
- * Shared utility functions used across the DeJaVu platform.
+ * Shared utility functions used across the ExoDuZe platform.
  */
 
 // ============================================================================

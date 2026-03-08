@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/domain",
+    "name": "@exoduze/domain",
     "version": "0.0.1",
     "private": true,
     "type": "module",
@@ -33,7 +33,7 @@
         "build": "tsc"
     },
     "dependencies": {
-        "@dejavu/shared": "workspace:*"
+        "@exoduze/shared": "workspace:*"
     },
     "devDependencies": {
         "typescript": "^5.4.0"

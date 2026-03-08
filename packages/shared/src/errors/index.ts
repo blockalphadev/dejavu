@@ -1,5 +1,5 @@
 /**
- * @dejavu/shared - Errors
+ * @exoduze/shared - Errors
  */
 
 export * from './domain-error';

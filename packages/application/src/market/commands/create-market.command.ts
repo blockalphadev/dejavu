@@ -3,7 +3,7 @@
  */
 
 import { Command } from '../../common/command.interface';
-import type { MarketCategory, MarketType } from '@dejavu/shared/types';
+import type { MarketCategory, MarketType } from '@exoduze/shared/types';
 
 /**
  * DTO for creating a market

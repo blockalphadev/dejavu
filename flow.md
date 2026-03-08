@@ -1,4 +1,4 @@
-# Flow Diagram – DeJaVu Architecture
+# Flow Diagram – ExoDuZe Architecture
 
 ```
         ┌────────────┐
@@ -170,7 +170,7 @@ POST /sports/etl/sync/:sport
 
 ---
 
-## Roadmap Pengembangan DeJaVu
+## Roadmap Pengembangan ExoDuZe
 
 ### Phase 1 – Foundation (Month 1–2)
 

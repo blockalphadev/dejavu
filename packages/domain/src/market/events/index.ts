@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain - Market Events
+ * @exoduze/domain - Market Events
  */
 
 export * from './market.events';

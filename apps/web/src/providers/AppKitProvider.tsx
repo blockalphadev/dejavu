@@ -13,9 +13,9 @@ const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'b56e18d47c72
 
 // Metadata
 const metadata = {
-    name: 'DeJaVu',
-    description: 'DeJaVu Decentralized Prediction Market',
-    url: 'https://dejavubuild.netlify.app',
+    name: 'ExoDuZe',
+    description: 'ExoDuZe Decentralized Prediction Market',
+    url: 'https://exoduzebuild.netlify.app',
     icons: ['https://assets.reown.com/reown-profile-pic.png']
 }
 

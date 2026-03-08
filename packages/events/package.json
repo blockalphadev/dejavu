@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/events",
+    "name": "@exoduze/events",
     "version": "0.0.1",
     "private": true,
     "type": "module",
@@ -19,9 +19,9 @@
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@dejavu/shared": "workspace:*",
-        "@dejavu/domain": "workspace:*",
-        "@dejavu/messaging": "workspace:*"
+        "@exoduze/shared": "workspace:*",
+        "@exoduze/domain": "workspace:*",
+        "@exoduze/messaging": "workspace:*"
     },
     "devDependencies": {
         "@types/node": "^22.0.0",

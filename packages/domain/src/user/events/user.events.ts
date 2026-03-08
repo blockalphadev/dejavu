@@ -3,7 +3,7 @@
  */
 
 import { DomainEvent } from '../common/domain-event.base';
-import type { AuthProvider, UserRole } from '@dejavu/shared/types';
+import type { AuthProvider, UserRole } from '@exoduze/shared/types';
 
 /**
  * User Registered Event

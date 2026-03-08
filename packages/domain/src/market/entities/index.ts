@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain - Market Entities
+ * @exoduze/domain - Market Entities
  */
 
 export * from './outcome.entity';

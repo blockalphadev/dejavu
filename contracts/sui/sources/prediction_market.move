@@ -1,7 +1,7 @@
-/// DeJaVu Prediction Market - Sui Move Module
+/// ExoDuZe Prediction Market - Sui Move Module
 /// 
-/// Core prediction market contract for the DeJaVu platform on Sui.
-module dejavu::prediction_market {
+/// Core prediction market contract for the ExoDuZe platform on Sui.
+module exoduze::prediction_market {
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};
     use sui::transfer;

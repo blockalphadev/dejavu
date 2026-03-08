@@ -48,10 +48,10 @@ export function Footer() {
                         <div className="w-8 h-8">
                             <Logo3D className="w-full h-full" />
                         </div>
-                        <span className="font-rajdhani font-bold text-xl tracking-wider text-foreground">DeJaVu</span>
+                        <span className="font-rajdhani font-bold text-xl tracking-wider text-foreground">ExoDuZe</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        © 2026 DeJaVu. All rights reserved.
+                        © 2026 ExoDuZe. All rights reserved.
                     </p>
                     <div className="flex items-center gap-4">
                         <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">

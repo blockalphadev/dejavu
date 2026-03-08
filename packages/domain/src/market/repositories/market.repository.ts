@@ -2,10 +2,10 @@
  * Market Repository Interface
  */
 
-import type { Result } from '@dejavu/shared/utils';
+import type { Result } from '@exoduze/shared/utils';
 import type { IRepository } from '../../common/repository.interface';
 import type { MarketAggregate } from '../aggregates/market.aggregate';
-import type { MarketCategory, MarketStatus, ChainId } from '@dejavu/shared/types';
+import type { MarketCategory, MarketStatus, ChainId } from '@exoduze/shared/types';
 
 /**
  * Market query filters

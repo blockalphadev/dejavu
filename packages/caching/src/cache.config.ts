@@ -57,7 +57,7 @@ export const DEFAULT_REDIS_CONFIG: RedisConfig = {
     host: 'localhost',
     port: 6379,
     db: 0,
-    keyPrefix: 'dejavu:',
+    keyPrefix: 'exoduze:',
     connectTimeout: 10000,
     commandTimeout: 5000,
     maxRetriesPerRequest: 3,

@@ -3,7 +3,7 @@
  */
 
 import { Query, type PaginatedQueryOptions, type PaginatedResult } from '../../common/query.interface';
-import type { MarketCategory, MarketStatus } from '@dejavu/shared/types';
+import type { MarketCategory, MarketStatus } from '@exoduze/shared/types';
 import type { MarketViewModel } from './get-market.query';
 
 /**

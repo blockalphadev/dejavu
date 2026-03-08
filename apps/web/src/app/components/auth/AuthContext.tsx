@@ -47,7 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const refreshUser = useCallback(async () => {
         // Check if we have any auth credentials before making API call
         const token = getAccessToken();
-        const hasRefreshToken = !!localStorage.getItem('dejavu_refresh_token');
+        const hasRefreshToken = !!localStorage.getItem('exoduze_refresh_token');
 
         if (!token && !hasRefreshToken) {
             // No credentials at all, user is definitely logged out

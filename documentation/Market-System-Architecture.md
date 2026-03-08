@@ -2,7 +2,7 @@
 
 > **Technical Blueprint for Multi-Category Prediction Markets**
 >
-> This document details the unified data ingestion, storage, and streaming architecture powering DeJaVu's prediction markets. It covers the database schema, ETL pipelines, and real-time integration via RabbitMQ and WebSockets.
+> This document details the unified data ingestion, storage, and streaming architecture powering ExoDuZe's prediction markets. It covers the database schema, ETL pipelines, and real-time integration via RabbitMQ and WebSockets.
 
 ---
 

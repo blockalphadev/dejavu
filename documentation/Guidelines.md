@@ -1,4 +1,4 @@
-# DeJaVu — Development Guidelines
+# ExoDuZe — Development Guidelines
 
 > **Engineering Standards & Best Practices**  
 > Version 2.0.0 | Published: January 8, 2026  
@@ -8,7 +8,7 @@
 
 ## Document Purpose
 
-This document establishes coding standards, architectural patterns, and development workflows for the DeJaVu project. All contributors must follow these guidelines to ensure code quality, security, and maintainability.
+This document establishes coding standards, architectural patterns, and development workflows for the ExoDuZe project. All contributors must follow these guidelines to ensure code quality, security, and maintainability.
 
 ---
 
@@ -57,8 +57,8 @@ This document establishes coding standards, architectural patterns, and developm
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/siabang35/dejavu.git
-cd dejavu
+git clone https://github.com/siabang35/exoduze.git
+cd exoduze
 
 # 2. Install dependencies
 pnpm install
@@ -122,8 +122,8 @@ import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 
-// 3. Internal packages (@dejavu/*)
-import { User } from '@dejavu/domain';
+// 3. Internal packages (@exoduze/*)
+import { User } from '@exoduze/domain';
 
 // 4. Relative imports
 import { UsersService } from './users.service.js';
@@ -953,4 +953,4 @@ SELECT pg_size_pretty(pg_total_relation_size('users'));
 
 ---
 
-*Maintained by DeJaVu Engineering Team. For questions, contact engineering@dejavu.io*
+*Maintained by ExoDuZe Engineering Team. For questions, contact engineering@exoduze.io*

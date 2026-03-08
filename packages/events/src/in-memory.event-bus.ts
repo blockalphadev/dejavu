@@ -5,7 +5,7 @@
  * Events are processed synchronously within the same process.
  */
 
-import type { DomainEvent } from '@dejavu/domain';
+import type { DomainEvent } from '@exoduze/domain';
 import type { IEventBus, IEventHandler, EventBusConfig } from './event-bus.interface';
 import { DEFAULT_EVENT_BUS_CONFIG } from './event-bus.interface';
 

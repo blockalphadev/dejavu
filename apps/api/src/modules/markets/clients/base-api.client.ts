@@ -167,7 +167,7 @@ export abstract class BaseAPIClient {
 
                 const defaultHeaders = {
                     'Content-Type': 'application/json',
-                    'User-Agent': 'DejavuMarketData/1.0 (Integration; +https://github.com/dejavu/project)',
+                    'User-Agent': 'ExoduzeMarketData/1.0 (Integration; +https://github.com/exoduze/project)',
                     ...this.getAuthHeaders(),
                 };
 

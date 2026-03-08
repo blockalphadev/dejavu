@@ -1,10 +1,10 @@
 /**
- * @dejavu/web3 - Solana Chain Adapter
+ * @exoduze/web3 - Solana Chain Adapter
  * 
  * Adapter for Solana blockchain using @solana/web3.js.
  */
 
-import type { ChainId } from '@dejavu/core';
+import type { ChainId } from '@exoduze/core';
 import type {
     ChainAdapter,
     TransactionRequest,

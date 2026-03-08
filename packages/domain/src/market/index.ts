@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain - Market Domain
+ * @exoduze/domain - Market Domain
  */
 
 export * from './value-objects';

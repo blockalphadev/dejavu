@@ -88,7 +88,7 @@ export function Header({ onOpenAuth, onToggleMenu }: HeaderProps) {
                 <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full pointer-events-none" />
               </div>
               <span className="font-rajdhani font-bold text-2xl tracking-wider text-foreground group-hover:text-primary transition-colors">
-                DeJaVu
+                ExoDuZe
               </span>
             </div>
 

@@ -6,8 +6,8 @@
 
 import { AggregateRoot, AggregateRootProps } from '../../common/aggregate-root.base';
 import { StringId } from '../../common/entity.base';
-import type { MarketCategory, MarketStatus, MarketType, ResolutionSource, ChainId } from '@dejavu/shared/types';
-import { BusinessRuleError, MarketNotActiveError, MarketClosedError, MarketAlreadyResolvedError } from '@dejavu/shared/errors';
+import type { MarketCategory, MarketStatus, MarketType, ResolutionSource, ChainId } from '@exoduze/shared/types';
+import { BusinessRuleError, MarketNotActiveError, MarketClosedError, MarketAlreadyResolvedError } from '@exoduze/shared/errors';
 import { OutcomeEntity } from '../entities/outcome.entity';
 import { MarketIdVO, MoneyVO } from '../value-objects/market.vo';
 import {

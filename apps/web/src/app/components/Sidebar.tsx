@@ -94,7 +94,7 @@ export function Sidebar({ isOpen, onClose, onOpenAuth }: SidebarProps) {
           {/* Auth Section (Guest Only) */}
           {!isAuthenticated && (
             <div className="rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 p-5">
-              <h3 className="font-semibold mb-2">Join DeJaVu</h3>
+              <h3 className="font-semibold mb-2">Join ExoDuZe</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Sign up to start predicting and earning rewards.
               </p>

@@ -418,7 +418,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center space-y-1.5">
                     <h2 className="text-2xl font-bold tracking-tight text-foreground dark:text-white">
-                        {initialMode === 'signup' ? 'Create an Account' : 'Welcome to DeJaVu'}
+                        {initialMode === 'signup' ? 'Create an Account' : 'Welcome to ExoDuZe'}
                     </h2>
                     <p className="text-muted-foreground text-sm">
                         {initialMode === 'signup'
@@ -516,7 +516,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="w-full max-w-[94vw] sm:max-w-[450px] max-h-[80vh] overflow-y-auto overflow-x-hidden p-0 gap-0 bg-background/80 backdrop-blur-xl border border-border shadow-2xl duration-300 [&>button]:hidden ring-1 ring-border/5 rounded-2xl custom-scrollbar">
                     <DialogTitle className="sr-only">Authentication</DialogTitle>
-                    <DialogDescription className="sr-only">Sign in or create an account to access DeJaVu.</DialogDescription>
+                    <DialogDescription className="sr-only">Sign in or create an account to access ExoDuZe.</DialogDescription>
 
                     {/* Close button */}
                     <div className="absolute right-4 top-4 z-50">

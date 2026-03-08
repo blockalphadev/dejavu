@@ -5,9 +5,9 @@
  * Suitable for production environments with multiple service instances.
  */
 
-import type { DomainEvent } from '@dejavu/domain';
-import type { MessageBus, MessageEnvelope } from '@dejavu/messaging';
-import { createMessageBus, DOMAIN_EVENTS_EXCHANGE } from '@dejavu/messaging';
+import type { DomainEvent } from '@exoduze/domain';
+import type { MessageBus, MessageEnvelope } from '@exoduze/messaging';
+import { createMessageBus, DOMAIN_EVENTS_EXCHANGE } from '@exoduze/messaging';
 import type { IEventBus, IEventHandler, EventBusConfig } from './event-bus.interface';
 import { DEFAULT_EVENT_BUS_CONFIG } from './event-bus.interface';
 

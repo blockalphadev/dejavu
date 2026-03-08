@@ -8,7 +8,7 @@ services:
     build:
       context: ../../
       dockerfile: infra/docker/Dockerfile.api
-    container_name: dejavu-api
+    container_name: exoduze-api
     ports:
       - "3001:3001"
     environment:
@@ -20,7 +20,7 @@ services:
       - redis
       - rabbitmq
     networks:
-      - dejavu-network
+      - exoduze-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
@@ -36,7 +36,7 @@ services:
     build:
       context: ../../
       dockerfile: infra/docker/Dockerfile.web
-    container_name: dejavu-web
+    container_name: exoduze-web
     ports:
       - "3000:3000"
     environment:
@@ -44,7 +44,7 @@ services:
     depends_on:
       - api
     networks:
-      - dejavu-network
+      - exoduze-network
     restart: unless-stopped
 
   # ===================
@@ -52,14 +52,14 @@ services:
   # ===================
   redis:
     image: redis:7-alpine
-    container_name: dejavu-redis
+    container_name: exoduze-redis
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     networks:
-      - dejavu-network
+      - exoduze-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -72,18 +72,18 @@ services:
   # ===================
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: dejavu-rabbitmq
+    container_name: exoduze-rabbitmq
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
     environment:
-      - RABBITMQ_DEFAULT_USER=dejavu
-      - RABBITMQ_DEFAULT_PASS=dejavu_secret
-      - RABBITMQ_DEFAULT_VHOST=/dejavu
+      - RABBITMQ_DEFAULT_USER=exoduze
+      - RABBITMQ_DEFAULT_PASS=exoduze_secret
+      - RABBITMQ_DEFAULT_VHOST=/exoduze
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
-      - dejavu-network
+      - exoduze-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
@@ -92,7 +92,7 @@ services:
       retries: 3
 
 networks:
-  dejavu-network:
+  exoduze-network:
     driver: bridge
 
 volumes:

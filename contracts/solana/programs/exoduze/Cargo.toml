@@ -1,12 +1,12 @@
 [package]
-name = "dejavu"
+name = "exoduze"
 version = "0.1.0"
-description = "DeJaVu Prediction Market on Solana"
+description = "ExoDuZe Prediction Market on Solana"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "dejavu"
+name = "exoduze"
 
 [features]
 no-entrypoint = []

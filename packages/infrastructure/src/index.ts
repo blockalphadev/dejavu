@@ -1,5 +1,5 @@
 /**
- * @dejavu/infrastructure
+ * @exoduze/infrastructure
  *
  * Infrastructure layer with repository implementations,
  * database utilities, and cross-cutting concerns.

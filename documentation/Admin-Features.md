@@ -1,13 +1,13 @@
 # Admin Panel Features & Architecture
 
-> **DeJaVu Admin Dashboard**
+> **ExoDuZe Admin Dashboard**
 > Version: 1.1.0 | Published: January 24, 2026
 
 ---
 
 ## 1. Overview
 
-The DeJaVu Admin Panel is a secured, real-time control center built to monitor platform health, user growth, and financial activity. It leverages **Socket.IO** for live updates and **Recharts** for data visualization.
+The ExoDuZe Admin Panel is a secured, real-time control center built to monitor platform health, user growth, and financial activity. It leverages **Socket.IO** for live updates and **Recharts** for data visualization.
 
 ---
 

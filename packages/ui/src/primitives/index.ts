@@ -1,5 +1,5 @@
 /**
- * @dejavu/ui - Primitives
+ * @exoduze/ui - Primitives
  * 
  * Base UI components that serve as building blocks.
  * These are typically wrappers around Radix UI primitives.

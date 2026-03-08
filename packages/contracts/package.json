@@ -1,5 +1,5 @@
 {
-    "name": "@dejavu/contracts",
+    "name": "@exoduze/contracts",
     "version": "0.0.1",
     "private": true,
     "type": "module",
@@ -37,6 +37,6 @@
         "tsx": "^4.7.0"
     },
     "peerDependencies": {
-        "@dejavu/shared": "workspace:*"
+        "@exoduze/shared": "workspace:*"
     }
 }

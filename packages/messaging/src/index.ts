@@ -1,5 +1,5 @@
 /**
- * @dejavu/messaging
+ * @exoduze/messaging
  *
  * Enterprise-grade RabbitMQ messaging layer with exchange/queue management,
  * message publishing, consuming, and RPC patterns.

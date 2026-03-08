@@ -2,7 +2,7 @@
 
 ## 🛡️ Commitment to Security
 
-DeJaVu takes the security of our prediction market platform seriously. We are committed to protecting our users, their assets, and the integrity of our financial data. This document outlines our security policies, reporting procedures, and the active measures we take to secure the platform.
+ExoDuZe takes the security of our prediction market platform seriously. We are committed to protecting our users, their assets, and the integrity of our financial data. This document outlines our security policies, reporting procedures, and the active measures we take to secure the platform.
 
 ## 📦 Supported Versions
 
@@ -17,10 +17,10 @@ If you are running an older version, please upgrade immediately to benefit from 
 
 ## 🐞 Reporting a Vulnerability
 
-We value the contributions of the security research community. If you discover a vulnerability in DeJaVu, please report it to us responsibly.
+We value the contributions of the security research community. If you discover a vulnerability in ExoDuZe, please report it to us responsibly.
 
 ### How to Report
-Please email our security team at **security@dejavu.finance** with the following details:
+Please email our security team at **security@exoduze.finance** with the following details:
 1.  **Subject**: Security Vulnerability - [Brief Description]
 2.  **Description**: Detailed explanation of the vulnerability.
 3.  **Steps to Reproduce**: PoC steps, scripts, or screenshots.

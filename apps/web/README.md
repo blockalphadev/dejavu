@@ -1,12 +1,12 @@
-# DeJaVu Web Application
+# ExoDuZe Web Application
 
-Frontend React application untuk platform DeJaVu prediction market.
+Frontend React application untuk platform ExoDuZe prediction market.
 
 ## Development
 
 ```bash
 # Dari root directory
-pnpm dev --filter=@dejavu/web
+pnpm dev --filter=@exoduze/web
 
 # Atau dari direktori ini
 pnpm dev
@@ -36,6 +36,6 @@ src/
 
 ## Dependencies
 
-- `@dejavu/core` - Shared types dan utilities
-- `@dejavu/ui` - Design system components
-- `@dejavu/web3` - Web3 wallet integration
+- `@exoduze/core` - Shared types dan utilities
+- `@exoduze/ui` - Design system components
+- `@exoduze/web3` - Web3 wallet integration

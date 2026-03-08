@@ -1,5 +1,5 @@
 {
-  "name": "@dejavu/www",
+  "name": "@exoduze/www",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,9 +12,9 @@
     "next": "16.1.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "@dejavu/ui": "workspace:*",
-    "@dejavu/core": "workspace:*",
-    "@dejavu/web3": "workspace:*"
+    "@exoduze/ui": "workspace:*",
+    "@exoduze/core": "workspace:*",
+    "@exoduze/web3": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

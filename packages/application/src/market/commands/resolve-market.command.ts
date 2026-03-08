@@ -3,7 +3,7 @@
  */
 
 import { Command } from '../../common/command.interface';
-import type { ResolutionSource } from '@dejavu/shared/types';
+import type { ResolutionSource } from '@exoduze/shared/types';
 
 /**
  * DTO for resolving a market

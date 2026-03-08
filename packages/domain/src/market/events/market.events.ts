@@ -3,7 +3,7 @@
  */
 
 import { DomainEvent } from '../../common/domain-event.base';
-import type { MarketCategory, MarketStatus, MarketType, ResolutionSource } from '@dejavu/shared/types';
+import type { MarketCategory, MarketStatus, MarketType, ResolutionSource } from '@exoduze/shared/types';
 
 /**
  * Market Created Event

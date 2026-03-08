@@ -1,5 +1,5 @@
 /**
- * @dejavu/events
+ * @exoduze/events
  *
  * Event bus abstraction supporting both in-memory and distributed
  * (RabbitMQ) event publishing and handling.

@@ -1,5 +1,5 @@
 /**
- * @dejavu/domain - Market Aggregates
+ * @exoduze/domain - Market Aggregates
  */
 
 export * from './market.aggregate';

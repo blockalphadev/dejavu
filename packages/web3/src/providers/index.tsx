@@ -1,11 +1,11 @@
 /**
- * @dejavu/web3 - React Providers
+ * @exoduze/web3 - React Providers
  * 
  * Context providers for Web3 functionality.
  */
 
 import React, { createContext, useContext, useMemo, type ReactNode } from 'react';
-import type { ChainType, ChainId } from '@dejavu/core';
+import type { ChainType, ChainId } from '@exoduze/core';
 import type { Web3ContextValue, WalletProviderConfig } from '../types';
 import { useWallet } from '../hooks';
 

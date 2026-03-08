@@ -1,7 +1,7 @@
 /**
- * @dejavu/contracts
+ * @exoduze/contracts
  * 
- * Multi-chain smart contract SDK for DeJaVu Prediction Market.
+ * Multi-chain smart contract SDK for ExoDuZe Prediction Market.
  * 
  * Provides:
  * - Type-safe ABIs for all contracts

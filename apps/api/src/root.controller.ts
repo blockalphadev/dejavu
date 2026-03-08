@@ -5,7 +5,7 @@ export class RootController {
     @Get()
     root() {
         return {
-            name: 'DeJaVu API',
+            name: 'ExoDuZe API',
             version: '1.0.0',
             status: 'running',
             docs: '/docs',

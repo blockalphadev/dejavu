@@ -338,7 +338,7 @@ export class AuthService {
         // 4. If new user, create Supabase Auth User
         if (!userId) {
             const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-                email: `${address.slice(0, 8)}@wallet.dejavu.app`,
+                email: `${address.slice(0, 8)}@wallet.exoduze.app`,
                 password: crypto.randomUUID(), // Secure random password
                 email_confirm: true,
                 user_metadata: {
@@ -697,7 +697,7 @@ export class AuthService {
         // Check reserved usernames
         const reserved = [
             'admin', 'administrator', 'mod', 'moderator', 'support', 'help',
-            'dejavu', 'official', 'system', 'root', 'api', 'www', 'mail',
+            'exoduze', 'official', 'system', 'root', 'api', 'www', 'mail',
             'bot', 'null', 'undefined', 'anonymous', 'guest', 'test', 'demo',
         ];
         if (reserved.includes(normalized)) {

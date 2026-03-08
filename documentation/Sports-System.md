@@ -574,8 +574,8 @@ function transformTheSportsDBEvent(raw: any): SportsEvent {
 
 | Exchange | Type | Purpose |
 |----------|------|---------|
-| `dejavu.sports` | topic | Sports event routing |
-| `dejavu.domain.events` | topic | General domain events |
+| `exoduze.sports` | topic | Sports event routing |
+| `exoduze.domain.events` | topic | General domain events |
 
 ### Routing Keys
 
@@ -613,7 +613,7 @@ const ROUTING_KEYS = {
        │
        ▼
 2. Publishes to RabbitMQ
-   { exchange: 'dejavu.sports', routingKey: 'sports.event.updated', message: {...} }
+   { exchange: 'exoduze.sports', routingKey: 'sports.event.updated', message: {...} }
        │
        ▼
 3. Sports Gateway subscribes to queue

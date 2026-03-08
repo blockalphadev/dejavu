@@ -1,5 +1,5 @@
 /**
- * @dejavu/caching
+ * @exoduze/caching
  *
  * Enterprise-grade Redis caching layer with distributed locking,
  * TTL management, and cache invalidation patterns.

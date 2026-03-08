@@ -5,7 +5,7 @@
  * eventual event sourcing support.
  */
 
-import type { DomainEvent } from '@dejavu/domain';
+import type { DomainEvent } from '@exoduze/domain';
 
 /**
  * Stored event record

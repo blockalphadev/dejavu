@@ -2,7 +2,7 @@
 
 > **Intelligent Image Enrichment for Market Data**
 >
-> This document details the image scraping utility, topic-based fallback system, and per-category image strategies powering DeJaVu's visual market intelligence.
+> This document details the image scraping utility, topic-based fallback system, and per-category image strategies powering ExoDuZe's visual market intelligence.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * @dejavu/shared - Utils
+ * @exoduze/shared - Utils
  */
 
 export * from './result';

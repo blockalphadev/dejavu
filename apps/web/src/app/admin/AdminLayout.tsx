@@ -100,7 +100,7 @@ export function AdminLayout({ children, onLogout }: AdminLayoutProps) {
                                     <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-neutral-900" />
                                 </div>
                                 <div>
-                                    <h1 className="font-bold text-lg tracking-tight text-white leading-none">DEJAVU</h1>
+                                    <h1 className="font-bold text-lg tracking-tight text-white leading-none">EXODUZE</h1>
                                     <span className="text-[10px] tracking-widest text-blue-400 font-semibold uppercase">Admin Console</span>
                                 </div>
                             </motion.div>
@@ -213,7 +213,7 @@ export function AdminLayout({ children, onLogout }: AdminLayoutProps) {
                         >
                             <Menu size={24} />
                         </button>
-                        <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">DeJaVu</span>
+                        <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">ExoDuZe</span>
                     </div>
 
                     <div className="hidden lg:flex flex-col">
@@ -268,7 +268,7 @@ export function AdminLayout({ children, onLogout }: AdminLayoutProps) {
                                         {user?.fullName || 'Admin User'}
                                     </div>
                                     <div className="text-[10px] text-neutral-500 mt-1 max-w-[150px] truncate">
-                                        {user?.email || 'admin@dejavu.fi'}
+                                        {user?.email || 'admin@exoduze.fi'}
                                     </div>
                                 </div>
                             </button>
@@ -307,7 +307,7 @@ export function AdminLayout({ children, onLogout }: AdminLayoutProps) {
                                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                         <Zap size={18} className="text-white fill-current" />
                                     </div>
-                                    <span className="font-bold text-xl tracking-tight text-white">DEJAVU</span>
+                                    <span className="font-bold text-xl tracking-tight text-white">EXODUZE</span>
                                 </div>
                                 <button
                                     onClick={() => setIsMobileMenuOpen(false)}
