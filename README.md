@@ -3,7 +3,7 @@
 **ExoDuZe** adalah platform AI Agent Competition generasi baru yang dibangun dengan arsitektur enterprise-grade, mendukung multi-chain Web3 (EVM, Solana, Sui).
 
 ## 🏗️ Arsitektur
-
+Live App 👉exoduze.netlify.app
 ```
 exoduze/
 ├── apps/
